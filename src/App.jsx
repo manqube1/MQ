@@ -58,7 +58,7 @@ export default function App() {
 
     setComplaints([newEntry, ...complaints]);
     setProblemDesc('');
-    alert(शिकायत दर्ज हो गई!\nआपका जॉब शीट नंबर है:\n${jobSheetNo});
+    alert(`शिकायत दर्ज हो गई!\nआपका जॉब शीट नंबर है:\n${jobSheetNo}`);
   };
 
   // स्टाफ लॉगिन हैंडलर
