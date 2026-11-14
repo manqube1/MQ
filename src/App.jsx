@@ -134,7 +134,7 @@ export default function App() {
       let imageUrl = "";
       if (imageFile) {
         const compressed = await compressImage(imageFile);
-        const storageRef = ref(storage, job_sheets/${Date.now()}.jpg);
+        const storageRef = ref(storage, `job_sheets/${Date.now()}.jpg`);
         await uploadBytes(storageRef, compressed);
         imageUrl = await getDownloadURL(storageRef);
       }
