@@ -53,7 +53,7 @@ export default function App() {
       product: productType,
       desc: problemDesc,
       status: 'Pending',
-      date: ${day}/${month}/${year} ${hours}:${minutes}
+      date: `${day}/${month}/${year} ${hours}:${minutes}`
     };
 
     setComplaints([newEntry, ...complaints]);
