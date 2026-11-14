@@ -230,4 +230,4 @@ export default function App() {
             <h3>अपनी पुरानी शिकायतें देखें (Customer History)</h3>
             <div style={{ marginBottom: '12px' }}>
               <label>अपना रजिस्टर्ड मोबाइल नंबर दर्ज करें:</label><br />
-              <input type="tel" placeholder="मोबाइल नंबर लिखें" value={searchPhone} onChange={(e) => setSearchPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              <input type="tel" placeholder="mobile number" value={searchPhone} onChange={(e) => setSearchPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
