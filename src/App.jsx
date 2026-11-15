@@ -1,23 +1,70 @@
 import React, { useState } from 'react';
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
+// 1. Firebase कॉन्फ़िगरेशन और कनेक्शन
+const firebaseConfig = {
+  apiKey: "AIzaSyDUUnfmXZSLOS2FrUAnr2eSFYAWnwURRfC",
+  authDomain: "mq-fsm-45ee9.firebaseapp.com",
+  projectId: "mq-fsm-45ee9",
+  storageBucket: "mq-fsm-45ee9.firebasestorage.app",
+  messagingSenderId: "527381468184",
+  appId: "1:527381468184:web:326741c5e9759c7799a36d",
+  measurementId: "G-VTMP9DR7D9"
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+
+// 2. फोटो को छोटा (Compress) करने का फंक्शन
+export const compressImage = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxWidth = 800;
+        const scaleSize = maxWidth / img.width;
+        canvas.width = maxWidth;
+        canvas.height = img.height * scaleSize;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, "image/jpeg", 0.7);
+      };
+    };
+  });
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('customer'); // customer, staff, admin
   
+  // सभी जॉब-शीट्स और शिकायतों का सेंट्रल डेटाबेस (State)
+  const [jobSheets, setJobSheets] = useState([]);
+
   // कस्टमर स्टेट
   const [custPhone, setCustPhone] = useState('');
   const [custLoggedIn, setCustLoggedIn] = useState(false);
-  const [complaints, setComplaints] = useState([]);
   
-  // नई शिकायत फॉर्म स्टेट
+  // नई शिकायत फॉर्म स्टेट (कस्टमर के लिए)
   const [productType, setProductType] = useState('Split AC');
   const [problemDesc, setProblemDesc] = useState('');
 
   // स्टाफ स्टेट
+  const [staffName, setStaffName] = useState('');
   const [staffPhone, setStaffPhone] = useState('');
   const [staffPin, setStaffPin] = useState('');
   const [staffLoggedIn, setStaffLoggedIn] = useState(false);
 
-  // जॉब शीट फॉर्म स्टेट (स्टाफ के लिए)
+  // जॉब शीट फॉर्म स्टेट (स्टाफ के लिए - पूरी तकनीकी डिटेल्स के साथ)
   const [jobCustName, setJobCustName] = useState('');
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
@@ -30,6 +77,10 @@ export default function App() {
   const [stabilizer, setStabilizer] = useState('OK');
   const [selectedItems, setSelectedItems] = useState([]);
 
+  // फोटो अपलोड स्टेट
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
   // कस्टमर लॉगिन हैंडलर
   const handleCustomerLogin = (e) => {
     e.preventDefault();
@@ -40,7 +91,7 @@ export default function App() {
     setCustLoggedIn(true);
   };
 
-  // नई शिकायत दर्ज करना (ऑटोमैटिक यूनिक जॉब शीट नंबर जनरेटर के साथ)
+  // कस्टमर द्वारा नई शिकायत दर्ज करना
   const handleNewComplaint = (e) => {
     e.preventDefault();
     const now = new Date();
@@ -50,28 +101,162 @@ export default function App() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
 
-    const jobSheetNo = ${custPhone}${day}${month}${year}${hours}${minutes};
+    const jobSheetNo = COMP${custPhone}${day}${month}${hours}${minutes};
 
     const newEntry = {
       jobSheetNo,
+      customerName: 'Customer',
+      customerPhone: custPhone,
+      customerAddress: 'N/A',
       product: productType,
       desc: problemDesc,
       status: 'Pending',
-      date: ${day}/${month}/${year} ${hours}:${minutes}
+      date: ${day}/${month}/${year} ${hours}:${minutes},
+      staffName: 'Not Assigned Yet',
+      staffPhone: '-',
+      location: 'Online Booking',
+      photoURL: '',
+      sectionPressure: '-',
+      roomTemp: '-',
+      voltage: '-',
+      ampere: '-',
+      stabilizer: '-',
+      selectedItems: []
     };
 
-    setComplaints([newEntry, ...complaints]);
+    setJobSheets([newEntry, ...jobSheets]);
     setProblemDesc('');
-    alert(शिकायत दर्ज हो गई!\nआपका जॉब शीट नंबर है:\n${jobSheetNo});
+    alert(शिकायत दर्ज हो गई!\nआपका जॉब शीट/कंप्लेंट नंबर है:\n${jobSheetNo});
   };
 
   // स्टाफ लॉगिन हैंडलर
   const handleStaffLogin = (e) => {
     e.preventDefault();
+    if (!staffName.trim()) {
+      alert('कृपया अपना नाम दर्ज करें!');
+      return;
+    }
     if (staffPin === '1234' || staffPin.length === 4) {
       setStaffLoggedIn(true);
     } else {
-      alert('गलत पिन! कृपया सही पिन दर्ज करें।');
+      alert('गलत पिन! कृपया सही 4-अंकों का पिन दर्ज करें।');
+    }
+  };
+
+  // फोटो सेलेक्ट और कम्प्रेस करने का हैंडलर
+  const handleFileChange = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    const compressedBlob = await compressImage(selectedFile);
+    const compressedFile = new File([compressedBlob], selectedFile.name, {
+      type: 'image/jpeg',
+    });
+
+    setImageFile(compressedFile);
+  };
+
+  // स्टाफ द्वारा जॉब शीट और फोटो Firebase पर सबमिट करने का हैंडलर
+  const handleJobSubmit = () => {
+    if (!jobCustName || !jobCustPhone) {
+      alert('कृपया कस्टमर का नाम और मोबाइल नंबर भरें!');
+      return;
+    }
+
+    setUploading(true);
+
+    // ब्राउज़र से लाइव लोकेशन (GPS) प्राप्त करना
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude.toFixed(4);
+          const lng = position.coords.longitude.toFixed(4);
+          const locationStr = Lat: ${lat}, Lng: ${lng} (Prayagraj);
+          
+          await processAndSaveJob(locationStr);
+        },
+        async (error) => {
+          await processAndSaveJob('Prayagraj (Location default)');
+        }
+      );
+    } else {
+      processAndSaveJob('Prayagraj');
+    }
+  };
+
+  // डेटा प्रोसेस करके सेव करने का मुख्य फंक्शन
+  const processAndSaveJob = async (locationStr) => {
+    let uploadedImageUrl = '';
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    const jobSheetNo = JS${jobCustPhone.slice(-4)}${day}${month}${hours}${minutes};
+
+    try {
+      if (imageFile) {
+        const storageRef = ref(storage, job_photos/${Date.now()}_${imageFile.name});
+        const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            () => {
+              getDownloadURL(uploadTask.snapshot.ref).then((url) => {
+                uploadedImageUrl = url;
+                resolve();
+              });
+            }
+          );
+        });
+      }
+
+      const newJobRecord = {
+        jobSheetNo,
+        customerName: jobCustName,
+        customerPhone: jobCustPhone,
+        customerAddress: jobCustAddress,
+        product: modelNo || 'Split/Window AC',
+        desc: workDone || 'General Service / Repair',
+        status: 'Completed',
+        date: ${day}/${month}/${year} ${hours}:${minutes},
+        staffName: staffName,
+        staffPhone: staffPhone,
+        location: locationStr,
+        photoURL: uploadedImageUrl,
+        sectionPressure,
+        roomTemp,
+        voltage,
+        ampere,
+        stabilizer,
+        selectedItems
+      };
+
+      setJobSheets([newJobRecord, ...jobSheets]);
+      setUploading(false);
+      alert(जॉब शीट सफलतापूर्वक सेव हो गई!\nजॉब शीट नंबर: ${jobSheetNo});
+      
+      // फॉर्म रीसेट करें
+      setJobCustName('');
+      setJobCustAddress('');
+      setJobCustPhone('');
+      setModelNo('');
+      setWorkDone('');
+      setSectionPressure('');
+      setRoomTemp('');
+      setAmpere('');
+      setImageFile(null);
+      setSelectedItems([]);
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploading(false);
+      alert('जॉब सबमिट करने में कुछ गड़बड़ी हुई!');
     }
   };
 
@@ -92,7 +277,7 @@ export default function App() {
           {!custLoggedIn ? (
             <form onSubmit={handleCustomerLogin}>
               <h3>कस्टमर पोर्टल</h3>
-              <p>अपनी पुरानी शिकायतें देखने या नई दर्ज करने के लिए मोबाइल नंबर डालें:</p>
+              <p>अपनी शिकायतें और पूरी हुई जॉब-शीट देखने के लिए अपना मोबाइल नंबर दर्ज करें:</p>
               <input type="tel" placeholder="मोबाइल नंबर दर्ज करें" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} required />
               <button type="submit" style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>आगे बढ़ें</button>
             </form>
@@ -104,163 +289,8 @@ export default function App() {
               </div>
               <hr style={{ margin: '15px 0' }} />
 
-              {/* नई शिकायत फॉर्म */}
               <h5>नई शिकायत दर्ज करें</h5>
               <form onSubmit={handleNewComplaint}>
                 <div style={{ marginBottom: '10px' }}>
                   <label>समस्या का प्रकार / प्रोडक्ट:</label><br />
-                  <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                    <option value="Split AC">Split AC / Window AC</option>
-                    <option value="Fridge">Fridge (फ्रिज)</option>
-                    <option value="Stabilizer">Stabilizer (स्टेबलाइजर)</option>
-                    <option value="Electrical">Electrical Wiring/Panel</option>
-                  </select>
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                  <label>समस्या का विवरण (Problem Description):</label><br />
-                  <textarea value={problemDesc} onChange={(e) => setProblemDesc(e.target.value)} rows="3" placeholder="समस्या क्या आ रही है लिखें..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
-                </div>
-                <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>शिकायत सबमिट करें</button>
-              </form>
-
-              {/* पुरानी शिकायतें और जॉब शीट लिस्ट */}
-              <h5 style={{ marginTop: '25px' }}>आपकी पुरानी शिकायतें और जॉब शीट (History)</h5>
-              {complaints.length === 0 ? (
-                <p style={{ color: '#777' }}>इस नंबर पर अभी कोई शिकायत दर्ज नहीं है।</p>
-              ) : (
-                complaints.map((item, index) => (
-                  <div key={index} style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '10px', borderLeft: '4px solid #007bff' }}>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '13px', color: '#555' }}><b>जॉब शीट नंबर:</b> {item.jobSheetNo}</p>
-                    <p style={{ margin: '0 0 5px 0' }}><b>प्रोडक्ट:</b> {item.product} | <b>स्थिति:</b> <span style={{ color: item.status === 'Pending' ? 'orange' : 'green' }}>{item.status}</span></p>
-                    <p style={{ margin: '0 0 5px 0' }}><b>विवरण:</b> {item.desc}</p>
-                    <p style={{ margin: '0', fontSize: '12px', color: '#888' }}>दिनांक: {item.date}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 2. स्टाफ सेक्शन */}
-      {activeTab === 'staff' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-          {!staffLoggedIn ? (
-            <form onSubmit={handleStaffLogin}>
-              <h3>स्टाफ लॉगिन (Staff Authentication)</h3>
-              <p>काम शुरू करने के लिए अपना मोबाइल नंबर और 4-अंकों का पिन (PIN) दर्ज करें:</p>
-              <input type="tel" placeholder="स्टाफ मोबाइल नंबर" value={staffPhone} onChange={(e) => setStaffPhone(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} required />
-              <input type="password" maxLength="4" placeholder="4-Digit PIN (डिफ़ॉल्ट: 1234)" value={staffPin} onChange={(e) => setStaffPin(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} required />
-              <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>लॉग इन करें</button>
-            </form>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4>स्टाफ सर्विस रिपोर्ट (सक्रिय: {staffPhone})</h4>
-                <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '5px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>लॉग आउट</button>
-              </div>
-              <hr style={{ margin: '15px 0' }} />
-
-              {/* डिजिटल जॉब शीट फॉर्म */}
-              <h5>सर्विस रिपोर्ट / जॉब शीट भरें</h5>
-              
-              <div style={{ marginBottom: '10px' }}>
-                <label>कस्टमर का नाम:</label>
-                <input type="text" placeholder="ग्राहक का नाम" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>पता (Address):</label>
-                <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>मोबाइल नंबर:</label>
-                <input type="tel" placeholder="मोबाइल नंबर" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>मॉडल / ब्रांड (Model No):</label>
-                <input type="text" placeholder="जैसे Voltas / Samsung" value={modelNo} onChange={(e) => setModelNo(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Section Pressure:</label>
-                  <input type="text" placeholder="जैसे 65" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Room Temp:</label>
-                  <input type="text" placeholder="जैसे 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Voltage:</label>
-                  <input type="text" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Ampere:</label>
-                  <input type="text" placeholder="जैसे 5.2A" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>Stabilizer Status:</label>
-                <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                  <option value="OK">OK</option>
-                  <option value="High/Low Cut">High/Low Cut</option>
-                  <option value="Not Available">Not Available</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>Work Done (किया गया काम):</label>
-                <input type="text" placeholder="जैसे A.C. Installation / Repair" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              {/* क्विक आइटम्स स्लाइडर/चेकबॉक्स */}
-              <div style={{ marginBottom: '15px' }}>
-                <label>मटेरियल / पार्ट्स (Quick Select):</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
-                  {['Copper Pipe', 'Drain Pipe', 'Stand', 'Capacitor', 'Gas Charging'].map((item) => (
-                    <label key={item} style={{ background: '#e9ecef', padding: '6px 10px', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="checkbox" onChange={(e) => {
-                        if(e.target.checked) setSelectedItems([...selectedItems, item]);
-                        else setSelectedItems(selectedItems.filter(i => i !== item));
-                      }} style={{ marginRight: '5px' }} />
-                      {item}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* डिजिटल हस्ताक्षर पैड */}
-              <div style={{ marginBottom: '15px' }}>
-                <label>कस्टमर डिजिटल हस्ताक्षर (Signature & Remark):</label>
-                <div style={{ border: '2px dashed #ccc', height: '90px', background: '#fafafa', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', marginTop: '5px' }}>
-                  [कस्टमर यहाँ उंगली से हस्ताक्षर करें]
-                </div>
-              </div>
-
-              <button onClick={() => alert('जॉब शीट सफलतापूर्वक सेव और सबमिट हो गई!')} style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>जॉब शीट सबमिट करें</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 3. एडमिन सेक्शन */}
-      {activeTab === 'admin' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-          <h3>एडमिन पैनल (Management)</h3>
-          <p>यहाँ सभी शिकायतों और भरी गई जॉब शीट की रिपोर्ट दिखाई देगी।</p>
-          <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '6px', border: '1px solid #ddd' }}>
-            <p><b>कुल दर्ज शिकायतें:</b> {complaints.length}</p>
-            <p style={{ color: 'green', fontWeight: 'bold' }}>सिस्टम पूरी तरह से अपडेटेड और एक्टिव है।</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                  <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '10

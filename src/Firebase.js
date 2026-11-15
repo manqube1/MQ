@@ -1,4 +1,22 @@
 import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore"; // अगर डेटाबेस भी इस्तेमाल करना है
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Firebase ऐप को इनिशियलाइज करें
+const app = initializeApp(firebaseConfig);
+
+// Storage और Firestore को एक्सपोर्ट करें ताकि बाकी फाइलों में इस्तेमाल हो सके
+export const storage = getStorage(app);
+export const db = getFirestore(app); // जॉब-शीट्स और टेक्स्ट डेटा सेव करने के लिएimport { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
