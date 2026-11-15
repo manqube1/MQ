@@ -155,7 +155,7 @@ export default function App() {
       customerName: 'Customer',
       customerPhone: custPhone,
       customerAddress: 'N/A',
-      product: [${categoryType}] ${productType},
+      product: "[" + categoryType + "] " + productType,
       desc: problemDesc,
       status: 'Pending',
       date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
@@ -291,7 +291,7 @@ export default function App() {
         customerAddress: jobCustAddress,
         categoryType,
         productType,
-        product: [${categoryType}] ${productType},
+        product: "[" + categoryType + "] " + productType,
         desc: workDone || 'General Service / Repair',
         status: 'Completed',
         date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
@@ -573,7 +573,6 @@ export default function App() {
                 <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
-              {/* स्टाफ के लिए भी तीनों मुख्य श्रेणियां */}
               <div style={{ marginBottom: '10px' }}>
                 <label>मुख्य श्रेणी (Category):</label><br />
                 <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
@@ -620,7 +619,6 @@ export default function App() {
                 </select>
               </div>
 
-              {/* HVAC श्रेणी के लिए विशेष फील्ड्स (इंडोर, आउटडोर, कंप्रेसर आदि) */}
               {categoryType === 'HVAC & Refrigeration' && (
                 <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #e2e8f0' }}>
                   <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1a365d', fontSize: '13px' }}>HVAC यूनिट विवरण:</p>
