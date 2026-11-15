@@ -91,7 +91,7 @@ export default function App() {
   const [standType, setStandType] = useState('Wall Type');
 
   const [workDone, setWorkDone] = useState('');
-  const [jobStatusType, setJobStatusType] = useState('Completed'); // 'Completed', 'Pending', 'Part Pending'
+  const [jobStatusType, setJobStatusType] = useState('Completed');
   
   const [materials, setMaterials] = useState([
     { name: '', qty: '', price: '' },
@@ -175,7 +175,7 @@ export default function App() {
       customerAddress: 'Prayagraj Main Location',
       product: "[" + categoryType + "] " + productType,
       desc: problemDesc,
-      status: 'Pending', // Pending / Part Pending / Completed
+      status: 'Pending',
       date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
       staffName: 'Not Assigned Yet',
       staffPhone: '-',
@@ -228,13 +228,13 @@ export default function App() {
       setOtpStep(1);
       setEnteredOtp('');
 
-      // Capture GPS location upon staff login
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const lat = position.coords.latitude.toFixed(4);
             const lng = position.coords.longitude.toFixed(4);
-            setStaffGpsLocation(Lat: ${lat}, Lng: ${lng} (GPS Active));
+            // Fixed using normal string concatenation to avoid syntax issues
+            setStaffGpsLocation('Lat: ' + lat + ', Lng: ' + lng + ' (GPS Active)');
           },
           () => {
             setStaffGpsLocation('Prayagraj (GPS Default)');
@@ -251,7 +251,6 @@ export default function App() {
 
   const handleAdminLogin = (e) => {
     e.preventDefault();
-    // Default office login credentials check (e.g. admin / 1234 or manager / man123)
     if ((adminUser === 'admin' || adminUser === 'manager' || adminUser === 'office') && adminPass.length >= 4) {
       setAdminLoggedIn(true);
       alert('ऑफिस स्टाफ लॉगिन सफल!');
@@ -268,7 +267,7 @@ export default function App() {
     setCategoryType(comp.categoryType || 'HVAC & Refrigeration');
     setProductType(comp.productType || 'Split / Window AC');
     setWorkDone(comp.desc || '');
-    setStaffSubTab('new'); // switch to new job form tab with pre-filled data
+    setStaffSubTab('new');
   };
 
   const handleFileChange = async (e) => {
@@ -345,7 +344,7 @@ export default function App() {
           productType,
           product: "[" + categoryType + "] " + productType,
           desc: workDone || 'General Service / Repair',
-          status: jobStatusType, // 'Completed', 'Pending', or 'Part Pending'
+          status: jobStatusType,
           date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
           staffName: currentStaffName,
           staffPhone: staffPhoneInput,
@@ -370,14 +369,12 @@ export default function App() {
           feedback: customerFeedback || 'Good Service'
         };
 
-        // If it was an existing pending complaint, update it, else add new
         const filteredList = jobSheets.filter(j => j.jobSheetNo !== jobSheetNo);
         setJobSheets([updatedRecord, ...filteredList]);
 
         setUploading(false);
-        alert(`जॉब शीट सफलताપूर्वक ${jobStatusType === 'Completed' ? 'सेव व पूर्ण' : 'पेंडिंग रूप में'} हो गई!\nजॉब शीट नंबर: ` + jobSheetNo);
+        alert('जॉब शीट सफलताપूर्वक सेव हो गई!\nजॉब शीट नंबर: ' + jobSheetNo);
         
-        // Reset form
         setSelectedComplaint(null);
         setJobCustName('');
         setJobCustAddress('');
@@ -411,7 +408,6 @@ export default function App() {
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: '750px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
       
-      {/* HEADER SECTION */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', background: '#fff', borderRadius: '8px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
         <img 
           src="/1000384854.jpg" 
@@ -419,7 +415,7 @@ export default function App() {
           style={{ height: '70px', width: '70px', objectFit: 'contain', borderRadius: '12px', marginBottom: '8px' }} 
         />
         <h1 style={{ margin: '0', color: '#1a365d', fontSize: '26px', fontWeight: '800', letterSpacing: '1px' }}>MANQUBE</h1>
-        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.[span_0](start_span)[span_0](end_span)</p>
+        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.[span_1](start_span)[span_1](end_span)</p>
         <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '11px' }}>Hindustan Refrigeration Service</p>
       </div>
 
@@ -464,7 +460,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CUSTOMER PORTAL */}
       {activeTab === 'customer' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!custLoggedIn ? (
@@ -557,7 +552,6 @@ export default function App() {
         </div>
       )}
 
-      {/* STAFF PORTAL */}
       {activeTab === 'staff' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!staffLoggedIn ? (
@@ -606,7 +600,6 @@ export default function App() {
               </div>
               <hr style={{ margin: '15px 0' }} />
 
-              {/* THREE MAIN OPTIONS BAR FOR STAFF */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                 <button 
                   onClick={() => setStaffSubTab('new')} 
@@ -625,12 +618,11 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 1. NEW JOB / NEW COMPLAINTS TAB */}
               {staffSubTab === 'new' && (
                 <div>
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
                     <h4 style={{ color: '#166534', marginTop: '0' }}>
-                      {selectedComplaint ? शिकायत (${selectedComplaint.jobSheetNo}) को जॉब शीट में भरें : 'नई जॉब शीट / सर्विस रिपोर्ट भरें'}
+                      {selectedComplaint ? 'शिकायत (' + selectedComplaint.jobSheetNo + ') को जॉब शीट में भरें' : 'नई जॉब शीट / सर्विस रिपोर्ट भरें'}
                     </h4>
                     <p style={{ fontSize: '12px', color: '#4b5563' }}>ग्राहक की डीटेल्स नीचे स्वतः भरी हुई हैं। काम पूरा होने पर सबमिट करें।</p>
 
@@ -736,7 +728,6 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* List of unassigned online complaints from customers */}
                   <h5>ऑनलाइन दर्ज नई शिकायतें (क्लिक करके भरें):</h5>
                   {jobSheets.filter(i => i.status === 'Pending' && i.staffName === 'Not Assigned Yet').length === 0 ? (
                     <p style={{ fontSize: '13px', color: '#666' }}>अभी कोई नई ऑनलाइन शिकायत नहीं है। आप ऊपर सीधे फॉर्म भरकर भी नई जॉब जोड़ सकते हैं।</p>
@@ -756,7 +747,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* 2. PENDING JOB TAB */}
               {staffSubTab === 'pending' && (
                 <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '15px', borderRadius: '8px' }}>
                   <h4 style={{ color: '#854d0e', marginTop: '0' }}>⏳ Pending Jobs (लंबित कार्य)</h4>
@@ -777,7 +767,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3. PART PENDING JOB TAB */}
               {staffSubTab === 'partPending' && (
                 <div style={{ background: '#ffedd5', border: '1px solid #fed7aa', padding: '15px', borderRadius: '8px' }}>
                   <h4 style={{ color: '#9a3412', marginTop: '0' }}>⚙️ Part Pending Jobs (स्पेयर पार्ट पेंडिंग)</h4>
@@ -803,7 +792,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ADMIN & OFFICE STAFF PANEL */}
       {activeTab === 'admin' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!adminLoggedIn ? (
