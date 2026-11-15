@@ -53,10 +53,11 @@ export default function App() {
   const [productType, setProductType] = useState('Split / Window AC');
   const [problemDesc, setProblemDesc] = useState('');
 
-  const [staffName, setStaffName] = useState('');
-  const [staffPhone, setStaffPhone] = useState('');
-  const [staffPin, setStaffPin] = useState('');
+  // Staff 0001 to 0020 Authentication state
+  const [staffIdInput, setStaffIdInput] = useState('');
+  const [staffPinInput, setStaffPinInput] = useState('');
   const [staffLoggedIn, setStaffLoggedIn] = useState(false);
+  const [currentStaffName, setCurrentStaffName] = useState('');
 
   const [jobCustName, setJobCustName] = useState('');
   const [jobCustAddress, setJobCustAddress] = useState('');
@@ -189,16 +190,20 @@ export default function App() {
     alert('शिकायत दर्ज हो गई!\nआपका जॉब शीट/कंप्लेंट नंबर है:\n' + jobSheetNo);
   };
 
+  // Staff 0001 to 0020 Verification Logic
   const handleStaffLogin = (e) => {
     e.preventDefault();
-    if (!staffName.trim()) {
-      alert('कृपया अपना नाम दर्ज करें!');
-      return;
-    }
-    if (staffPin === '1234' || staffPin.length === 4) {
-      setStaffLoggedIn(true);
+    const staffNum = parseInt(staffIdInput, 10);
+
+    if (staffIdInput.length === 4 && staffNum >= 1 && staffNum <= 20) {
+      if (staffIdInput === staffPinInput) {
+        setCurrentStaffName(Staff ${staffIdInput});
+        setStaffLoggedIn(true);
+      } else {
+        alert('गलत पासवर्ड! स्टाफ आईडी और पासवर्ड (0001 से 0020) समान होने चाहिए।');
+      }
     } else {
-      alert('गलत पिन! कृपया सही 4-अंकों का पिन दर्ज करें।');
+      alert('अमान्य स्टाफ आईडी! केवल Staff 0001 से Staff 0020 तक ही अनुमति है।');
     }
   };
 
@@ -295,8 +300,8 @@ export default function App() {
         desc: workDone || 'General Service / Repair',
         status: 'Completed',
         date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
-        staffName: staffName,
-        staffPhone: staffPhone,
+        staffName: currentStaffName,
+        staffPhone: '-',
         location: locationStr,
         photoURL: uploadedImageUrl,
         signatureURL: signatureDataURL,
@@ -350,12 +355,22 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: '700px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
-      <h2 style={{ textAlign: 'center', color: '#1a365d', marginBottom: '5px' }}>Manqube Field Service Management</h2>
-      <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '0', marginBottom: '20px' }}>Hindustan Refrigeration Service</p>
+      
+      {/* HEADER SECTION WITH LOGO AND BRANDING */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', background: '#fff', borderRadius: '8px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+        <img 
+          src="/1000384854.jpg" 
+          alt="Manqube Logo" 
+          style={{ height: '70px', width: '70px', objectFit: 'contain', borderRadius: '12px', marginBottom: '8px' }} 
+        />
+        <h1 style={{ margin: '0', color: '#1a365d', fontSize: '26px', fontWeight: '800', letterSpacing: '1px' }}>MANQUBE</h1>
+        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.</p>
+        <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '11px' }}>Hindustan Refrigeration Service</p>
+      </div>
 
       {activeTab === 'home' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '30px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '10px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '5px' }}>
             <h3 style={{ color: '#333' }}>पोर्टल चुनें (Select Portal)</h3>
             <p style={{ color: '#666', fontSize: '14px' }}>कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:</p>
           </div>
@@ -371,8 +386,8 @@ export default function App() {
           <div onClick={() => setActiveTab('staff')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #28a745' }}>
             <div style={{ fontSize: '35px' }}>🛠️</div>
             <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Portal)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>डिजिटल जॉब शीट भरें, सिग्नेचर और GPS लोकेशन कैप्चर करें</p>
+              <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Portal - 0001 to 0020)</h3>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>अधिकृत स्टाफ आईडी से लॉगिन कर डिजिटल जॉब शीट भरें</p>
             </div>
           </div>
 
@@ -510,7 +525,7 @@ export default function App() {
                       )}
 
                       <div style={{ background: '#e9ecef', padding: '8px', borderRadius: '4px', marginTop: '8px', fontSize: '13px' }}>
-                        <p style={{ margin: '0 0 3px 0' }}>🛠️ <b>स्टाफ:</b> {item.staffName} (Ph: {item.staffPhone})</p>
+                        <p style={{ margin: '0 0 3px 0' }}>🛠️ <b>स्टाफ:</b> {item.staffName}</p>
                         <p style={{ margin: '0' }}>📍 <b>GPS लोकेशन:</b> {item.location}</p>
                       </div>
 
@@ -541,251 +556,328 @@ export default function App() {
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!staffLoggedIn ? (
             <form onSubmit={handleStaffLogin}>
-              <h3>स्टाफ लॉगिन (Staff Authentication)</h3>
-              <p>जॉब शीट भरने के लिए अपना पूरा नाम, मोबाइल नंबर और पिन दर्ज करें:</p>
-              <input type="text" placeholder="आपका पूरा नाम (जैसे: राहुल कुमार)" value={staffName} onChange={(e) => setStaffName(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} required />
-              <input type="tel" placeholder="स्टाफ मोबाइल नंबर" value={staffPhone} onChange={(e) => setStaffPhone(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} required />
-              <input type="password" maxLength="4" placeholder="4-Digit PIN (डिफ़ॉल्ट: 1234)" value={staffPin} onChange={(e) => setStaffPin(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} required />
+              <h3>स्टाफ पोर्टल लॉगिन (Staff 0001 - 0020 Only)</h3>
+              <p>कृपया अपनी अधिकृत स्टाफ आईडी (0001 से 0020 के बीच) और पिन दर्ज करें:</p>
+              
+              <input 
+                type="text" 
+                maxLength="4" 
+                placeholder="स्टाफ आईडी (जैसे: 0001, 0005)" 
+                value={staffIdInput} 
+                onChange={(e) => setStaffIdInput(e.target.value)} 
+                style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} 
+                required 
+              />
+              
+              <input 
+                type="password" 
+                maxLength="4" 
+                placeholder="पासवर्ड/पिन (आईडी के समान)" 
+                value={staffPinInput} 
+                onChange={(e) => setStaffPinInput(e.target.value)} 
+                style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} 
+                required 
+              />
+
               <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>लॉग इन करें</button>
             </form>
           ) : (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4>स्टाफ: {staffName} ({staffPhone})</h4>
+                <h4>अधिकृत स्टाफ: {currentStaffName}</h4>
                 <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '5px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>लॉग आउट</button>
               </div>
               <hr style={{ margin: '15px 0' }} />
 
-              <h5>डिजिटल जॉब शीट भरें (GPS लोकेशन ऑटो-कैप्चर होगी)</h5>
-              
-              <div style={{ marginBottom: '10px' }}>
-                <label>कस्टमर का नाम:</label>
-                <input type="text" placeholder="ग्राहक का नाम" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>कस्टमर का मोबाइल नंबर (मुख्य पहचान):</label>
-                <input type="tel" placeholder="मोबाइल नंबर" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>पता (Address):</label>
-                <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>मुख्य श्रेणी (Category):</label><br />
-                <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                  <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
-                  <option value="Electrical Work">Electrical Work (वायरिंग, फैन, लाइट आदि)</option>
-                  <option value="Civil Work">Civil Work (सिविल और निर्माण कार्य)</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label><br />
-                <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                  {categoryType === 'HVAC & Refrigeration' && (
-                    <>
-                      <option value="Split / Window AC">Split / Window AC</option>
-                      <option value="Ductable AC">Ductable AC</option>
-                      <option value="VRV / VRF AC">VRV / VRF AC</option>
-                      <option value="Cassette AC">Cassette AC</option>
-                      <option value="Tower AC">Tower AC</option>
-                      <option value="Air Cooler">Air Cooler</option>
-                      <option value="Room Cooler">Room Cooler</option>
-                      <option value="Fridge">Fridge</option>
-                      <option value="Deep Freezer">Deep Freezer</option>
-                      <option value="Stabilizer">Stabilizer</option>
-                    </>
-                  )}
-                  {categoryType === 'Electrical Work' && (
-                    <>
-                      <option value="House Wiring & Panel">House Wiring & Main Panel</option>
-                      <option value="Fan & Light">Fan & Light</option>
-                      <option value="Exhaust Fan">Exhaust Fan</option>
-                      <option value="Fresh Air Fan">Fresh Air Fan</option>
-                      <option value="Earthing Work">Earthing Work</option>
-                    </>
-                  )}
-                  {categoryType === 'Civil Work' && (
-                    <>
-                      <option value="Flooring & Tiling">Flooring & Tiling</option>
-                      <option value="Masonry & Plaster">Masonry & Plaster</option>
-                      <option value="Waterproofing">Waterproofing</option>
-                      <option value="Minor Repairs / Painting">Minor Repairs & Painting</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {categoryType === 'HVAC & Refrigeration' && (
-                <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #e2e8f0' }}>
-                  <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1a365d', fontSize: '13px' }}>HVAC यूनिट विवरण:</p>
+              {/* STAFF PORTAL SECTIONS ORDER: 1. New Job, 2. Old Job, 3. Pending Job */}
+              <div style={{ marginBottom: '20px' }}>
+                
+                {/* 1. NEW JOB SECTION */}
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <h4 style={{ color: '#166534', marginTop: '0' }}>1. New Job (नई जॉब शीट भरें)</h4>
+                  <p style={{ fontSize: '12px', color: '#4b5563' }}>GPS लोकेशन ऑटो-कैप्चर होगी और डेटा सीधे सेव होगा।</p>
                   
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Indoor Model No:</label>
-                      <input type="text" placeholder="इंडोर मॉडल" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>कस्टमर का नाम:</label>
+                    <input type="text" placeholder="ग्राहक का नाम" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>कस्टमर का मोबाइल नंबर (मुख्य पहचान):</label>
+                    <input type="tel" placeholder="मोबाइल नंबर" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>पता (Address):</label>
+                    <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>मुख्य श्रेणी (Category):</label><br />
+                    <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                      <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
+                      <option value="Electrical Work">Electrical Work (वायरिंग, फैन, लाइट आदि)</option>
+                      <option value="Civil Work">Civil Work (सिविल और निर्माण कार्य)</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label><br />
+                    <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                      {categoryType === 'HVAC & Refrigeration' && (
+                        <>
+                          <option value="Split / Window AC">Split / Window AC</option>
+                          <option value="Ductable AC">Ductable AC</option>
+                          <option value="VRV / VRF AC">VRV / VRF AC</option>
+                          <option value="Cassette AC">Cassette AC</option>
+                          <option value="Tower AC">Tower AC</option>
+                          <option value="Air Cooler">Air Cooler</option>
+                          <option value="Room Cooler">Room Cooler</option>
+                          <option value="Fridge">Fridge</option>
+                          <option value="Deep Freezer">Deep Freezer</option>
+                          <option value="Stabilizer">Stabilizer</option>
+                        </>
+                      )}
+                      {categoryType === 'Electrical Work' && (
+                        <>
+                          <option value="House Wiring & Panel">House Wiring & Main Panel</option>
+                          <option value="Fan & Light">Fan & Light</option>
+                          <option value="Exhaust Fan">Exhaust Fan</option>
+                          <option value="Fresh Air Fan">Fresh Air Fan</option>
+                          <option value="Earthing Work">Earthing Work</option>
+                        </>
+                      )}
+                      {categoryType === 'Civil Work' && (
+                        <>
+                          <option value="Flooring & Tiling">Flooring & Tiling</option>
+                          <option value="Masonry & Plaster">Masonry & Plaster</option>
+                          <option value="Waterproofing">Waterproofing</option>
+                          <option value="Minor Repairs / Painting">Minor Repairs & Painting</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  {categoryType === 'HVAC & Refrigeration' && (
+                    <div style={{ background: '#fff', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #cbd5e1' }}>
+                      <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1a365d', fontSize: '13px' }}>HVAC यूनिट विवरण:</p>
+                      
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Indoor Model No:</label>
+                          <input type="text" placeholder="इंडोर मॉडल" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Indoor Serial No:</label>
+                          <input type="text" placeholder="इंडोर सीरियल नंबर" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Outdoor Model No:</label>
+                          <input type="text" placeholder="आउटडोर मॉडल" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Outdoor Serial No:</label>
+                          <input type="text" placeholder="आउटडोर सीरियल नंबर" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Motor Type:</label>
+                          <select value={motorType} onChange={(e) => setMotorType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                            <option value="AC">AC Motor</option>
+                            <option value="DC">DC Motor</option>
+                          </select>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Compressor Model:</label>
+                          <input type="text" placeholder="कंप्रेसर मॉडल" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '8px' }}>
+                        <label style={{ fontSize: '12px' }}>Compressor Serial No:</label>
+                        <input type="text" placeholder="कंप्रेसर सीरियल नंबर" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Section Pressure:</label>
+                          <input type="text" placeholder="जैसे 65" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Room Temp:</label>
+                          <input type="text" placeholder="जैसे 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Stabilizer Status:</label>
+                          <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                            <option value="OK">OK</option>
+                            <option value="High/Low Cut">High/Low Cut</option>
+                            <option value="Not Available">Not Available</option>
+                          </select>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px' }}>Stand Type:</label>
+                          <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                            <option value="Wall Type">Wall Type</option>
+                            <option value="Floor Type">Floor Type</option>
+                            <option value="MS Stand">MS Stand</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Indoor Serial No:</label>
-                      <input type="text" placeholder="इंडोर सीरियल नंबर" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  )}
+
+                  {categoryType !== 'Civil Work' && (
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label>Voltage:</label>
+                        <input type="text" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label>Ampere:</label>
+                        <input type="text" placeholder="जैसे 5.2A" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>Work Done (किया गया काम का विवरण):</label>
+                    <input type="text" placeholder="जैसे Installation / Repair / Wiring Done" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ fontWeight: 'bold' }}>मटेरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
+                    <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {materials.map((mat, index) => (
+                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 'bold', width: '20px', color: '#555' }}>{index + 1}.</span>
+                          <input 
+                            type="text" 
+                            placeholder="सामान का नाम" 
+                            value={mat.name} 
+                            onChange={(e) => handleMaterialFieldChange(index, 'name', e.target.value)} 
+                            style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="मात्रा (Qty)" 
+                            value={mat.qty} 
+                            onChange={(e) => handleMaterialFieldChange(index, 'qty', e.target.value)} 
+                            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="दाम (₹)" 
+                            value={mat.price} 
+                            onChange={(e) => handleMaterialFieldChange(index, 'price', e.target.value)} 
+                            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Outdoor Model No:</label>
-                      <input type="text" placeholder="आउटडोर मॉडल" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Outdoor Serial No:</label>
-                      <input type="text" placeholder="आउटडोर सीरियल नंबर" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                    </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label>विशेष नोट (Note):</label>
+                    <input type="text" placeholder="कोई अतिरिक्त जानकारी या निर्देश..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Motor Type:</label>
-                      <select value={motorType} onChange={(e) => setMotorType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                        <option value="AC">AC Motor</option>
-                        <option value="DC">DC Motor</option>
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Compressor Model:</label>
-                      <input type="text" placeholder="कंप्रेसर मॉडल" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                    </div>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label>कस्टमर फीडबैक (Customer Feedback):</label>
+                    <input type="text" placeholder="ग्राहक की प्रतिक्रिया लिखें..." value={customerFeedback} onChange={(e) => setCustomerFeedback(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                   </div>
 
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ fontSize: '12px' }}>Compressor Serial No:</label>
-                    <input type="text" placeholder="कंप्रेसर सीरियल नंबर" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    <label style={{ fontWeight: 'bold' }}>साइट की फोटो जोड़ें:</label><br />
+                    <input type="file" accept="image/*" onChange={handleFileChange} style={{ marginTop: '5px' }} />
+                    {imageFile && <p style={{ fontSize: '12px', color: 'green', margin: '5px 0 0 0' }}>फोटो चुनी गई है!</p>}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Section Pressure:</label>
-                      <input type="text" placeholder="जैसे 65" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                      <label style={{ fontWeight: 'bold' }}>कस्टमर सिग्नेचर (Customer Signature):</label>
+                      <button type="button" onClick={clearSignature} style={{ padding: '3px 8px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>रीसेट (Clear)</button>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Room Temp:</label>
-                      <input type="text" placeholder="जैसे 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                    </div>
+                    <p style={{ fontSize: '11px', color: '#666', margin: '0 0 5px 0' }}>नीचे दिए गए बॉक्स पर उंगली या माउस से साइन करें:</p>
+                    <canvas 
+                      ref={canvasRef} 
+                      width={320} 
+                      height={130} 
+                      onMouseDown={startDrawing}
+                      onMouseMove={draw}
+                      onMouseUp={stopDrawing}
+                      onMouseLeave={stopDrawing}
+                      onTouchStart={startDrawing}
+                      onTouchMove={draw}
+                      onTouchEnd={stopDrawing}
+                      style={{ border: '1px dashed #007bff', background: '#fafafa', borderRadius: '4px', cursor: 'crosshair', width: '100%', touchAction: 'none' }}
+                    />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Stabilizer Status:</label>
-                      <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                        <option value="OK">OK</option>
-                        <option value="High/Low Cut">High/Low Cut</option>
-                        <option value="Not Available">Not Available</option>
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px' }}>Stand Type:</label>
-                      <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                        <option value="Wall Type">Wall Type</option>
-                        <option value="Floor Type">Floor Type</option>
-                        <option value="MS Stand">MS Stand</option>
-                      </select>
-                    </div>
+                  <button onClick={handleJobSubmit} disabled={uploading} style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    {uploading ? "लोकेशन और डेटा सेव हो रहा है..." : "जॉब शीट सबमिट करें"}
+                  </button>
+                </div>
+
+                {/* 2. OLD JOB SECTION (Reordered Table with Job Sheet No and Category first) */}
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <h4 style={{ color: '#1e40af', marginTop: '0' }}>2. Old Job (पूर्ण हो चुकी जॉब्स - टेबल)</h4>
+                  <div style={{ overflowX: 'auto', background: '#fff', borderRadius: '6px', padding: '5px' }}>
+                    {jobSheets.filter(i => i.status === 'Completed').length === 0 ? (
+                      <p style={{ fontSize: '13px', color: '#666', padding: '10px' }}>कोई पुराना रिकॉर्ड उपलब्ध नहीं है।</p>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Job Sheet No</th>
+                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Category</th>
+                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Customer</th>
+                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Staff</th>
+                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {jobSheets.filter(i => i.status === 'Completed').map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '8px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#2563eb' }}>{item.jobSheetNo}</td>
+                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.categoryType}</td>
+                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.customerName} ({item.customerPhone})</td>
+                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.staffName}</td>
+                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.date}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
-              )}
 
-              {categoryType !== 'Civil Work' && (
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label>Voltage:</label>
-                    <input type="text" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label>Ampere:</label>
-                    <input type="text" placeholder="जैसे 5.2A" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
+                {/* 3. PENDING JOB SECTION */}
+                <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#854d0e', marginTop: '0' }}>3. Pending Job (लंबित शिकायतें)</h4>
+                  {jobSheets.filter(i => i.status === 'Pending').length === 0 ? (
+                    <p style={{ fontSize: '13px', color: '#666' }}>कोई पेंडिंग शिकायत नहीं है।</p>
+                  ) : (
+                    jobSheets.filter(i => i.status === 'Pending').map((item, idx) => (
+                      <div key={idx} style={{ background: '#fff', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fde047', fontSize: '13px' }}>
+                        <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#854d0e' }}>Job Sheet No: {item.jobSheetNo}</p>
+                        <p style={{ margin: '0 0 4px 0' }}><b>Category:</b> {item.categoryType} ({item.productType})</p>
+                        <p style={{ margin: '0 0 4px 0' }}><b>Customer Ph:</b> {item.customerPhone}</p>
+                        <p style={{ margin: '0' }}><b>Desc:</b> {item.desc}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
 
-              <div style={{ marginBottom: '10px' }}>
-                <label>Work Done (किया गया काम का विवरण):</label>
-                <input type="text" placeholder="जैसे Installation / Repair / Wiring Done" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ fontWeight: 'bold' }}>मटेरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
-                <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {materials.map((mat, index) => (
-                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 'bold', width: '20px', color: '#555' }}>{index + 1}.</span>
-                      <input 
-                        type="text" 
-                        placeholder="सामान का नाम" 
-                        value={mat.name} 
-                        onChange={(e) => handleMaterialFieldChange(index, 'name', e.target.value)} 
-                        style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="मात्रा (Qty)" 
-                        value={mat.qty} 
-                        onChange={(e) => handleMaterialFieldChange(index, 'qty', e.target.value)} 
-                        style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="दाम (₹)" 
-                        value={mat.price} 
-                        onChange={(e) => handleMaterialFieldChange(index, 'price', e.target.value)} 
-                        style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label>विशेष नोट (Note):</label>
-                <input type="text" placeholder="कोई अतिरिक्त जानकारी या निर्देश..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label>कस्टमर फीडबैक (Customer Feedback):</label>
-                <input type="text" placeholder="ग्राहक की प्रतिक्रिया लिखें..." value={customerFeedback} onChange={(e) => setCustomerFeedback(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
-
-              <div style={{ marginBottom: '15px', background: '#e9ecef', padding: '10px', borderRadius: '6px' }}>
-                <label style={{ fontWeight: 'bold' }}>साइट की फोटो जोड़ें:</label><br />
-                <input type="file" accept="image/*" onChange={handleFileChange} style={{ marginTop: '5px' }} />
-                {imageFile && <p style={{ fontSize: '12px', color: 'green', margin: '5px 0 0 0' }}>फोटो चुनी गई है!</p>}
-              </div>
-
-              <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                  <label style={{ fontWeight: 'bold' }}>कस्टमर सिग्नेचर (Customer Signature):</label>
-                  <button type="button" onClick={clearSignature} style={{ padding: '3px 8px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>रीसेट (Clear)</button>
-                </div>
-                <p style={{ fontSize: '11px', color: '#666', margin: '0 0 5px 0' }}>नीचे दिए गए बॉक्स पर उंगली या माउस से साइन करें:</p>
-                <canvas 
-                  ref={canvasRef} 
-                  width={320} 
-                  height={130} 
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
-                  style={{ border: '1px dashed #007bff', background: '#fafafa', borderRadius: '4px', cursor: 'crosshair', width: '100%', touchAction: 'none' }}
-                />
-              </div>
-
-              <button onClick={handleJobSubmit} disabled={uploading} style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
-                {uploading ? "लोकेशन और डेटा सेव हो रहा है..." : "जॉब शीट सबमिट करें"}
-              </button>
             </div>
           )}
         </div>
