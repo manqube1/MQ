@@ -49,7 +49,6 @@ export default function App() {
   const [custPhone, setCustPhone] = useState('');
   const [custLoggedIn, setCustLoggedIn] = useState(false);
 
-  // कॉमन कैटेगरी और सब-ऑप्शन स्टेट
   const [categoryType, setCategoryType] = useState('HVAC & Refrigeration');
   const [productType, setProductType] = useState('Split / Window AC');
   const [problemDesc, setProblemDesc] = useState('');
@@ -63,7 +62,6 @@ export default function App() {
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
   
-  // HVAC विशिष्ट फील्ड्स
   const [indoorModel, setIndoorModel] = useState('');
   const [indoorSerial, setIndoorSerial] = useState('');
   const [outdoorModel, setOutdoorModel] = useState('');
@@ -700,7 +698,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* इलेक्ट्रिकल और एचवीएसी के लिए वोल्टेज और एम्पीयर */}
               {categoryType !== 'Civil Work' && (
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                   <div style={{ flex: 1 }}>
