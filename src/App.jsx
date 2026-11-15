@@ -101,7 +101,7 @@ export default function App() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
 
-    const jobSheetNo = COMP${custPhone}${day}${month}${hours}${minutes};
+    const jobSheetNo = `COMP${custPhone}${day}${month}${hours}${minutes}`;
 
     const newEntry = {
       jobSheetNo,
