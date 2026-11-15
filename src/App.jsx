@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -43,7 +43,6 @@ export const compressImage = (file) => {
 };
 
 export default function App() {
-  // 'home' का मतलब ऐप खुलते ही होम स्क्रीन दिखेगी जिसपर तीनों आइकॉन होंगे
   const [activeTab, setActiveTab] = useState('home');
   const [jobSheets, setJobSheets] = useState([]);
 
@@ -61,16 +60,57 @@ export default function App() {
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
   const [modelNo, setModelNo] = useState('');
+  const [serialNo, setSerialNo] = useState('');
   const [workDone, setWorkDone] = useState('');
   const [sectionPressure, setSectionPressure] = useState('');
   const [roomTemp, setRoomTemp] = useState('');
   const [voltage, setVoltage] = useState('230V');
   const [ampere, setAmpere] = useState('');
   const [stabilizer, setStabilizer] = useState('OK');
-  const [selectedItems, setSelectedItems] = useState([]);
+  const [standType, setStandType] = useState('Wall Type');
+  
+  // मटीरियल लिस्ट (शुरुआत में 2 रो)
+  const [materials, setMaterials] = useState(['', '']);
 
+  const [customerFeedback, setCustomerFeedback] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // सिग्नेचर के लिए रेफ (Canvas)
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
 
   const handleCustomerLogin = (e) => {
     e.preventDefault();
@@ -104,12 +144,15 @@ export default function App() {
       staffPhone: '-',
       location: 'Online Booking',
       photoURL: '',
+      signatureURL: '',
       sectionPressure: '-',
       roomTemp: '-',
       voltage: '-',
       ampere: '-',
       stabilizer: '-',
-      selectedItems: []
+      standType: '-',
+      materials: [],
+      feedback: '-'
     };
 
     setJobSheets([newEntry, ...jobSheets]);
@@ -142,6 +185,17 @@ export default function App() {
     setImageFile(compressedFile);
   };
 
+  const handleMaterialChange = (index, value) => {
+    const newMaterials = [...materials];
+    newMaterials[index] = value;
+    setMaterials(newMaterials);
+
+    // यदि आखिरी इनपुट भर दिया गया है, तो अपने आप नई खाली लाइन (रो) नीचे जुड़ जाएगी
+    if (index === newMaterials.length - 1 && value.trim() !== '') {
+      setMaterials([...newMaterials, '']);
+    }
+  };
+
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert('कृपया कस्टमर का नाम और मोबाइल नंबर भरें!');
@@ -150,24 +204,28 @@ export default function App() {
 
     setUploading(true);
 
+    // सिग्नेचर को इमेज (Data URL) में बदलना
+    const canvas = canvasRef.current;
+    const signatureDataURL = canvas.toDataURL('image/png');
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude.toFixed(4);
           const lng = position.coords.longitude.toFixed(4);
           const locationStr = 'Lat: ' + lat + ', Lng: ' + lng + ' (Prayagraj)';
-          await processAndSaveJob(locationStr);
+          await processAndSaveJob(locationStr, signatureDataURL);
         },
         async () => {
-          await processAndSaveJob('Prayagraj (Location default)');
+          await processAndSaveJob('Prayagraj (Location default)', signatureDataURL);
         }
       );
     } else {
-      processAndSaveJob('Prayagraj');
+      processAndSaveJob('Prayagraj', signatureDataURL);
     }
   };
 
-  const processAndSaveJob = async (locationStr) => {
+  const processAndSaveJob = async (locationStr, signatureDataURL) => {
     let uploadedImageUrl = '';
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
@@ -197,12 +255,15 @@ export default function App() {
         });
       }
 
+      // खाली मटीरियल को हटा दें
+      const filteredMaterials = materials.filter(m => m.trim() !== '');
+
       const newJobRecord = {
         jobSheetNo,
         customerName: jobCustName,
         customerPhone: jobCustPhone,
         customerAddress: jobCustAddress,
-        product: modelNo || 'Split/Window AC',
+        product: modelNo ? modelNo + (serialNo ? ' (S/N: ' + serialNo + ')' : '') : 'Split/Window AC',
         desc: workDone || 'General Service / Repair',
         status: 'Completed',
         date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
@@ -210,12 +271,15 @@ export default function App() {
         staffPhone: staffPhone,
         location: locationStr,
         photoURL: uploadedImageUrl,
+        signatureURL: signatureDataURL,
         sectionPressure,
         roomTemp,
         voltage,
         ampere,
         stabilizer,
-        selectedItems
+        standType,
+        materials: filteredMaterials,
+        feedback: customerFeedback || 'Good Service'
       };
 
       setJobSheets([newJobRecord, ...jobSheets]);
@@ -226,12 +290,15 @@ export default function App() {
       setJobCustAddress('');
       setJobCustPhone('');
       setModelNo('');
+      setSerialNo('');
       setWorkDone('');
       setSectionPressure('');
       setRoomTemp('');
       setAmpere('');
+      setCustomerFeedback('');
       setImageFile(null);
-      setSelectedItems([]);
+      setMaterials(['', '']);
+      clearSignature();
 
     } catch (error) {
       console.error("Upload error:", error);
@@ -245,7 +312,6 @@ export default function App() {
       <h2 style={{ textAlign: 'center', color: '#1a365d', marginBottom: '5px' }}>Manqube Field Service Management</h2>
       <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '0', marginBottom: '20px' }}>Hindustan Refrigeration Service</p>
 
-      {/* यदि होम स्क्रीन है तो केवल तीनों आइकॉन/बटन दिखेंगे */}
       {activeTab === 'home' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '30px' }}>
           <div style={{ textAlign: 'center', marginBottom: '10px' }}>
@@ -253,10 +319,7 @@ export default function App() {
             <p style={{ color: '#666', fontSize: '14px' }}>कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:</p>
           </div>
 
-          <div 
-            onClick={() => setActiveTab('customer')}
-            style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #007bff' }}
-          >
+          <div onClick={() => setActiveTab('customer')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #007bff' }}>
             <div style={{ fontSize: '35px' }}>👤</div>
             <div>
               <h3 style={{ margin: '0 0 5px 0', color: '#007bff' }}>कस्टमर पोर्टल (Customer Portal)</h3>
@@ -264,21 +327,15 @@ export default function App() {
             </div>
           </div>
 
-          <div 
-            onClick={() => setActiveTab('staff')}
-            style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #28a745' }}
-          >
+          <div onClick={() => setActiveTab('staff')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #28a745' }}>
             <div style={{ fontSize: '35px' }}>🛠️</div>
             <div>
               <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Portal)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>डिजिटल जॉब शीट भरें, लोकेशन और फोटो कैप्चर करें</p>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>डिजिटल जॉब शीट भरें, सिग्नेचर और फोटो कैप्चर करें</p>
             </div>
           </div>
 
-          <div 
-            onClick={() => setActiveTab('admin')}
-            style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #ffc107' }}
-          >
+          <div onClick={() => setActiveTab('admin')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #ffc107' }}>
             <div style={{ fontSize: '35px' }}>📊</div>
             <div>
               <h3 style={{ margin: '0 0 5px 0', color: '#d39e00' }}>एडमिन पैनल (Admin Panel)</h3>
@@ -288,13 +345,9 @@ export default function App() {
         </div>
       )}
 
-      {/* यदि कोई पोर्टल खुला है तो ऊपर 'होम पर वापस जाएं' (Back to Home) का बटन दिखेगा */}
       {activeTab !== 'home' && (
         <div style={{ marginBottom: '15px' }}>
-          <button 
-            onClick={() => setActiveTab('home')} 
-            style={{ padding: '8px 14px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
-          >
+          <button onClick={() => setActiveTab('home')} style={{ padding: '8px 14px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
             ⬅️ मुख्य मेनू (Home) पर वापस जाएं
           </button>
         </div>
@@ -350,24 +403,33 @@ export default function App() {
                       {item.status === 'Completed' && (
                         <div style={{ background: '#e2e8f0', padding: '8px', borderRadius: '4px', marginTop: '6px', fontSize: '12px' }}>
                           <p style={{ margin: '0 0 2px 0' }}>🌡️ <b>Room Temp:</b> {item.roomTemp} | 🔵 <b>Pressure:</b> {item.sectionPressure}</p>
-                          <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere} | 🛡️ <b>Stabilizer:</b> {item.stabilizer}</p>
-                          {item.selectedItems && item.selectedItems.length > 0 && (
-                            <p style={{ margin: '2px 0 0 0' }}>📦 <b>पार्ट्स/मटेरियल:</b> {item.selectedItems.join(', ')}</p>
+                          <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere} | 🛡️ <b>Stabilizer:</b> {item.stabilizer} | 📐 <b>Stand:</b> {item.standType}</p>
+                          {item.materials && item.materials.length > 0 && (
+                            <p style={{ margin: '2px 0 0 0' }}>📦 <b>मटेरियल/पार्ट्स:</b> {item.materials.join(', ')}</p>
                           )}
+                          <p style={{ margin: '4px 0 0 0' }}>💬 <b>कस्टमर फीडबैक:</b> {item.feedback}</p>
                         </div>
                       )}
 
                       <div style={{ background: '#e9ecef', padding: '8px', borderRadius: '4px', marginTop: '8px', fontSize: '13px' }}>
-                        <p style={{ margin: '0 0 3px 0' }}>🛠️ <b>अटेंड करने वाला स्टाफ:</b> {item.staffName} (Ph: {item.staffPhone})</p>
-                        <p style={{ margin: '0' }}>📍 <b>साइट लोकेशन:</b> {item.location}</p>
+                        <p style={{ margin: '0 0 3px 0' }}>🛠️ <b>स्टाफ:</b> {item.staffName} (Ph: {item.staffPhone})</p>
+                        <p style={{ margin: '0' }}>📍 <b>लोकेशन:</b> {item.location}</p>
                       </div>
 
-                      {item.photoURL && (
-                        <div style={{ marginTop: '10px' }}>
-                          <p style={{ fontSize: '12px', margin: '0 0 3px 0', fontWeight: 'bold' }}>साइट की फोटो:</p>
-                          <img src={item.photoURL} alt="Site" style={{ width: '120px', borderRadius: '4px' }} />
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                        {item.photoURL && (
+                          <div>
+                            <p style={{ fontSize: '11px', margin: '0 0 3px 0', fontWeight: 'bold' }}>साइट फोटो:</p>
+                            <img src={item.photoURL} alt="Site" style={{ width: '100px', borderRadius: '4px' }} />
+                          </div>
+                        )}
+                        {item.signatureURL && (
+                          <div>
+                            <p style={{ fontSize: '11px', margin: '0 0 3px 0', fontWeight: 'bold' }}>कस्टमर सिग्नेचर:</p>
+                            <img src={item.signatureURL} alt="Signature" style={{ width: '100px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }} />
+                          </div>
+                        )}
+                      </div>
                       <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: '#888' }}>दिनांक: {item.date}</p>
                     </div>
                   ))
@@ -413,9 +475,16 @@ export default function App() {
                 <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
-              <div style={{ marginBottom: '10px' }}>
-                <label>मॉडल / ब्रांड (Model No):</label>
-                <input type="text" placeholder="जैसे Voltas / Samsung" value={modelNo} onChange={(e) => setModelNo(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              {/* मॉडल नंबर और सीरियल नंबर एक लाइन में */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Model No:</label>
+                  <input type="text" placeholder="जैसे Voltas / Samsung" value={modelNo} onChange={(e) => setModelNo(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Serial No:</label>
+                  <input type="text" placeholder="सीरियल नंबर" value={serialNo} onChange={(e) => setSerialNo(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -440,13 +509,24 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '10px' }}>
-                <label>Stabilizer Status:</label>
-                <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                  <option value="OK">OK</option>
-                  <option value="High/Low Cut">High/Low Cut</option>
-                  <option value="Not Available">Not Available</option>
-                </select>
+              {/* स्टेबलाइजर और स्टैंड टाइप एक लाइन में */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Stabilizer Status:</label>
+                  <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                    <option value="OK">OK</option>
+                    <option value="High/Low Cut">High/Low Cut</option>
+                    <option value="Not Available">Not Available</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Stand Type:</label>
+                  <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                    <option value="Wall Type">Wall Type</option>
+                    <option value="Floor Type">Floor Type</option>
+                    <option value="MS Stand">MS Stand</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ marginBottom: '10px' }}>
@@ -454,25 +534,58 @@ export default function App() {
                 <input type="text" placeholder="जैसे A.C. Installation / Repair" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
+              {/* मटीरियल / पार्ट्स इस्तेमाल (Dynamic 1, 2, 3...) */}
               <div style={{ marginBottom: '15px' }}>
-                <label>मटेरियल / पार्ट्स (Quick Select):</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
-                  {['Copper Pipe', 'Drain Pipe', 'Stand', 'Capacitor', 'Gas Charging'].map((item) => (
-                    <label key={item} style={{ background: '#e9ecef', padding: '6px 10px', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="checkbox" onChange={(e) => {
-                        if(e.target.checked) setSelectedItems([...selectedItems, item]);
-                        else setSelectedItems(selectedItems.filter(i => i !== item));
-                      }} style={{ marginRight: '5px' }} />
-                      {item}
-                    </label>
+                <label style={{ fontWeight: 'bold' }}>मटीरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
+                <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {materials.map((mat, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 'bold', width: '25px', color: '#555' }}>{index + 1}.</span>
+                      <input 
+                        type="text" 
+                        placeholder={'मटीरियल ' + (index + 1) + ' दर्ज करें'} 
+                        value={mat} 
+                        onChange={(e) => handleMaterialChange(index, e.target.value)} 
+                        style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
 
+              {/* कस्टमर फीडबैक */}
+              <div style={{ marginBottom: '15px' }}>
+                <label>कस्टमर फीडबैक (Customer Feedback):</label>
+                <input type="text" placeholder="ग्राहक की प्रतिक्रिया लिखें..." value={customerFeedback} onChange={(e) => setCustomerFeedback(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              </div>
+
+              {/* साइट फोटो */}
               <div style={{ marginBottom: '15px', background: '#e9ecef', padding: '10px', borderRadius: '6px' }}>
                 <label style={{ fontWeight: 'bold' }}>साइट की फोटो जोड़ें:</label><br />
                 <input type="file" accept="image/*" onChange={handleFileChange} style={{ marginTop: '5px' }} />
                 {imageFile && <p style={{ fontSize: '12px', color: 'green', margin: '5px 0 0 0' }}>फोटो चुनी गई है!</p>}
+              </div>
+
+              {/* डिजिटल सिग्नेचर पैड */}
+              <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ fontWeight: 'bold' }}>कस्टमर सिग्नेचर (Customer Signature):</label>
+                  <button type="button" onClick={clearSignature} style={{ padding: '3px 8px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>रीसेट (Clear)</button>
+                </div>
+                <p style={{ fontSize: '11px', color: '#666', margin: '0 0 5px 0' }}>नीचे दिए गए बॉक्स पर उंगली या माउस से साइन करें:</p>
+                <canvas 
+                  ref={canvasRef} 
+                  width={320} 
+                  height={130} 
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                  style={{ border: '1px dashed #007bff', background: '#fafafa', borderRadius: '4px', cursor: 'crosshair', width: '100%', touchAction: 'none' }}
+                />
               </div>
 
               <button onClick={handleJobSubmit} disabled={uploading} style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -494,9 +607,19 @@ export default function App() {
             jobSheets.map((item, index) => (
               <div key={index} style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '10px', borderLeft: '4px solid #ffc107' }}>
                 <p style={{ margin: '0 0 5px 0' }}><b>जॉब शीट नं:</b> {item.jobSheetNo} | <b>ग्राहक:</b> {item.customerName} ({item.customerPhone})</p>
-                <p style={{ margin: '0 0 5px 0' }}><b>काम:</b> {item.product} - {item.desc}</p>
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px', color: '#333' }}>👤 <b>स्टाफ:</b> {item.staffName} ({item.staffPhone}) | 📍 <b>लोकेशन:</b> {item.location}</p>
-                <p style={{ margin: '0', fontSize: '11px', color: '#888' }}>दिनांक: {item.date}</p>
+                <p style={{ margin: '0 0 5px 0' }}><b>प्रोडक्ट/मॉडल:</b> {item.product} | <b>काम:</b> {item.desc}</p>
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📐 <b>स्टैंड:</b> {item.standType} | 🛡️ <b>स्टेबलाइजर:</b> {item.stabilizer}</p>
+                {item.materials && item.materials.length > 0 && (
+                  <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📦 <b>मटीरियल:</b> {item.materials.join(', ')}</p>
+                )}
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px', color: '#333' }}>👤 <b>स्टाफ:</b> {item.staffName} | 📍 <b>लोकेशन:</b> {item.location}</p>
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>💬 <b>फीडबैक:</b> {item.feedback}</p>
+                
+                <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
+                  {item.photoURL && <img src={item.photoURL} alt="Site" style={{ width: '80px', borderRadius: '4px' }} />}
+                  {item.signatureURL && <img src={item.signatureURL} alt="Sign" style={{ width: '80px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }} />}
+                </div>
+                <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: '#888' }}>दिनांक: {item.date}</p>
               </div>
             ))
           )}
