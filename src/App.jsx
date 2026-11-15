@@ -46,20 +46,32 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [jobSheets, setJobSheets] = useState([]);
 
+  // Customer Portal State
   const [custPhone, setCustPhone] = useState('');
   const [custLoggedIn, setCustLoggedIn] = useState(false);
-
   const [categoryType, setCategoryType] = useState('HVAC & Refrigeration');
   const [productType, setProductType] = useState('Split / Window AC');
   const [problemDesc, setProblemDesc] = useState('');
 
+  // Staff Portal State
   const [staffPhoneInput, setStaffPhoneInput] = useState('');
   const [otpStep, setOtpStep] = useState(1);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [staffLoggedIn, setStaffLoggedIn] = useState(false);
   const [currentStaffName, setCurrentStaffName] = useState('');
+  const [staffGpsLocation, setStaffGpsLocation] = useState('Fetching GPS...');
+  
+  // Staff Sub-tabs: 'new', 'pending', 'partPending'
+  const [staffSubTab, setStaffSubTab] = useState('new');
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
 
+  // Admin / Office Staff Login State
+  const [adminUser, setAdminUser] = useState('');
+  const [adminPass, setAdminPass] = useState('');
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+
+  // Job Submission Form State
   const [jobCustName, setJobCustName] = useState('');
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
@@ -79,6 +91,7 @@ export default function App() {
   const [standType, setStandType] = useState('Wall Type');
 
   const [workDone, setWorkDone] = useState('');
+  const [jobStatusType, setJobStatusType] = useState('Completed'); // 'Completed', 'Pending', 'Part Pending'
   
   const [materials, setMaterials] = useState([
     { name: '', qty: '', price: '' },
@@ -95,6 +108,7 @@ export default function App() {
 
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX || e.touches[0].clientX) - rect.left;
@@ -107,6 +121,7 @@ export default function App() {
   const draw = (e) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX || e.touches[0].clientX) - rect.left;
@@ -121,6 +136,7 @@ export default function App() {
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
@@ -156,10 +172,10 @@ export default function App() {
       jobSheetNo,
       customerName: 'Customer',
       customerPhone: custPhone,
-      customerAddress: 'N/A',
+      customerAddress: 'Prayagraj Main Location',
       product: "[" + categoryType + "] " + productType,
       desc: problemDesc,
-      status: 'Pending',
+      status: 'Pending', // Pending / Part Pending / Completed
       date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
       staffName: 'Not Assigned Yet',
       staffPhone: '-',
@@ -188,7 +204,7 @@ export default function App() {
 
     setJobSheets([newEntry, ...jobSheets]);
     setProblemDesc('');
-    alert('शिकायत दर्ज हो गई!\nआपका जॉब शीट/कंप्लेंट नंबर है:\n' + jobSheetNo);
+    alert('शिकायत सफलतापूर्वक दर्ज हो गई!\nआपका कंप्लेंट नंबर है:\n' + jobSheetNo);
   };
 
   const handleSendOtp = (e) => {
@@ -211,9 +227,48 @@ export default function App() {
       setStaffLoggedIn(true);
       setOtpStep(1);
       setEnteredOtp('');
+
+      // Capture GPS location upon staff login
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude.toFixed(4);
+            const lng = position.coords.longitude.toFixed(4);
+            setStaffGpsLocation(Lat: ${lat}, Lng: ${lng} (GPS Active));
+          },
+          () => {
+            setStaffGpsLocation('Prayagraj (GPS Default)');
+          }
+        );
+      } else {
+        setStaffGpsLocation('Prayagraj (No GPS Support)');
+      }
+
     } else {
       alert('गलत OTP! कृपया सही OTP दर्ज करें।');
     }
+  };
+
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    // Default office login credentials check (e.g. admin / 1234 or manager / man123)
+    if ((adminUser === 'admin' || adminUser === 'manager' || adminUser === 'office') && adminPass.length >= 4) {
+      setAdminLoggedIn(true);
+      alert('ऑफिस स्टाफ लॉगिन सफल!');
+    } else {
+      alert('गलत यूजरनेम या पासवर्ड! (यूजरनेम: admin या manager, पासवर्ड कम से कम 4 अंक)');
+    }
+  };
+
+  const handleFillComplaintToNewJob = (comp) => {
+    setSelectedComplaint(comp);
+    setJobCustName(comp.customerName || 'Customer');
+    setJobCustPhone(comp.customerPhone || '');
+    setJobCustAddress(comp.customerAddress || '');
+    setCategoryType(comp.categoryType || 'HVAC & Refrigeration');
+    setProductType(comp.productType || 'Split / Window AC');
+    setWorkDone(comp.desc || '');
+    setStaffSubTab('new'); // switch to new job form tab with pre-filled data
   };
 
   const handleFileChange = async (e) => {
@@ -247,124 +302,116 @@ export default function App() {
     setUploading(true);
 
     const canvas = canvasRef.current;
-    const signatureDataURL = canvas.toDataURL('image/png');
+    const signatureDataURL = canvas ? canvas.toDataURL('image/png') : '';
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude.toFixed(4);
-          const lng = position.coords.longitude.toFixed(4);
-          const locationStr = 'Lat: ' + lat + ', Lng: ' + lng + ' (Prayagraj)';
-          await processAndSaveJob(locationStr, signatureDataURL);
-        },
-        async () => {
-          await processAndSaveJob('Prayagraj (GPS Default)', signatureDataURL);
+    const processSave = async (locStr) => {
+      let uploadedImageUrl = '';
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+
+      const jobSheetNo = selectedComplaint ? selectedComplaint.jobSheetNo : ('JS' + jobCustPhone.slice(-4) + day + month + hours + minutes);
+
+      try {
+        if (imageFile) {
+          const storageRef = ref(storage, 'job_photos/' + Date.now() + '_' + imageFile.name);
+          const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+          await new Promise((resolve, reject) => {
+            uploadTask.on(
+              'state_changed',
+              null,
+              (error) => reject(error),
+              () => {
+                getDownloadURL(uploadTask.snapshot.ref).then((url) => {
+                  uploadedImageUrl = url;
+                  resolve();
+                });
+              }
+            );
+          });
         }
-      );
-    } else {
-      processAndSaveJob('Prayagraj (No GPS)', signatureDataURL);
-    }
-  };
 
-  const processAndSaveJob = async (locationStr, signatureDataURL) => {
-    let uploadedImageUrl = '';
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
+        const filteredMaterials = materials.filter(m => m.name.trim() !== '');
 
-    const jobSheetNo = 'JS' + jobCustPhone.slice(-4) + day + month + hours + minutes;
+        const updatedRecord = {
+          jobSheetNo,
+          customerName: jobCustName,
+          customerPhone: jobCustPhone,
+          customerAddress: jobCustAddress,
+          categoryType,
+          productType,
+          product: "[" + categoryType + "] " + productType,
+          desc: workDone || 'General Service / Repair',
+          status: jobStatusType, // 'Completed', 'Pending', or 'Part Pending'
+          date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
+          staffName: currentStaffName,
+          staffPhone: staffPhoneInput,
+          location: locStr,
+          photoURL: uploadedImageUrl,
+          signatureURL: signatureDataURL,
+          indoorModel: indoorModel || '-',
+          indoorSerial: indoorSerial || '-',
+          outdoorModel: outdoorModel || '-',
+          outdoorSerial: outdoorSerial || '-',
+          motorType: motorType,
+          compressorModel: compressorModel || '-',
+          compressorSerial: compressorSerial || '-',
+          sectionPressure: categoryType === 'HVAC & Refrigeration' ? sectionPressure : '-',
+          roomTemp: categoryType === 'HVAC & Refrigeration' ? roomTemp : '-',
+          voltage: categoryType !== 'Civil Work' ? voltage : '-',
+          ampere: categoryType !== 'Civil Work' ? ampere : '-',
+          stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
+          standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
+          materials: filteredMaterials,
+          note: jobNote || '-',
+          feedback: customerFeedback || 'Good Service'
+        };
 
-    try {
-      if (imageFile) {
-        const storageRef = ref(storage, 'job_photos/' + Date.now() + '_' + imageFile.name);
-        const uploadTask = uploadBytesResumable(storageRef, imageFile);
+        // If it was an existing pending complaint, update it, else add new
+        const filteredList = jobSheets.filter(j => j.jobSheetNo !== jobSheetNo);
+        setJobSheets([updatedRecord, ...filteredList]);
 
-        await new Promise((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            null,
-            (error) => reject(error),
-            () => {
-              getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-                uploadedImageUrl = url;
-                resolve();
-              });
-            }
-          );
-        });
+        setUploading(false);
+        alert(`जॉब शीट सफलताપूर्वक ${jobStatusType === 'Completed' ? 'सेव व पूर्ण' : 'पेंडिंग रूप में'} हो गई!\nजॉब शीट नंबर: ` + jobSheetNo);
+        
+        // Reset form
+        setSelectedComplaint(null);
+        setJobCustName('');
+        setJobCustAddress('');
+        setJobCustPhone('');
+        setIndoorModel('');
+        setIndoorSerial('');
+        setOutdoorModel('');
+        setOutdoorSerial('');
+        setCompressorModel('');
+        setCompressorSerial('');
+        setWorkDone('');
+        setSectionPressure('');
+        setRoomTemp('');
+        setAmpere('');
+        setJobNote('');
+        setCustomerFeedback('');
+        setImageFile(null);
+        setMaterials([{ name: '', qty: '', price: '' }, { name: '', qty: '', price: '' }]);
+        clearSignature();
+
+      } catch (error) {
+        console.error("Upload error:", error);
+        setUploading(false);
+        alert('जॉब सबमिट करने में कुछ गड़बड़ी हुई!');
       }
+    };
 
-      const filteredMaterials = materials.filter(m => m.name.trim() !== '');
-
-      const newJobRecord = {
-        jobSheetNo,
-        customerName: jobCustName,
-        customerPhone: jobCustPhone,
-        customerAddress: jobCustAddress,
-        categoryType,
-        productType,
-        product: "[" + categoryType + "] " + productType,
-        desc: workDone || 'General Service / Repair',
-        status: 'Completed',
-        date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
-        staffName: currentStaffName,
-        staffPhone: '-',
-        location: locationStr,
-        photoURL: uploadedImageUrl,
-        signatureURL: signatureDataURL,
-        indoorModel: indoorModel || '-',
-        indoorSerial: indoorSerial || '-',
-        outdoorModel: outdoorModel || '-',
-        outdoorSerial: outdoorSerial || '-',
-        motorType: motorType,
-        compressorModel: compressorModel || '-',
-        compressorSerial: compressorSerial || '-',
-        sectionPressure: categoryType === 'HVAC & Refrigeration' ? sectionPressure : '-',
-        roomTemp: categoryType === 'HVAC & Refrigeration' ? roomTemp : '-',
-        voltage: categoryType !== 'Civil Work' ? voltage : '-',
-        ampere: categoryType !== 'Civil Work' ? ampere : '-',
-        stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
-        standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
-        materials: filteredMaterials,
-        note: jobNote || '-',
-        feedback: customerFeedback || 'Good Service'
-      };
-
-      setJobSheets([newJobRecord, ...jobSheets]);
-      setUploading(false);
-      alert('जॉब शीट सफलतापूर्वक सेव हो गई!\nजॉब शीट नंबर: ' + jobSheetNo);
-      
-      setJobCustName('');
-      setJobCustAddress('');
-      setJobCustPhone('');
-      setIndoorModel('');
-      setIndoorSerial('');
-      setOutdoorModel('');
-      setOutdoorSerial('');
-      setCompressorModel('');
-      setCompressorSerial('');
-      setWorkDone('');
-      setSectionPressure('');
-      setRoomTemp('');
-      setAmpere('');
-      setJobNote('');
-      setCustomerFeedback('');
-      setImageFile(null);
-      setMaterials([{ name: '', qty: '', price: '' }, { name: '', qty: '', price: '' }]);
-      clearSignature();
-
-    } catch (error) {
-      console.error("Upload error:", error);
-      setUploading(false);
-      alert('जॉब सबमिट करने में कुछ गड़बड़ी हुई!');
-    }
+    processSave(staffGpsLocation);
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: '700px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
+    <div style={{ fontFamily: 'sans-serif', maxWidth: '750px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
       
+      {/* HEADER SECTION */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', background: '#fff', borderRadius: '8px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
         <img 
           src="/1000384854.jpg" 
@@ -372,7 +419,7 @@ export default function App() {
           style={{ height: '70px', width: '70px', objectFit: 'contain', borderRadius: '12px', marginBottom: '8px' }} 
         />
         <h1 style={{ margin: '0', color: '#1a365d', fontSize: '26px', fontWeight: '800', letterSpacing: '1px' }}>MANQUBE</h1>
-        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.[span_2](start_span)[span_2](end_span)</p>
+        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.[span_0](start_span)[span_0](end_span)</p>
         <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '11px' }}>Hindustan Refrigeration Service</p>
       </div>
 
@@ -394,16 +441,16 @@ export default function App() {
           <div onClick={() => setActiveTab('staff')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #28a745' }}>
             <div style={{ fontSize: '35px' }}>🛠️</div>
             <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Mobile & OTP Login)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>मोबाइल नंबर और OTP से सुरक्षित लॉगिन करें</p>
+              <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Mobile & GPS Login)</h3>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>मोबाइल नंबर, OTP और GPS लोकेशन के साथ लॉगिन करें</p>
             </div>
           </div>
 
           <div onClick={() => setActiveTab('admin')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #ffc107' }}>
             <div style={{ fontSize: '35px' }}>📊</div>
             <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#d39e00' }}>एडमिन पैनल (Admin Panel)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>सभी रिकॉर्ड और कुल जॉब-शीट्स की सूची देखें</p>
+              <h3 style={{ margin: '0 0 5px 0', color: '#d39e00' }}>एडमिन & ऑफिस स्टाफ पैनल (Office Login)</h3>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>ऑफिस स्टाफ लॉगिन करके पेंडिंग और पार्ट पेंडिंग जॉब्स देखें</p>
             </div>
           </div>
         </div>
@@ -417,6 +464,7 @@ export default function App() {
         </div>
       )}
 
+      {/* CUSTOMER PORTAL */}
       {activeTab === 'customer' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!custLoggedIn ? (
@@ -499,59 +547,8 @@ export default function App() {
                     <div key={index} style={{ background: '#f8f9fa', padding: '15px', borderRadius: '6px', marginBottom: '12px', borderLeft: '4px solid #007bff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                       <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#1a365d' }}><b>जॉब शीट / कंप्लेंट नंबर:</b> {item.jobSheetNo}</p>
                       <p style={{ margin: '0 0 5px 0' }}><b>विवरण/प्रोडक्ट:</b> {item.product} - {item.desc}</p>
-                      <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}><b>स्थिति:</b> <span style={{ color: item.status === 'Pending' ? 'orange' : 'green', fontWeight: 'bold' }}>{item.status}</span></p>
-                      
-                      {item.status === 'Completed' && (
-                        <div style={{ background: '#e2e8f0', padding: '8px', borderRadius: '4px', marginTop: '6px', fontSize: '12px' }}>
-                          {item.categoryType === 'HVAC & Refrigeration' && (
-                            <>
-                              <p style={{ margin: '0 0 2px 0' }}>🏠 <b>Indoor Model:</b> {item.indoorModel} | <b>Serial:</b> {item.indoorSerial}</p>
-                              <p style={{ margin: '0 0 2px 0' }}>☀️ <b>Outdoor Model:</b> {item.outdoorModel} | <b>Serial:</b> {item.outdoorSerial}</p>
-                              <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Motor Type:</b> {item.motorType} | 🌀 <b>Compressor M/S:</b> {item.compressorModel} / {item.compressorSerial}</p>
-                              <p style={{ margin: '0 0 2px 0' }}>🌡️ <b>Room Temp:</b> {item.roomTemp} | 🔵 <b>Pressure:</b> {item.sectionPressure}</p>
-                              <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere} | 🛡️ <b>Stabilizer:</b> {item.stabilizer} | 📐 <b>Stand:</b> {item.standType}</p>
-                            </>
-                          )}
-                          {item.categoryType === 'Electrical Work' && (
-                            <>
-                              <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere}</p>
-                            </>
-                          )}
-                          
-                          {item.materials && item.materials.length > 0 && (
-                            <div style={{ marginTop: '4px', borderTop: '1px dashed #cbd5e1', paddingTop: '4px' }}>
-                              <p style={{ margin: '0 0 2px 0', fontWeight: 'bold' }}>📦 <b>मटेरियल इस्तेमाल:</b></p>
-                              {item.materials.map((m, idx) => (
-                                <p key={idx} style={{ margin: '0 0 2px 10px' }}>• {m.name} | मात्रा: {m.qty} | दाम: ₹{m.price}</p>
-                              ))}
-                            </div>
-                          )}
-
-                          <p style={{ margin: '4px 0 2px 0' }}>📝 <b>नोट:</b> {item.note}</p>
-                          <p style={{ margin: '2px 0 0 0' }}>💬 <b>कस्टमर फीडबैक:</b> {item.feedback}</p>
-                        </div>
-                      )}
-
-                      <div style={{ background: '#e9ecef', padding: '8px', borderRadius: '4px', marginTop: '8px', fontSize: '13px' }}>
-                        <p style={{ margin: '0 0 3px 0' }}>🛠️ <b>स्टाफ:</b> {item.staffName}</p>
-                        <p style={{ margin: '0' }}>📍 <b>GPS लोकेशन:</b> {item.location}</p>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-                        {item.photoURL && (
-                          <div>
-                            <p style={{ fontSize: '11px', margin: '0 0 3px 0', fontWeight: 'bold' }}>साइट फोटो:</p>
-                            <img src={item.photoURL} alt="Site" style={{ width: '100px', borderRadius: '4px' }} />
-                          </div>
-                        )}
-                        {item.signatureURL && (
-                          <div>
-                            <p style={{ fontSize: '11px', margin: '0 0 3px 0', fontWeight: 'bold' }}>कस्टमर सिग्नेचर:</p>
-                            <img src={item.signatureURL} alt="Signature" style={{ width: '100px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }} />
-                          </div>
-                        )}
-                      </div>
-                      <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: '#888' }}>दिनांक: {item.date}</p>
+                      <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}><b>स्थिति:</b> <span style={{ color: item.status === 'Completed' ? 'green' : (item.status === 'Part Pending' ? '#d97706' : 'orange'), fontWeight: 'bold' }}>{item.status}</span></p>
+                      <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>दिनांक: {item.date}</p>
                     </div>
                   ))
               )}
@@ -560,15 +557,16 @@ export default function App() {
         </div>
       )}
 
+      {/* STAFF PORTAL */}
       {activeTab === 'staff' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!staffLoggedIn ? (
             <div>
-              <h3>स्टाफ मोबाइल & OTP लॉगिन (Staff Portal)</h3>
+              <h3>स्टाफ मोबाइल & GPS लॉगिन (Staff Portal)</h3>
               
               {otpStep === 1 ? (
                 <form onSubmit={handleSendOtp}>
-                  <p>लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें:</p>
+                  <p>लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें (GPS ऑटो-रजिस्टर होगा):</p>
                   <input 
                     type="tel" 
                     maxLength="10" 
@@ -599,346 +597,280 @@ export default function App() {
             </div>
           ) : (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4>अधिकृत स्टाफ: {currentStaffName}</h4>
-                <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '5px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>लॉग आउट</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f1f5f9', padding: '10px', borderRadius: '6px' }}>
+                <div>
+                  <h4 style={{ margin: '0', color: '#1e293b' }}>👤 {currentStaffName}</h4>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#059669' }}>📍 GPS: {staffGpsLocation}</p>
+                </div>
+                <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '6px 12px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>लॉग आउट</button>
               </div>
               <hr style={{ margin: '15px 0' }} />
 
-              <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                
-                {/* 1. NEW JOB SECTION */}
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#166534', marginTop: '0' }}>1. New Job (नई जॉब शीट भरें)</h4>
-                  <p style={{ fontSize: '12px', color: '#4b5563' }}>GPS लोकेशन ऑटो-कैप्चर होगी और डेटा सीधे सेव होगा।</p>
-                  
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>मुख्य श्रेणी (Category):</label><br />
-                    <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                      <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
-                      <option value="Electrical Work">Electrical Work (वायरिंग, फैन, लाइट आदि)</option>
-                      <option value="Civil Work">Civil Work (सिविल और निर्माण कार्य)</option>
-                    </select>
-                  </div>
+              {/* THREE MAIN OPTIONS BAR FOR STAFF */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                <button 
+                  onClick={() => setStaffSubTab('new')} 
+                  style={{ flex: 1, padding: '10px 5px', background: staffSubTab === 'new' ? '#166534' : '#dcfce7', color: staffSubTab === 'new' ? '#fff' : '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
+                  🛠️ New Job / New Complaints
+                </button>
+                <button 
+                  onClick={() => setStaffSubTab('pending')} 
+                  style={{ flex: 1, padding: '10px 5px', background: staffSubTab === 'pending' ? '#b45309' : '#fef9c3', color: staffSubTab === 'pending' ? '#fff' : '#854d0e', border: '1px solid #fef08a', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
+                  ⏳ Pending Job
+                </button>
+                <button 
+                  onClick={() => setStaffSubTab('partPending')} 
+                  style={{ flex: 1, padding: '10px 5px', background: staffSubTab === 'partPending' ? '#c2410c' : '#ffedd5', color: staffSubTab === 'partPending' ? '#fff' : '#9a3412', border: '1px solid #fed7aa', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
+                  ⚙️ Part Pending Job
+                </button>
+              </div>
 
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label><br />
-                    <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                      {categoryType === 'HVAC & Refrigeration' && (
-                        <>
-                          <option value="Split / Window AC">Split / Window AC</option>
-                          <option value="Ductable AC">Ductable AC</option>
-                          <option value="VRV / VRF AC">VRV / VRF AC</option>
-                          <option value="Cassette AC">Cassette AC</option>
-                          <option value="Tower AC">Tower AC</option>
-                          <option value="Air Cooler">Air Cooler</option>
-                          <option value="Room Cooler">Room Cooler</option>
-                          <option value="Fridge">Fridge</option>
-                          <option value="Deep Freezer">Deep Freezer</option>
-                          <option value="Stabilizer">Stabilizer</option>
-                        </>
-                      )}
-                      {categoryType === 'Electrical Work' && (
-                        <>
-                          <option value="House Wiring & Panel">House Wiring & Main Panel</option>
-                          <option value="Fan & Light">Fan & Light</option>
-                          <option value="Exhaust Fan">Exhaust Fan</option>
-                          <option value="Fresh Air Fan">Fresh Air Fan</option>
-                          <option value="Earthing Work">Earthing Work</option>
-                        </>
-                      )}
-                      {categoryType === 'Civil Work' && (
-                        <>
-                          <option value="Flooring & Tiling">Flooring & Tiling</option>
-                          <option value="Masonry & Plaster">Masonry & Plaster</option>
-                          <option value="Waterproofing">Waterproofing</option>
-                          <option value="Minor Repairs / Painting">Minor Repairs & Painting</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
+              {/* 1. NEW JOB / NEW COMPLAINTS TAB */}
+              {staffSubTab === 'new' && (
+                <div>
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                    <h4 style={{ color: '#166534', marginTop: '0' }}>
+                      {selectedComplaint ? शिकायत (${selectedComplaint.jobSheetNo}) को जॉब शीट में भरें : 'नई जॉब शीट / सर्विस रिपोर्ट भरें'}
+                    </h4>
+                    <p style={{ fontSize: '12px', color: '#4b5563' }}>ग्राहक की डीटेल्स नीचे स्वतः भरी हुई हैं। काम पूरा होने पर सबमिट करें।</p>
 
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>कस्टमर का नाम:</label>
-                    <input type="text" placeholder="ग्राहक का नाम" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>स्टेटस चुनें (Job Status):</label><br />
+                      <select value={jobStatusType} onChange={(e) => setJobStatusType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold', color: jobStatusType === 'Completed' ? 'green' : (jobStatusType === 'Part Pending' ? '#c2410c' : 'orange') }}>
+                        <option value="Completed">Completed (काम पूरा हो गया)</option>
+                        <option value="Pending">Pending (अभी पेंडिंग है)</option>
+                        <option value="Part Pending">Part Pending (स्पेयर पार्ट की वजह से पेंडिंग)</option>
+                      </select>
+                    </div>
 
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>कस्टमर का मोबाइल नंबर (मुख्य पहचान):</label>
-                    <input type="tel" placeholder="मोबाइल नंबर" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>मुख्य श्रेणी (Category):</label><br />
+                      <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                        <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
+                        <option value="Electrical Work">Electrical Work (वायरिंग, फैन, लाइट आदि)</option>
+                        <option value="Civil Work">Civil Work (सिविल और निर्माण कार्य)</option>
+                      </select>
+                    </div>
 
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>पता (Address):</label>
-                    <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label><br />
+                      <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                        {categoryType === 'HVAC & Refrigeration' && (
+                          <>
+                            <option value="Split / Window AC">Split / Window AC</option>
+                            <option value="Ductable AC">Ductable AC</option>
+                            <option value="VRV / VRF AC">VRV / VRF AC</option>
+                            <option value="Cassette AC">Cassette AC</option>
+                            <option value="Air Cooler">Air Cooler</option>
+                            <option value="Fridge">Fridge</option>
+                            <option value="Deep Freezer">Deep Freezer</option>
+                            <option value="Stabilizer">Stabilizer</option>
+                          </>
+                        )}
+                        {categoryType === 'Electrical Work' && (
+                          <>
+                            <option value="House Wiring & Panel">House Wiring & Main Panel</option>
+                            <option value="Fan & Light">Fan & Light</option>
+                            <option value="Earthing Work">Earthing Work</option>
+                          </>
+                        )}
+                        {categoryType === 'Civil Work' && (
+                          <>
+                            <option value="Flooring & Tiling">Flooring & Tiling</option>
+                            <option value="Waterproofing">Waterproofing</option>
+                            <option value="Minor Repairs / Painting">Minor Repairs & Painting</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
 
-                  {categoryType === 'HVAC & Refrigeration' && (
-                    <div style={{ background: '#fff', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #cbd5e1' }}>
-                      <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1a365d', fontSize: '13px' }}>HVAC यूनिट विवरण:</p>
-                      
-                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Indoor Model No:</label>
-                          <input type="text" placeholder="इंडोर मॉडल" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Indoor Serial No:</label>
-                          <input type="text" placeholder="इंडोर सीरियल नंबर" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                      </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>कस्टमर का नाम:</label>
+                      <input type="text" placeholder="ग्राहक का नाम" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
 
-                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Outdoor Model No:</label>
-                          <input type="text" placeholder="आउटडोर मॉडल" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Outdoor Serial No:</label>
-                          <input type="text" placeholder="आउटडोर सीरियल नंबर" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                      </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>कस्टमर का मोबाइल नंबर:</label>
+                      <input type="tel" placeholder="मोबाइल नंबर" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
 
-                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Motor Type:</label>
-                          <select value={motorType} onChange={(e) => setMotorType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="AC">AC Motor</option>
-                            <option value="DC">DC Motor</option>
-                          </select>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Compressor Model:</label>
-                          <input type="text" placeholder="कंप्रेसर मॉडल" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                      </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>पता (Address):</label>
+                      <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
 
-                      <div style={{ marginBottom: '8px' }}>
-                        <label style={{ fontSize: '12px' }}>Compressor Serial No:</label>
-                        <input type="text" placeholder="कंप्रेसर सीरियल नंबर" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                      </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>Work Done / समस्या का विवरण:</label>
+                      <input type="text" placeholder="किया गया काम या समस्या" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
 
-                      <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Section Pressure:</label>
-                          <input type="text" placeholder="जैसे 65" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Room Temp:</label>
-                          <input type="text" placeholder="जैसे 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Stabilizer Status:</label>
-                          <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="OK">OK</option>
-                            <option value="High/Low Cut">High/Low Cut</option>
-                            <option value="Not Available">Not Available</option>
-                          </select>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '12px' }}>Stand Type:</label>
-                          <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="Wall Type">Wall Type</option>
-                            <option value="Floor Type">Floor Type</option>
-                            <option value="MS Stand">MS Stand</option>
-                          </select>
-                        </div>
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{ fontWeight: 'bold' }}>मटेरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
+                      <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {materials.map((mat, index) => (
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: 'bold', width: '20px', color: '#555' }}>{index + 1}.</span>
+                            <input type="text" placeholder="सामान का नाम" value={mat.name} onChange={(e) => handleMaterialFieldChange(index, 'name', e.target.value)} style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                            <input type="text" placeholder="मात्रा" value={mat.qty} onChange={(e) => handleMaterialFieldChange(index, 'qty', e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                            <input type="text" placeholder="दाम (₹)" value={mat.price} onChange={(e) => handleMaterialFieldChange(index, 'price', e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  )}
 
-                  {categoryType !== 'Civil Work' && (
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                      <div style={{ flex: 1 }}>
-                        <label>Voltage:</label>
-                        <input type="text" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    <div style={{ marginBottom: '10px' }}>
+                      <label>विशेष नोट / पेंडेंसी का कारण (Note):</label>
+                      <input type="text" placeholder="जैसे: Part Not Available..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+
+                    <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                        <label style={{ fontWeight: 'bold' }}>कस्टमर सिग्नेचर:</label>
+                        <button type="button" onClick={clearSignature} style={{ padding: '3px 8px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>रीसेट</button>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <label>Ampere:</label>
-                        <input type="text" placeholder="जैसे 5.2A" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                      </div>
+                      <canvas ref={canvasRef} width={300} height={120} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ border: '1px dashed #007bff', background: '#fafafa', borderRadius: '4px', width: '100%', touchAction: 'none' }} />
                     </div>
-                  )}
 
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>Work Done (किया गया काम का विवरण):</label>
-                    <input type="text" placeholder="जैसे Installation / Repair / Wiring Done" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    <button onClick={handleJobSubmit} disabled={uploading} style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      {uploading ? "सेव हो रहा है..." : "जॉब शीट सबमिट करें"}
+                    </button>
                   </div>
 
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ fontWeight: 'bold' }}>मटेरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
-                    <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {materials.map((mat, index) => (
-                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: 'bold', width: '20px', color: '#555' }}>{index + 1}.</span>
-                          <input 
-                            type="text" 
-                            placeholder="सामान का नाम" 
-                            value={mat.name} 
-                            onChange={(e) => handleMaterialFieldChange(index, 'name', e.target.value)} 
-                            style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                          />
-                          <input 
-                            type="text" 
-                            placeholder="मात्रा (Qty)" 
-                            value={mat.qty} 
-                            onChange={(e) => handleMaterialFieldChange(index, 'qty', e.target.value)} 
-                            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                          />
-                          <input 
-                            type="text" 
-                            placeholder="दाम (₹)" 
-                            value={mat.price} 
-                            onChange={(e) => handleMaterialFieldChange(index, 'price', e.target.value)} 
-                            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>विशेष नोट (Note):</label>
-                    <input type="text" placeholder="कोई अतिरिक्त जानकारी या निर्देश..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
-
-                  <div style={{ marginBottom: '15px' }}>
-                    <label>कस्टमर फीडबैक (Customer Feedback):</label>
-                    <input type="text" placeholder="ग्राहक की प्रतिक्रिया लिखें..." value={customerFeedback} onChange={(e) => setCustomerFeedback(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
-
-                  <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                    <label style={{ fontWeight: 'bold' }}>साइट की फोटो जोड़ें:</label><br />
-                    <input type="file" accept="image/*" onChange={handleFileChange} style={{ marginTop: '5px' }} />
-                    {imageFile && <p style={{ fontSize: '12px', color: 'green', margin: '5px 0 0 0' }}>फोटो चुनी गई है!</p>}
-                  </div>
-
-                  <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                      <label style={{ fontWeight: 'bold' }}>कस्टमर सिग्नेचर (Customer Signature):</label>
-                      <button type="button" onClick={clearSignature} style={{ padding: '3px 8px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>रीसेट (Clear)</button>
-                    </div>
-                    <p style={{ fontSize: '11px', color: '#666', margin: '0 0 5px 0' }}>नीचे दिए गए बॉक्स पर उंगली या माउस से साइन करें:</p>
-                    <canvas 
-                      ref={canvasRef} 
-                      width={320} 
-                      height={130} 
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
-                      onTouchStart={startDrawing}
-                      onTouchMove={draw}
-                      onTouchEnd={stopDrawing}
-                      style={{ border: '1px dashed #007bff', background: '#fafafa', borderRadius: '4px', cursor: 'crosshair', width: '100%', touchAction: 'none' }}
-                    />
-                  </div>
-
-                  <button onClick={handleJobSubmit} disabled={uploading} style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    {uploading ? "लोकेशन और डेटा सेव हो रहा है..." : "जॉब शीट सबमिट करें"}
-                  </button>
-                </div>
-
-                {/* 2. OLD JOB SECTION */}
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#1e40af', marginTop: '0' }}>2. Old Job (पूर्ण हो चुकी जॉब्स - टेबल)</h4>
-                  <div style={{ overflowX: 'auto', background: '#fff', borderRadius: '6px', padding: '5px' }}>
-                    {jobSheets.filter(i => i.status === 'Completed').length === 0 ? (
-                      <p style={{ fontSize: '13px', color: '#666', padding: '10px' }}>कोई पुराना रिकॉर्ड उपलब्ध नहीं है।</p>
-                    ) : (
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                        <thead>
-                          <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
-                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Job Sheet No</th>
-                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Category</th>
-                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Customer</th>
-                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Staff</th>
-                            <th style={{ padding: '8px', border: '1px solid #e2e8f0' }}>Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {jobSheets.filter(i => i.status === 'Completed').map((item, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '8px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#2563eb' }}>{item.jobSheetNo}</td>
-                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.categoryType}</td>
-                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.customerName} ({item.customerPhone})</td>
-                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.staffName}</td>
-                              <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.date}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3. PENDING JOB SECTION */}
-                <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#854d0e', marginTop: '0' }}>3. Pending Job (लंबित शिकायतें)</h4>
-                  {jobSheets.filter(i => i.status === 'Pending').length === 0 ? (
-                    <p style={{ fontSize: '13px', color: '#666' }}>कोई पेंडिंग शिकायत नहीं है।</p>
+                  {/* List of unassigned online complaints from customers */}
+                  <h5>ऑनलाइन दर्ज नई शिकायतें (क्लिक करके भरें):</h5>
+                  {jobSheets.filter(i => i.status === 'Pending' && i.staffName === 'Not Assigned Yet').length === 0 ? (
+                    <p style={{ fontSize: '13px', color: '#666' }}>अभी कोई नई ऑनलाइन शिकायत नहीं है। आप ऊपर सीधे फॉर्म भरकर भी नई जॉब जोड़ सकते हैं।</p>
                   ) : (
-                    jobSheets.filter(i => i.status === 'Pending').map((item, idx) => (
-                      <div key={idx} style={{ background: '#fff', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fde047', fontSize: '13px' }}>
-                        <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#854d0e' }}>Job Sheet No: {item.jobSheetNo}</p>
-                        <p style={{ margin: '0 0 4px 0' }}><b>Category:</b> {item.categoryType} ({item.productType})</p>
-                        <p style={{ margin: '0 0 4px 0' }}><b>Customer Ph:</b> {item.customerPhone}</p>
-                        <p style={{ margin: '0' }}><b>Desc:</b> {item.desc}</p>
+                    jobSheets.filter(i => i.status === 'Pending' && i.staffName === 'Not Assigned Yet').map((comp, idx) => (
+                      <div key={idx} style={{ background: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #86efac', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <p style={{ margin: '0 0 3px 0', fontWeight: 'bold', color: '#166534', fontSize: '13px' }}>{comp.jobSheetNo} - {comp.customerPhone}</p>
+                          <p style={{ margin: '0', fontSize: '12px', color: '#4b5563' }}><b>विवरण:</b> {comp.desc}</p>
+                        </div>
+                        <button onClick={() => handleFillComplaintToNewJob(comp)} style={{ padding: '6px 12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
+                          जॉब भरें ➡️
+                        </button>
                       </div>
                     ))
                   )}
                 </div>
+              )}
 
-              </div>
+              {/* 2. PENDING JOB TAB */}
+              {staffSubTab === 'pending' && (
+                <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#854d0e', marginTop: '0' }}>⏳ Pending Jobs (लंबित कार्य)</h4>
+                  {jobSheets.filter(i => i.status === 'Pending').length === 0 ? (
+                    <p style={{ fontSize: '13px', color: '#666' }}>कोई पेंडिंग जॉब नहीं है।</p>
+                  ) : (
+                    jobSheets.filter(i => i.status === 'Pending').map((item, idx) => (
+                      <div key={idx} style={{ background: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fde047', fontSize: '13px' }}>
+                        <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#854d0e' }}>Job No: {item.jobSheetNo} | Phone: {item.customerPhone}</p>
+                        <p style={{ margin: '0 0 4px 0' }}><b>Product:</b> {item.product}</p>
+                        <p style={{ margin: '0 0 8px 0' }}><b>Desc:</b> {item.desc}</p>
+                        <button onClick={() => handleFillComplaintToNewJob(item)} style={{ padding: '5px 10px', background: '#eab308', color: '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>
+                          इस जॉब को पूरा करें / अपडेट करें
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* 3. PART PENDING JOB TAB */}
+              {staffSubTab === 'partPending' && (
+                <div style={{ background: '#ffedd5', border: '1px solid #fed7aa', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#9a3412', marginTop: '0' }}>⚙️ Part Pending Jobs (स्पेयर पार्ट पेंडिंग)</h4>
+                  <p style={{ fontSize: '12px', color: '#7c2d12', marginBottom: '10px' }}>ये वे जॉब्स हैं जो स्पेयर पार्ट उपलब्ध न होने के कारण रुके हुए हैं। यह डेटा ऑफिस एडमिन पैनल पर भी दिखेगा।</p>
+                  {jobSheets.filter(i => i.status === 'Part Pending').length === 0 ? (
+                    <p style={{ fontSize: '13px', color: '#666' }}>कोई पार्ट पेंडिंग जॉब उपलब्ध नहीं है।</p>
+                  ) : (
+                    jobSheets.filter(i => i.status === 'Part Pending').map((item, idx) => (
+                      <div key={idx} style={{ background: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fdba74', fontSize: '13px' }}>
+                        <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#9a3412' }}>Job No: {item.jobSheetNo} | Customer: {item.customerPhone}</p>
+                        <p style={{ margin: '0 0 4px 0' }}><b>पार्ट नोट:</b> {item.note}</p>
+                        <button onClick={() => handleFillComplaintToNewJob(item)} style={{ padding: '5px 10px', background: '#f97316', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>
+                          पार्ट आने पर पूरा करें
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
             </div>
           )}
         </div>
       )}
 
+      {/* ADMIN & OFFICE STAFF PANEL */}
       {activeTab === 'admin' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-          <h3>एडमिन पैनल (All Records)</h3>
-          <p>कुल दर्ज जॉब-शीट्स / शिकायतें: <b>{jobSheets.length}</b></p>
-          <hr />
-          {jobSheets.length === 0 ? (
-            <p style={{ color: '#777' }}>अभी तक कोई रिकॉर्ड नहीं है।</p>
-          ) : (
-            jobSheets.map((item, index) => (
-              <div key={index} style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '10px', borderLeft: '4px solid #ffc107' }}>
-                <p style={{ margin: '0 0 5px 0' }}><b>जॉब शीट नं:</b> {item.jobSheetNo} | <b>ग्राहक:</b> {item.customerName} ({item.customerPhone})</p>
-                <p style={{ margin: '0 0 5px 0' }}><b>कार्य/प्रोडक्ट:</b> {item.product} | <b>विवरण:</b> {item.desc}</p>
-                
-                {item.categoryType === 'HVAC & Refrigeration' && (
-                  <>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>🏠 <b>Indoor:</b> {item.indoorModel} ({item.indoorSerial}) | ☀️ <b>Outdoor:</b> {item.outdoorModel} ({item.outdoorSerial})</p>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>⚡ <b>Motor:</b> {item.motorType} | 🌀 <b>Compressor:</b> {item.compressorModel} ({item.compressorSerial})</p>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📐 <b>स्टैंड:</b> {item.standType} | 🛡️ <b>स्टेबलाइजर:</b> {item.stabilizer}</p>
-                  </>
-                )}
-                
-                {item.materials && item.materials.length > 0 && (
-                  <div style={{ margin: '5px 0', fontSize: '13px', background: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                    <p style={{ margin: '0 0 2px 0', fontWeight: 'bold' }}>📦 <b>मटेरियल इस्तेमाल:</b></p>
-                    {item.materials.map((m, idx) => (
-                      <p key={idx} style={{ margin: '0 0 2px 10px' }}>• {m.name} (मात्रा: {m.qty}, दाम: ₹{m.price})</p>
-                    ))}
-                  </div>
-                )}
-
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📝 <b>नोट:</b> {item.note}</p>
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px', color: '#333' }}>👤 <b>स्टाफ:</b> {item.staffName} | 📍 <b>GPS लोकेशन:</b> {item.location}</p>
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>💬 <b>फीडबैक:</b> {item.feedback}</p>
-                
-                <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
-                  {item.photoURL && <img src={item.photoURL} alt="Site" style={{ width: '80px', borderRadius: '4px' }} />}
-                  {item.signatureURL && <img src={item.signatureURL} alt="Sign" style={{ width: '80px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }} />}
+          {!adminLoggedIn ? (
+            <div>
+              <h3>🔒 ऑफिस स्टाफ & एडमिन लॉगिन</h3>
+              <p style={{ fontSize: '13px', color: '#666' }}>पेंडिंग और पार्ट पेंडिंग जॉब्स देखने के लिए ऑफिस क्रेडेंशियल्स दर्ज करें:<br/><b>(यूजरनेम: admin या manager, पासवर्ड: कोई भी 4+ अंक)</b></p>
+              <form onSubmit={handleAdminLogin}>
+                <div style={{ marginBottom: '10px' }}>
+                  <label>यूजरनेम (Username):</label>
+                  <input type="text" placeholder="admin या manager" value={adminUser} onChange={(e) => setAdminUser(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
                 </div>
-                <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: '#888' }}>दिनांक: {item.date}</p>
+                <div style={{ marginBottom: '15px' }}>
+                  <label>पासवर्ड (Password):</label>
+                  <input type="password" placeholder="पासवर्ड दर्ज करें" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
+                </div>
+                <button type="submit" style={{ width: '100%', padding: '12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>लॉगिन करें</button>
+              </form>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ color: '#b45309', margin: '0' }}>📊 ऑफिस कंट्रोल पैनल (Office Staff View)</h4>
+                <button onClick={() => setAdminLoggedIn(false)} style={{ padding: '5px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>लॉग आउट</button>
               </div>
-            ))
+              <hr style={{ margin: '15px 0' }} />
+
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <div style={{ flex: 1, background: '#fef9c3', padding: '10px', borderRadius: '6px', textAlign: 'center', border: '1px solid #fef08a' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#854d0e' }}>Pending Jobs</p>
+                  <h3 style={{ margin: '5px 0 0 0', color: '#b45309' }}>{jobSheets.filter(i => i.status === 'Pending').length}</h3>
+                </div>
+                <div style={{ flex: 1, background: '#ffedd5', padding: '10px', borderRadius: '6px', textAlign: 'center', border: '1px solid #fed7aa' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#9a3412' }}>Part Pending Jobs</p>
+                  <h3 style={{ margin: '5px 0 0 0', color: '#c2410c' }}>{jobSheets.filter(i => i.status === 'Part Pending').length}</h3>
+                </div>
+                <div style={{ flex: 1, background: '#f0fdf4', padding: '10px', borderRadius: '6px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#166534' }}>Total Records</p>
+                  <h3 style={{ margin: '5px 0 0 0', color: '#15803d' }}>{jobSheets.length}</h3>
+                </div>
+              </div>
+
+              <h5 style={{ color: '#9a3412', marginTop: '20px' }}>⚙️ स्पेयर पार्ट पेंडिंग जॉब्स (Office Tracking):</h5>
+              {jobSheets.filter(i => i.status === 'Part Pending').length === 0 ? (
+                <p style={{ fontSize: '13px', color: '#666' }}>वर्तमान में कोई भी जॉब स्पेयर पार्ट की वजह से पेंडिंग नहीं है।</p>
+              ) : (
+                jobSheets.filter(i => i.status === 'Part Pending').map((item, idx) => (
+                  <div key={idx} style={{ background: '#fff7ed', padding: '12px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #fdba74', fontSize: '13px' }}>
+                    <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#9a3412' }}><b>Job No:</b> {item.jobSheetNo} | <b>Customer Ph:</b> {item.customerPhone}</p>
+                    <p style={{ margin: '0 0 4px 0' }}><b>Product:</b> {item.product} | <b>Staff:</b> {item.staffName}</p>
+                    <p style={{ margin: '0 0 4px 0', color: '#b91c1c' }}><b>पेंडेंसी कारण / नोट:</b> {item.note}</p>
+                    <p style={{ margin: '0', fontSize: '11px', color: '#666' }}>GPS लोकेशन: {item.location}</p>
+                  </div>
+                ))
+              )}
+
+              <h5 style={{ color: '#b45309', marginTop: '25px' }}>📋 सभी जनरल पेंडिंग जॉब्स (General Pending):</h5>
+              {jobSheets.filter(i => i.status === 'Pending').length === 0 ? (
+                <p style={{ fontSize: '13px', color: '#666' }}>कोई जनरल पेंडिंग जॉब नहीं है।</p>
+              ) : (
+                jobSheets.filter(i => i.status === 'Pending').map((item, idx) => (
+                  <div style={{ background: '#fffdf0', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fef08a', fontSize: '13px' }} key={idx}>
+                    <p style={{ margin: '0 0 3px 0', fontWeight: 'bold' }}>{item.jobSheetNo} - {item.customerName} ({item.customerPhone})</p>
+                    <p style={{ margin: '0' }}>विवरण: {item.desc}</p>
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
       )}
