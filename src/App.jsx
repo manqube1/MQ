@@ -48,7 +48,10 @@ export default function App() {
 
   const [custPhone, setCustPhone] = useState('');
   const [custLoggedIn, setCustLoggedIn] = useState(false);
-  const [productType, setProductType] = useState('Split AC');
+
+  // कॉमन कैटेगरी और सब-ऑप्शन स्टेट
+  const [categoryType, setCategoryType] = useState('HVAC & Refrigeration');
+  const [productType, setProductType] = useState('Split / Window AC');
   const [problemDesc, setProblemDesc] = useState('');
 
   const [staffName, setStaffName] = useState('');
@@ -60,7 +63,7 @@ export default function App() {
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
   
-  // नए फ़ील्ड्स
+  // HVAC विशिष्ट फील्ड्स
   const [indoorModel, setIndoorModel] = useState('');
   const [indoorSerial, setIndoorSerial] = useState('');
   const [outdoorModel, setOutdoorModel] = useState('');
@@ -68,14 +71,14 @@ export default function App() {
   const [motorType, setMotorType] = useState('AC');
   const [compressorModel, setCompressorModel] = useState('');
   const [compressorSerial, setCompressorSerial] = useState('');
-
-  const [workDone, setWorkDone] = useState('');
   const [sectionPressure, setSectionPressure] = useState('');
   const [roomTemp, setRoomTemp] = useState('');
   const [voltage, setVoltage] = useState('230V');
   const [ampere, setAmpere] = useState('');
   const [stabilizer, setStabilizer] = useState('OK');
   const [standType, setStandType] = useState('Wall Type');
+
+  const [workDone, setWorkDone] = useState('');
   
   const [materials, setMaterials] = useState([
     { name: '', qty: '', price: '' },
@@ -131,6 +134,14 @@ export default function App() {
     setCustLoggedIn(true);
   };
 
+  const handleCategoryChange = (e) => {
+    const cat = e.target.value;
+    setCategoryType(cat);
+    if (cat === 'HVAC & Refrigeration') setProductType('Split / Window AC');
+    else if (cat === 'Electrical Work') setProductType('House Wiring & Panel');
+    else if (cat === 'Civil Work') setProductType('Flooring & Tiling');
+  };
+
   const handleNewComplaint = (e) => {
     e.preventDefault();
     const now = new Date();
@@ -146,7 +157,7 @@ export default function App() {
       customerName: 'Customer',
       customerPhone: custPhone,
       customerAddress: 'N/A',
-      product: productType,
+      product: [${categoryType}] ${productType},
       desc: problemDesc,
       status: 'Pending',
       date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
@@ -155,6 +166,8 @@ export default function App() {
       location: 'Online Booking',
       photoURL: '',
       signatureURL: '',
+      categoryType,
+      productType,
       indoorModel: '-',
       indoorSerial: '-',
       outdoorModel: '-',
@@ -278,7 +291,9 @@ export default function App() {
         customerName: jobCustName,
         customerPhone: jobCustPhone,
         customerAddress: jobCustAddress,
-        product: indoorModel ? 'AC (Indoor: ' + indoorModel + ')' : 'Split/Window AC',
+        categoryType,
+        productType,
+        product: [${categoryType}] ${productType},
         desc: workDone || 'General Service / Repair',
         status: 'Completed',
         date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
@@ -294,12 +309,12 @@ export default function App() {
         motorType: motorType,
         compressorModel: compressorModel || '-',
         compressorSerial: compressorSerial || '-',
-        sectionPressure,
-        roomTemp,
-        voltage,
-        ampere,
-        stabilizer,
-        standType,
+        sectionPressure: categoryType === 'HVAC & Refrigeration' ? sectionPressure : '-',
+        roomTemp: categoryType === 'HVAC & Refrigeration' ? roomTemp : '-',
+        voltage: categoryType !== 'Civil Work' ? voltage : '-',
+        ampere: categoryType !== 'Civil Work' ? ampere : '-',
+        stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
+        standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
         materials: filteredMaterials,
         note: jobNote || '-',
         feedback: customerFeedback || 'Good Service'
@@ -401,17 +416,54 @@ export default function App() {
               <h5>नई शिकायत दर्ज करें</h5>
               <form onSubmit={handleNewComplaint}>
                 <div style={{ marginBottom: '10px' }}>
-                  <label>समस्या का प्रकार / प्रोडक्ट:</label><br />
-                  <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                    <option value="Split AC">Split AC / Window AC</option>
-                    <option value="Fridge">Fridge (फ्रिज)</option>
-                    <option value="Stabilizer">Stabilizer (स्टेबलाइजर)</option>
-                    <option value="Electrical">Electrical Wiring/Panel</option>
+                  <label>मुख्य श्रेणी (Category):</label><br />
+                  <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                    <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
+                    <option value="Electrical Work">Electrical Work (वायरिंग, फैन, लाइट आदि)</option>
+                    <option value="Civil Work">Civil Work (सिविल और निर्माण कार्य)</option>
                   </select>
                 </div>
+
+                <div style={{ marginBottom: '10px' }}>
+                  <label>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label><br />
+                  <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                    {categoryType === 'HVAC & Refrigeration' && (
+                      <>
+                        <option value="Split / Window AC">Split / Window AC</option>
+                        <option value="Ductable AC">Ductable AC</option>
+                        <option value="VRV / VRF AC">VRV / VRF AC</option>
+                        <option value="Cassette AC">Cassette AC</option>
+                        <option value="Tower AC">Tower AC</option>
+                        <option value="Air Cooler">Air Cooler (डेजर्ट कूलर)</option>
+                        <option value="Room Cooler">Room Cooler</option>
+                        <option value="Fridge">Fridge (फ्रिज)</option>
+                        <option value="Deep Freezer">Deep Freezer</option>
+                        <option value="Stabilizer">Stabilizer (स्टेबलाइजर)</option>
+                      </>
+                    )}
+                    {categoryType === 'Electrical Work' && (
+                      <>
+                        <option value="House Wiring & Panel">House Wiring & Main Panel</option>
+                        <option value="Fan & Light">Fan & Light Installation/Repair</option>
+                        <option value="Exhaust Fan">Exhaust Fan</option>
+                        <option value="Fresh Air Fan">Fresh Air Fan</option>
+                        <option value="Earthing Work">Earthing Work</option>
+                      </>
+                    )}
+                    {categoryType === 'Civil Work' && (
+                      <>
+                        <option value="Flooring & Tiling">Flooring & Tiling Work</option>
+                        <option value="Masonry & Plaster">Masonry & Plaster Work</option>
+                        <option value="Waterproofing">Waterproofing</option>
+                        <option value="Minor Repairs / Painting">Minor Repairs & Painting</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
                 <div style={{ marginBottom: '10px' }}>
                   <label>समस्या का विवरण (Problem Description):</label><br />
-                  <textarea value={problemDesc} onChange={(e) => setProblemDesc(e.target.value)} rows="3" placeholder="समस्या क्या आ रही है लिखें..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
+                  <textarea value={problemDesc} onChange={(e) => setProblemDesc(e.target.value)} rows="3" placeholder="समस्या क्या आ रही है विस्तार से लिखें..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
                 </div>
                 <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>शिकायत सबमिट करें</button>
               </form>
@@ -430,11 +482,20 @@ export default function App() {
                       
                       {item.status === 'Completed' && (
                         <div style={{ background: '#e2e8f0', padding: '8px', borderRadius: '4px', marginTop: '6px', fontSize: '12px' }}>
-                          <p style={{ margin: '0 0 2px 0' }}>🏠 <b>Indoor Model:</b> {item.indoorModel} | <b>Serial:</b> {item.indoorSerial}</p>
-                          <p style={{ margin: '0 0 2px 0' }}>☀️ <b>Outdoor Model:</b> {item.outdoorModel} | <b>Serial:</b> {item.outdoorSerial}</p>
-                          <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Motor Type:</b> {item.motorType} | 🌀 <b>Compressor M/S:</b> {item.compressorModel} / {item.compressorSerial}</p>
-                          <p style={{ margin: '0 0 2px 0' }}>🌡️ <b>Room Temp:</b> {item.roomTemp} | 🔵 <b>Pressure:</b> {item.sectionPressure}</p>
-                          <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere} | 🛡️ <b>Stabilizer:</b> {item.stabilizer} | 📐 <b>Stand:</b> {item.standType}</p>
+                          {item.categoryType === 'HVAC & Refrigeration' && (
+                            <>
+                              <p style={{ margin: '0 0 2px 0' }}>🏠 <b>Indoor Model:</b> {item.indoorModel} | <b>Serial:</b> {item.indoorSerial}</p>
+                              <p style={{ margin: '0 0 2px 0' }}>☀️ <b>Outdoor Model:</b> {item.outdoorModel} | <b>Serial:</b> {item.outdoorSerial}</p>
+                              <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Motor Type:</b> {item.motorType} | 🌀 <b>Compressor M/S:</b> {item.compressorModel} / {item.compressorSerial}</p>
+                              <p style={{ margin: '0 0 2px 0' }}>🌡️ <b>Room Temp:</b> {item.roomTemp} | 🔵 <b>Pressure:</b> {item.sectionPressure}</p>
+                              <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere} | 🛡️ <b>Stabilizer:</b> {item.stabilizer} | 📐 <b>Stand:</b> {item.standType}</p>
+                            </>
+                          )}
+                          {item.categoryType === 'Electrical Work' && (
+                            <>
+                              <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere}</p>
+                            </>
+                          )}
                           
                           {item.materials && item.materials.length > 0 && (
                             <div style={{ marginTop: '4px', borderTop: '1px dashed #cbd5e1', paddingTop: '4px' }}>
@@ -514,94 +575,148 @@ export default function App() {
                 <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
-              {/* इंडोर यूनिट मॉडल और सीरियल नंबर */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Indoor Model No:</label>
-                  <input type="text" placeholder="इंडोर मॉडल" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Indoor Serial No:</label>
-                  <input type="text" placeholder="इंडोर सीरियल नंबर" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-              </div>
-
-              {/* आउटडोर यूनिट मॉडल और सीरियल नंबर */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Outdoor Model No:</label>
-                  <input type="text" placeholder="आउटडोर मॉडल" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Outdoor Serial No:</label>
-                  <input type="text" placeholder="आउटडोर सीरियल नंबर" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-              </div>
-
-              {/* मोटर टाइप (AC/DC) और कंप्रेसर मॉडल/सीरियल */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Motor Type:</label>
-                  <select value={motorType} onChange={(e) => setMotorType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                    <option value="AC">AC Motor</option>
-                    <option value="DC">DC Motor</option>
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Compressor Model:</label>
-                  <input type="text" placeholder="कंप्रेसर मॉडल" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
+              {/* स्टाफ के लिए भी तीनों मुख्य श्रेणियां */}
+              <div style={{ marginBottom: '10px' }}>
+                <label>मुख्य श्रेणी (Category):</label><br />
+                <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                  <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
+                  <option value="Electrical Work">Electrical Work (वायरिंग, फैन, लाइट आदि)</option>
+                  <option value="Civil Work">Civil Work (सिविल और निर्माण कार्य)</option>
+                </select>
               </div>
 
               <div style={{ marginBottom: '10px' }}>
-                <label>Compressor Serial No:</label>
-                <input type="text" placeholder="कंप्रेसर सीरियल नंबर" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                <label>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label><br />
+                <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                  {categoryType === 'HVAC & Refrigeration' && (
+                    <>
+                      <option value="Split / Window AC">Split / Window AC</option>
+                      <option value="Ductable AC">Ductable AC</option>
+                      <option value="VRV / VRF AC">VRV / VRF AC</option>
+                      <option value="Cassette AC">Cassette AC</option>
+                      <option value="Tower AC">Tower AC</option>
+                      <option value="Air Cooler">Air Cooler</option>
+                      <option value="Room Cooler">Room Cooler</option>
+                      <option value="Fridge">Fridge</option>
+                      <option value="Deep Freezer">Deep Freezer</option>
+                      <option value="Stabilizer">Stabilizer</option>
+                    </>
+                  )}
+                  {categoryType === 'Electrical Work' && (
+                    <>
+                      <option value="House Wiring & Panel">House Wiring & Main Panel</option>
+                      <option value="Fan & Light">Fan & Light</option>
+                      <option value="Exhaust Fan">Exhaust Fan</option>
+                      <option value="Fresh Air Fan">Fresh Air Fan</option>
+                      <option value="Earthing Work">Earthing Work</option>
+                    </>
+                  )}
+                  {categoryType === 'Civil Work' && (
+                    <>
+                      <option value="Flooring & Tiling">Flooring & Tiling</option>
+                      <option value="Masonry & Plaster">Masonry & Plaster</option>
+                      <option value="Waterproofing">Waterproofing</option>
+                      <option value="Minor Repairs / Painting">Minor Repairs & Painting</option>
+                    </>
+                  )}
+                </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Section Pressure:</label>
-                  <input type="text" placeholder="जैसे 65" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Room Temp:</label>
-                  <input type="text" placeholder="जैसे 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-              </div>
+              {/* HVAC श्रेणी के लिए विशेष फील्ड्स (इंडोर, आउटडोर, कंप्रेसर आदि) */}
+              {categoryType === 'HVAC & Refrigeration' && (
+                <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #e2e8f0' }}>
+                  <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1a365d', fontSize: '13px' }}>HVAC यूनिट विवरण:</p>
+                  
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Indoor Model No:</label>
+                      <input type="text" placeholder="इंडोर मॉडल" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Indoor Serial No:</label>
+                      <input type="text" placeholder="इंडोर सीरियल नंबर" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Voltage:</label>
-                  <input type="text" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Ampere:</label>
-                  <input type="text" placeholder="जैसे 5.2A" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                </div>
-              </div>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Outdoor Model No:</label>
+                      <input type="text" placeholder="आउटडोर मॉडल" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Outdoor Serial No:</label>
+                      <input type="text" placeholder="आउटडोर सीरियल नंबर" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Stabilizer Status:</label>
-                  <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                    <option value="OK">OK</option>
-                    <option value="High/Low Cut">High/Low Cut</option>
-                    <option value="Not Available">Not Available</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Motor Type:</label>
+                      <select value={motorType} onChange={(e) => setMotorType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                        <option value="AC">AC Motor</option>
+                        <option value="DC">DC Motor</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Compressor Model:</label>
+                      <input type="text" placeholder="कंप्रेसर मॉडल" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '8px' }}>
+                    <label style={{ fontSize: '12px' }}>Compressor Serial No:</label>
+                    <input type="text" placeholder="कंप्रेसर सीरियल नंबर" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Section Pressure:</label>
+                      <input type="text" placeholder="जैसे 65" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Room Temp:</label>
+                      <input type="text" placeholder="जैसे 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Stabilizer Status:</label>
+                      <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                        <option value="OK">OK</option>
+                        <option value="High/Low Cut">High/Low Cut</option>
+                        <option value="Not Available">Not Available</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px' }}>Stand Type:</label>
+                      <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '3px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                        <option value="Wall Type">Wall Type</option>
+                        <option value="Floor Type">Floor Type</option>
+                        <option value="MS Stand">MS Stand</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label>Stand Type:</label>
-                  <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                    <option value="Wall Type">Wall Type</option>
-                    <option value="Floor Type">Floor Type</option>
-                    <option value="MS Stand">MS Stand</option>
-                  </select>
+              )}
+
+              {/* इलेक्ट्रिकल और एचवीएसी के लिए वोल्टेज और एम्पीयर */}
+              {categoryType !== 'Civil Work' && (
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Voltage:</label>
+                    <input type="text" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Ampere:</label>
+                    <input type="text" placeholder="जैसे 5.2A" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ marginBottom: '10px' }}>
-                <label>Work Done (किया गया काम):</label>
-                <input type="text" placeholder="जैसे A.C. Installation / Repair" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                <label>Work Done (किया गया काम का विवरण):</label>
+                <input type="text" placeholder="जैसे Installation / Repair / Wiring Done" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
               <div style={{ marginBottom: '15px' }}>
@@ -692,10 +807,15 @@ export default function App() {
             jobSheets.map((item, index) => (
               <div key={index} style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '10px', borderLeft: '4px solid #ffc107' }}>
                 <p style={{ margin: '0 0 5px 0' }}><b>जॉब शीट नं:</b> {item.jobSheetNo} | <b>ग्राहक:</b> {item.customerName} ({item.customerPhone})</p>
-                <p style={{ margin: '0 0 5px 0' }}><b>काम:</b> {item.desc}</p>
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>🏠 <b>Indoor:</b> {item.indoorModel} ({item.indoorSerial}) | ☀️ <b>Outdoor:</b> {item.outdoorModel} ({item.outdoorSerial})</p>
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>⚡ <b>Motor:</b> {item.motorType} | 🌀 <b>Compressor:</b> {item.compressorModel} ({item.compressorSerial})</p>
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📐 <b>स्टैंड:</b> {item.standType} | 🛡️ <b>स्टेबलाइजर:</b> {item.stabilizer}</p>
+                <p style={{ margin: '0 0 5px 0' }}><b>कार्य/प्रोडक्ट:</b> {item.product} | <b>विवरण:</b> {item.desc}</p>
+                
+                {item.categoryType === 'HVAC & Refrigeration' && (
+                  <>
+                    <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>🏠 <b>Indoor:</b> {item.indoorModel} ({item.indoorSerial}) | ☀️ <b>Outdoor:</b> {item.outdoorModel} ({item.outdoorSerial})</p>
+                    <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>⚡ <b>Motor:</b> {item.motorType} | 🌀 <b>Compressor:</b> {item.compressorModel} ({item.compressorSerial})</p>
+                    <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📐 <b>स्टैंड:</b> {item.standType} | 🛡️ <b>स्टेबलाइजर:</b> {item.stabilizer}</p>
+                  </>
+                )}
                 
                 {item.materials && item.materials.length > 0 && (
                   <div style={{ margin: '5px 0', fontSize: '13px', background: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
