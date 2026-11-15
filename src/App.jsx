@@ -62,8 +62,8 @@ export default function App() {
   const [currentStaffName, setCurrentStaffName] = useState('');
   const [staffGpsLocation, setStaffGpsLocation] = useState('Fetching GPS...');
   
-  // Staff Sub-tabs: 'new', 'pending', 'partPending'
-  const [staffSubTab, setStaffSubTab] = useState('new');
+  // Staff Sub-tabs: 'menu' (3 options main screen), 'new', 'pending', 'partPending'
+  const [staffSubTab, setStaffSubTab] = useState('menu');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   // Admin / Office Staff Login State
@@ -225,6 +225,7 @@ export default function App() {
     if (enteredOtp === generatedOtp) {
       setCurrentStaffName('Staff (' + staffPhoneInput + ')');
       setStaffLoggedIn(true);
+      setStaffSubTab('menu'); // Reset to 3 options menu on login
       setOtpStep(1);
       setEnteredOtp('');
 
@@ -233,7 +234,6 @@ export default function App() {
           (position) => {
             const lat = position.coords.latitude.toFixed(4);
             const lng = position.coords.longitude.toFixed(4);
-            // Fixed using normal string concatenation to avoid syntax issues
             setStaffGpsLocation('Lat: ' + lat + ', Lng: ' + lng + ' (GPS Active)');
           },
           () => {
@@ -251,12 +251,25 @@ export default function App() {
 
   const handleAdminLogin = (e) => {
     e.preventDefault();
-    if ((adminUser === 'admin' || adminUser === 'manager' || adminUser === 'office') && adminPass.length >= 4) {
+    if (adminUser === 'ADMIN' && adminPass === '123456789') {
       setAdminLoggedIn(true);
-      alert('ऑफिस स्टाफ लॉगिन सफल!');
+      alert('एडमिन लॉगिन सफल!');
     } else {
-      alert('गलत यूजरनेम या पासवर्ड! (यूजरनेम: admin या manager, पासवर्ड कम से कम 4 अंक)');
+      alert('गलत यूजरनेम या पासवर्ड!');
     }
+  };
+
+  const handleOpenBlankNewJob = () => {
+    setSelectedComplaint(null);
+    setJobCustName('');
+    setJobCustPhone('');
+    setJobCustAddress('');
+    setWorkDone('');
+    setJobNote('');
+    setCategoryType('HVAC & Refrigeration');
+    setProductType('Split / Window AC');
+    setJobStatusType('Completed');
+    setStaffSubTab('new');
   };
 
   const handleFillComplaintToNewJob = (comp) => {
@@ -267,6 +280,7 @@ export default function App() {
     setCategoryType(comp.categoryType || 'HVAC & Refrigeration');
     setProductType(comp.productType || 'Split / Window AC');
     setWorkDone(comp.desc || '');
+    setJobNote(comp.note !== '-' ? comp.note : '');
     setStaffSubTab('new');
   };
 
@@ -373,7 +387,7 @@ export default function App() {
         setJobSheets([updatedRecord, ...filteredList]);
 
         setUploading(false);
-        alert('जॉब शीट सफलताપूर्वक सेव हो गई!\nजॉब शीट नंबर: ' + jobSheetNo);
+        alert('जॉब शीट सफलतापूर्वक सेव हो गई!\nजॉब शीट नंबर: ' + jobSheetNo);
         
         setSelectedComplaint(null);
         setJobCustName('');
@@ -394,6 +408,7 @@ export default function App() {
         setImageFile(null);
         setMaterials([{ name: '', qty: '', price: '' }, { name: '', qty: '', price: '' }]);
         clearSignature();
+        setStaffSubTab('menu');
 
       } catch (error) {
         console.error("Upload error:", error);
@@ -415,7 +430,7 @@ export default function App() {
           style={{ height: '70px', width: '70px', objectFit: 'contain', borderRadius: '12px', marginBottom: '8px' }} 
         />
         <h1 style={{ margin: '0', color: '#1a365d', fontSize: '26px', fontWeight: '800', letterSpacing: '1px' }}>MANQUBE</h1>
-        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.[span_1](start_span)[span_1](end_span)</p>
+        <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '12px', fontWeight: '600' }}>We Build. Your Trust.[span_0](start_span)[span_0](end_span)</p>
         <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '11px' }}>Hindustan Refrigeration Service</p>
       </div>
 
@@ -600,31 +615,49 @@ export default function App() {
               </div>
               <hr style={{ margin: '15px 0' }} />
 
+              {/* THREE MAIN OPTIONS BAR FOR STAFF UPON LOGIN */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                 <button 
                   onClick={() => setStaffSubTab('new')} 
-                  style={{ flex: 1, padding: '10px 5px', background: staffSubTab === 'new' ? '#166534' : '#dcfce7', color: staffSubTab === 'new' ? '#fff' : '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
-                  🛠️ New Job / New Complaints
+                  style={{ flex: 1, padding: '12px 5px', background: staffSubTab === 'new' ? '#166534' : '#dcfce7', color: staffSubTab === 'new' ? '#fff' : '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
+                  🛠️ New Job
                 </button>
                 <button 
                   onClick={() => setStaffSubTab('pending')} 
-                  style={{ flex: 1, padding: '10px 5px', background: staffSubTab === 'pending' ? '#b45309' : '#fef9c3', color: staffSubTab === 'pending' ? '#fff' : '#854d0e', border: '1px solid #fef08a', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
+                  style={{ flex: 1, padding: '12px 5px', background: staffSubTab === 'pending' ? '#b45309' : '#fef9c3', color: staffSubTab === 'pending' ? '#fff' : '#854d0e', border: '1px solid #fef08a', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
                   ⏳ Pending Job
                 </button>
                 <button 
                   onClick={() => setStaffSubTab('partPending')} 
-                  style={{ flex: 1, padding: '10px 5px', background: staffSubTab === 'partPending' ? '#c2410c' : '#ffedd5', color: staffSubTab === 'partPending' ? '#fff' : '#9a3412', border: '1px solid #fed7aa', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
-                  ⚙️ Part Pending Job
+                  style={{ flex: 1, padding: '12px 5px', background: staffSubTab === 'partPending' ? '#c2410c' : '#ffedd5', color: staffSubTab === 'partPending' ? '#fff' : '#9a3412', border: '1px solid #fed7aa', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', textAlign: 'center' }}>
+                  ⚙️ Part Pending
                 </button>
               </div>
 
+              {/* IF STAFF IS AT MAIN MENU BEFORE CHOOSING NEW JOB */}
+              {staffSubTab === 'menu' && (
+                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ color: '#334155', marginTop: '0' }}>फ़ील्ड स्टाफ डैशबोर्ड</h4>
+                  <p style={{ fontSize: '14px', color: '#64748b' }}>ऊपर दिए गए तीन विकल्पों में से किसी एक पर क्लिक करें:</p>
+                  <ul style={{ textAlign: 'left', display: 'inline-block', fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
+                    <li><b>New Job:</b> नई जॉब भरें या ऑनलाइन आई कंप्लेंट को प्रोसेस करें।</li>
+                    <li><b>Pending Job:</b> लंबित कार्यों की सूची देखें और पूरी करें।</li>
+                    <li><b>Part Pending:</b> स्पेयर पार्ट की वजह से रुके हुए कार्यों को मैनेज करें।</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* 1. NEW JOB TAB */}
               {staffSubTab === 'new' && (
                 <div>
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                    <h4 style={{ color: '#166534', marginTop: '0' }}>
-                      {selectedComplaint ? 'शिकायत (' + selectedComplaint.jobSheetNo + ') को जॉब शीट में भरें' : 'नई जॉब शीट / सर्विस रिपोर्ट भरें'}
-                    </h4>
-                    <p style={{ fontSize: '12px', color: '#4b5563' }}>ग्राहक की डीटेल्स नीचे स्वतः भरी हुई हैं। काम पूरा होने पर सबमिट करें।</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ color: '#166534', marginTop: '0' }}>
+                        {selectedComplaint ? 'शिकायत (' + selectedComplaint.jobSheetNo + ') को जॉब शीट में भरें' : 'नई जॉब शीट / सर्विस रिपोर्ट'}
+                      </h4>
+                      <button onClick={() => setStaffSubTab('menu')} style={{ padding: '4px 8px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>बैक मेनू</button>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#4b5563' }}>ऑनलाइन कंप्लेंट होने पर डिटेल्स भरी होंगी, अन्यथा खाली फॉर्म में भरें।</p>
 
                     <div style={{ marginBottom: '10px' }}>
                       <label>स्टेटस चुनें (Job Status):</label><br />
@@ -711,8 +744,8 @@ export default function App() {
                     </div>
 
                     <div style={{ marginBottom: '10px' }}>
-                      <label>विशेष नोट / पेंडेंसी का कारण (Note):</label>
-                      <input type="text" placeholder="जैसे: Part Not Available..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      <label style={{ fontWeight: 'bold', color: '#9a3412' }}>विशेष नोट / पेंडेंसी का कारण (Special Note / Spare Part Needed):</label>
+                      <input type="text" placeholder="जैसे: Compressor 2 Ton Not Available..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #f97316', background: '#fff7ed' }} />
                     </div>
 
                     <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
@@ -728,9 +761,14 @@ export default function App() {
                     </button>
                   </div>
 
-                  <h5>ऑनलाइन दर्ज नई शिकायतें (क्लिक करके भरें):</h5>
+                  {/* Pending online complaints section */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+                    <h5>ऑनलाइन दर्ज नई शिकायतें (क्लिक करके भरें):</h5>
+                    <button onClick={handleOpenBlankNewJob} style={{ padding: '5px 10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>+ बिल्कुल नया फॉर्म भरें</button>
+                  </div>
+
                   {jobSheets.filter(i => i.status === 'Pending' && i.staffName === 'Not Assigned Yet').length === 0 ? (
-                    <p style={{ fontSize: '13px', color: '#666' }}>अभी कोई नई ऑनलाइन शिकायत नहीं है। आप ऊपर सीधे फॉर्म भरकर भी नई जॉब जोड़ सकते हैं।</p>
+                    <p style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>अभी कोई नई ऑनलाइन शिकायत नहीं है। ऊपर दिए बटन से नया फॉर्म भर सकते हैं।</p>
                   ) : (
                     jobSheets.filter(i => i.status === 'Pending' && i.staffName === 'Not Assigned Yet').map((comp, idx) => (
                       <div key={idx} style={{ background: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #86efac', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -747,9 +785,13 @@ export default function App() {
                 </div>
               )}
 
+              {/* 2. PENDING JOB TAB */}
               {staffSubTab === 'pending' && (
                 <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#854d0e', marginTop: '0' }}>⏳ Pending Jobs (लंबित कार्य)</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h4 style={{ color: '#854d0e', margin: '0' }}>⏳ Pending Jobs (लंबित कार्य)</h4>
+                    <button onClick={() => setStaffSubTab('menu')} style={{ padding: '4px 8px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>बैक मेनू</button>
+                  </div>
                   {jobSheets.filter(i => i.status === 'Pending').length === 0 ? (
                     <p style={{ fontSize: '13px', color: '#666' }}>कोई पेंडिंग जॉब नहीं है।</p>
                   ) : (
@@ -757,7 +799,8 @@ export default function App() {
                       <div key={idx} style={{ background: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fde047', fontSize: '13px' }}>
                         <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#854d0e' }}>Job No: {item.jobSheetNo} | Phone: {item.customerPhone}</p>
                         <p style={{ margin: '0 0 4px 0' }}><b>Product:</b> {item.product}</p>
-                        <p style={{ margin: '0 0 8px 0' }}><b>Desc:</b> {item.desc}</p>
+                        <p style={{ margin: '0 0 4px 0' }}><b>Desc:</b> {item.desc}</p>
+                        <p style={{ margin: '0 0 8px 0', color: '#b91c1c' }}><b>विशेष नोट:</b> {item.note}</p>
                         <button onClick={() => handleFillComplaintToNewJob(item)} style={{ padding: '5px 10px', background: '#eab308', color: '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>
                           इस जॉब को पूरा करें / अपडेट करें
                         </button>
@@ -767,17 +810,21 @@ export default function App() {
                 </div>
               )}
 
+              {/* 3. PART PENDING JOB TAB */}
               {staffSubTab === 'partPending' && (
                 <div style={{ background: '#ffedd5', border: '1px solid #fed7aa', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#9a3412', marginTop: '0' }}>⚙️ Part Pending Jobs (स्पेयर पार्ट पेंडिंग)</h4>
-                  <p style={{ fontSize: '12px', color: '#7c2d12', marginBottom: '10px' }}>ये वे जॉब्स हैं जो स्पेयर पार्ट उपलब्ध न होने के कारण रुके हुए हैं। यह डेटा ऑफिस एडमिन पैनल पर भी दिखेगा।</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h4 style={{ color: '#9a3412', margin: '0' }}>⚙️ Part Pending Jobs (स्पेयर पार्ट पेंडिंग)</h4>
+                    <button onClick={() => setStaffSubTab('menu')} style={{ padding: '4px 8px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>बैक मेनू</button>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#7c2d12', marginBottom: '10px' }}>ये वे जॉब्स हैं जो स्पेयर पार्ट उपलब्ध न होने के कारण रुके हुए हैं। यह डेटा एडमिन पैनल पर भी दिख रहा है।</p>
                   {jobSheets.filter(i => i.status === 'Part Pending').length === 0 ? (
                     <p style={{ fontSize: '13px', color: '#666' }}>कोई पार्ट पेंडिंग जॉब उपलब्ध नहीं है।</p>
                   ) : (
                     jobSheets.filter(i => i.status === 'Part Pending').map((item, idx) => (
                       <div key={idx} style={{ background: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #fdba74', fontSize: '13px' }}>
                         <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#9a3412' }}>Job No: {item.jobSheetNo} | Customer: {item.customerPhone}</p>
-                        <p style={{ margin: '0 0 4px 0' }}><b>पार्ट नोट:</b> {item.note}</p>
+                        <p style={{ margin: '0 0 4px 0', color: '#b91c1c' }}><b>पार्ट नोट / जरूरत:</b> {item.note}</p>
                         <button onClick={() => handleFillComplaintToNewJob(item)} style={{ padding: '5px 10px', background: '#f97316', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>
                           पार्ट आने पर पूरा करें
                         </button>
@@ -792,16 +839,17 @@ export default function App() {
         </div>
       )}
 
+      {/* ADMIN & OFFICE STAFF PANEL */}
       {activeTab === 'admin' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           {!adminLoggedIn ? (
             <div>
               <h3>🔒 ऑफिस स्टाफ & एडमिन लॉगिन</h3>
-              <p style={{ fontSize: '13px', color: '#666' }}>पेंडिंग और पार्ट पेंडिंग जॉब्स देखने के लिए ऑफिस क्रेडेंशियल्स दर्ज करें:<br/><b>(यूजरनेम: admin या manager, पासवर्ड: कोई भी 4+ अंक)</b></p>
+              <p style={{ fontSize: '13px', color: '#666' }}>पेंडिंग, पार्ट पेंडिंग और विशेष नोट देखने के लिए एडमिन क्रेडेंशियल्स दर्ज करें:</p>
               <form onSubmit={handleAdminLogin}>
                 <div style={{ marginBottom: '10px' }}>
                   <label>यूजरनेम (Username):</label>
-                  <input type="text" placeholder="admin या manager" value={adminUser} onChange={(e) => setAdminUser(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
+                  <input type="text" placeholder="यूजरनेम दर्ज करें" value={adminUser} onChange={(e) => setAdminUser(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} required />
                 </div>
                 <div style={{ marginBottom: '15px' }}>
                   <label>पासवर्ड (Password):</label>
@@ -813,7 +861,7 @@ export default function App() {
           ) : (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ color: '#b45309', margin: '0' }}>📊 ऑफिस कंट्रोल पैनल (Office Staff View)</h4>
+                <h4 style={{ color: '#b45309', margin: '0' }}>📊 एडमिन कंट्रोल पैनल (Admin Tracking View)</h4>
                 <button onClick={() => setAdminLoggedIn(false)} style={{ padding: '5px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>लॉग आउट</button>
               </div>
               <hr style={{ margin: '15px 0' }} />
@@ -833,16 +881,16 @@ export default function App() {
                 </div>
               </div>
 
-              <h5 style={{ color: '#9a3412', marginTop: '20px' }}>⚙️ स्पेयर पार्ट पेंडिंग जॉब्स (Office Tracking):</h5>
-              {jobSheets.filter(i => i.status === 'Part Pending').length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#666' }}>वर्तमान में कोई भी जॉब स्पेयर पार्ट की वजह से पेंडिंग नहीं है।</p>
+              <h5 style={{ color: '#9a3412', marginTop: '20px' }}>⚙️ स्पेयर पार्ट पेंडिंग & विशेष नोट (Admin Tracking):</h5>
+              {jobSheets.filter(i => i.status === 'Part Pending' || (i.note && i.note !== '-')).length === 0 ? (
+                <p style={{ fontSize: '13px', color: '#666' }}>वर्तमान में कोई भी पार्ट पेंडिंग या विशेष नोट उपलब्ध नहीं है।</p>
               ) : (
-                jobSheets.filter(i => i.status === 'Part Pending').map((item, idx) => (
+                jobSheets.filter(i => i.status === 'Part Pending' || (i.note && i.note !== '-')).map((item, idx) => (
                   <div key={idx} style={{ background: '#fff7ed', padding: '12px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #fdba74', fontSize: '13px' }}>
                     <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#9a3412' }}><b>Job No:</b> {item.jobSheetNo} | <b>Customer Ph:</b> {item.customerPhone}</p>
-                    <p style={{ margin: '0 0 4px 0' }}><b>Product:</b> {item.product} | <b>Staff:</b> {item.staffName}</p>
-                    <p style={{ margin: '0 0 4px 0', color: '#b91c1c' }}><b>पेंडेंसी कारण / नोट:</b> {item.note}</p>
-                    <p style={{ margin: '0', fontSize: '11px', color: '#666' }}>GPS लोकेशन: {item.location}</p>
+                    <p style={{ margin: '0 0 4px 0' }}><b>Product:</b> {item.product} | <b>Status:</b> <span style={{ color: '#c2410c', fontWeight: 'bold' }}>{item.status}</span></p>
+                    <p style={{ margin: '0 0 4px 0', color: '#b91c1c', background: '#ffedd5', padding: '5px', borderRadius: '4px' }}><b>📌 विशेष नोट / स्पेयर पार्ट जरूरत:</b> {item.note}</p>
+                    <p style={{ margin: '0', fontSize: '11px', color: '#666' }}>स्टाफ: {item.staffName} | GPS: {item.location}</p>
                   </div>
                 ))
               )}
