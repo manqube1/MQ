@@ -197,7 +197,7 @@ export default function App() {
 
     if (staffIdInput.length === 4 && staffNum >= 1 && staffNum <= 20) {
       if (staffIdInput === staffPinInput) {
-        setCurrentStaffName(Staff ${staffIdInput});
+        setCurrentStaffName(`Staff ${staffIdInput}`); //
         setStaffLoggedIn(true);
       } else {
         alert('गलत पासवर्ड! स्टाफ आईडी और पासवर्ड (0001 से 0020) समान होने चाहिए।');
