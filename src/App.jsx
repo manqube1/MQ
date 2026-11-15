@@ -59,8 +59,16 @@ export default function App() {
   const [jobCustName, setJobCustName] = useState('');
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
-  const [modelNo, setModelNo] = useState('');
-  const [serialNo, setSerialNo] = useState('');
+  
+  // नए फ़ील्ड्स
+  const [indoorModel, setIndoorModel] = useState('');
+  const [indoorSerial, setIndoorSerial] = useState('');
+  const [outdoorModel, setOutdoorModel] = useState('');
+  const [outdoorSerial, setOutdoorSerial] = useState('');
+  const [motorType, setMotorType] = useState('AC');
+  const [compressorModel, setCompressorModel] = useState('');
+  const [compressorSerial, setCompressorSerial] = useState('');
+
   const [workDone, setWorkDone] = useState('');
   const [sectionPressure, setSectionPressure] = useState('');
   const [roomTemp, setRoomTemp] = useState('');
@@ -69,14 +77,16 @@ export default function App() {
   const [stabilizer, setStabilizer] = useState('OK');
   const [standType, setStandType] = useState('Wall Type');
   
-  // मटीरियल लिस्ट (शुरुआत में 2 रो)
-  const [materials, setMaterials] = useState(['', '']);
+  const [materials, setMaterials] = useState([
+    { name: '', qty: '', price: '' },
+    { name: '', qty: '', price: '' }
+  ]);
 
+  const [jobNote, setJobNote] = useState('');
   const [customerFeedback, setCustomerFeedback] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // सिग्नेचर के लिए रेफ (Canvas)
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -145,6 +155,13 @@ export default function App() {
       location: 'Online Booking',
       photoURL: '',
       signatureURL: '',
+      indoorModel: '-',
+      indoorSerial: '-',
+      outdoorModel: '-',
+      outdoorSerial: '-',
+      motorType: '-',
+      compressorModel: '-',
+      compressorSerial: '-',
       sectionPressure: '-',
       roomTemp: '-',
       voltage: '-',
@@ -152,6 +169,7 @@ export default function App() {
       stabilizer: '-',
       standType: '-',
       materials: [],
+      note: '-',
       feedback: '-'
     };
 
@@ -185,14 +203,13 @@ export default function App() {
     setImageFile(compressedFile);
   };
 
-  const handleMaterialChange = (index, value) => {
+  const handleMaterialFieldChange = (index, field, value) => {
     const newMaterials = [...materials];
-    newMaterials[index] = value;
+    newMaterials[index][field] = value;
     setMaterials(newMaterials);
 
-    // यदि आखिरी इनपुट भर दिया गया है, तो अपने आप नई खाली लाइन (रो) नीचे जुड़ जाएगी
     if (index === newMaterials.length - 1 && value.trim() !== '') {
-      setMaterials([...newMaterials, '']);
+      setMaterials([...newMaterials, { name: '', qty: '', price: '' }]);
     }
   };
 
@@ -204,7 +221,6 @@ export default function App() {
 
     setUploading(true);
 
-    // सिग्नेचर को इमेज (Data URL) में बदलना
     const canvas = canvasRef.current;
     const signatureDataURL = canvas.toDataURL('image/png');
 
@@ -217,11 +233,11 @@ export default function App() {
           await processAndSaveJob(locationStr, signatureDataURL);
         },
         async () => {
-          await processAndSaveJob('Prayagraj (Location default)', signatureDataURL);
+          await processAndSaveJob('Prayagraj (GPS Default)', signatureDataURL);
         }
       );
     } else {
-      processAndSaveJob('Prayagraj', signatureDataURL);
+      processAndSaveJob('Prayagraj (No GPS)', signatureDataURL);
     }
   };
 
@@ -255,15 +271,14 @@ export default function App() {
         });
       }
 
-      // खाली मटीरियल को हटा दें
-      const filteredMaterials = materials.filter(m => m.trim() !== '');
+      const filteredMaterials = materials.filter(m => m.name.trim() !== '');
 
       const newJobRecord = {
         jobSheetNo,
         customerName: jobCustName,
         customerPhone: jobCustPhone,
         customerAddress: jobCustAddress,
-        product: modelNo ? modelNo + (serialNo ? ' (S/N: ' + serialNo + ')' : '') : 'Split/Window AC',
+        product: indoorModel ? 'AC (Indoor: ' + indoorModel + ')' : 'Split/Window AC',
         desc: workDone || 'General Service / Repair',
         status: 'Completed',
         date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
@@ -272,6 +287,13 @@ export default function App() {
         location: locationStr,
         photoURL: uploadedImageUrl,
         signatureURL: signatureDataURL,
+        indoorModel: indoorModel || '-',
+        indoorSerial: indoorSerial || '-',
+        outdoorModel: outdoorModel || '-',
+        outdoorSerial: outdoorSerial || '-',
+        motorType: motorType,
+        compressorModel: compressorModel || '-',
+        compressorSerial: compressorSerial || '-',
         sectionPressure,
         roomTemp,
         voltage,
@@ -279,6 +301,7 @@ export default function App() {
         stabilizer,
         standType,
         materials: filteredMaterials,
+        note: jobNote || '-',
         feedback: customerFeedback || 'Good Service'
       };
 
@@ -289,15 +312,20 @@ export default function App() {
       setJobCustName('');
       setJobCustAddress('');
       setJobCustPhone('');
-      setModelNo('');
-      setSerialNo('');
+      setIndoorModel('');
+      setIndoorSerial('');
+      setOutdoorModel('');
+      setOutdoorSerial('');
+      setCompressorModel('');
+      setCompressorSerial('');
       setWorkDone('');
       setSectionPressure('');
       setRoomTemp('');
       setAmpere('');
+      setJobNote('');
       setCustomerFeedback('');
       setImageFile(null);
-      setMaterials(['', '']);
+      setMaterials([{ name: '', qty: '', price: '' }, { name: '', qty: '', price: '' }]);
       clearSignature();
 
     } catch (error) {
@@ -331,7 +359,7 @@ export default function App() {
             <div style={{ fontSize: '35px' }}>🛠️</div>
             <div>
               <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Portal)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>डिजिटल जॉब शीट भरें, सिग्नेचर और फोटो कैप्चर करें</p>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>डिजिटल जॉब शीट भरें, सिग्नेचर और GPS लोकेशन कैप्चर करें</p>
             </div>
           </div>
 
@@ -402,18 +430,29 @@ export default function App() {
                       
                       {item.status === 'Completed' && (
                         <div style={{ background: '#e2e8f0', padding: '8px', borderRadius: '4px', marginTop: '6px', fontSize: '12px' }}>
+                          <p style={{ margin: '0 0 2px 0' }}>🏠 <b>Indoor Model:</b> {item.indoorModel} | <b>Serial:</b> {item.indoorSerial}</p>
+                          <p style={{ margin: '0 0 2px 0' }}>☀️ <b>Outdoor Model:</b> {item.outdoorModel} | <b>Serial:</b> {item.outdoorSerial}</p>
+                          <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Motor Type:</b> {item.motorType} | 🌀 <b>Compressor M/S:</b> {item.compressorModel} / {item.compressorSerial}</p>
                           <p style={{ margin: '0 0 2px 0' }}>🌡️ <b>Room Temp:</b> {item.roomTemp} | 🔵 <b>Pressure:</b> {item.sectionPressure}</p>
                           <p style={{ margin: '0 0 2px 0' }}>⚡ <b>Voltage:</b> {item.voltage} | 🔌 <b>Ampere:</b> {item.ampere} | 🛡️ <b>Stabilizer:</b> {item.stabilizer} | 📐 <b>Stand:</b> {item.standType}</p>
+                          
                           {item.materials && item.materials.length > 0 && (
-                            <p style={{ margin: '2px 0 0 0' }}>📦 <b>मटेरियल/पार्ट्स:</b> {item.materials.join(', ')}</p>
+                            <div style={{ marginTop: '4px', borderTop: '1px dashed #cbd5e1', paddingTop: '4px' }}>
+                              <p style={{ margin: '0 0 2px 0', fontWeight: 'bold' }}>📦 <b>मटेरियल इस्तेमाल:</b></p>
+                              {item.materials.map((m, idx) => (
+                                <p key={idx} style={{ margin: '0 0 2px 10px' }}>• {m.name} | मात्रा: {m.qty} | दाम: ₹{m.price}</p>
+                              ))}
+                            </div>
                           )}
-                          <p style={{ margin: '4px 0 0 0' }}>💬 <b>कस्टमर फीडबैक:</b> {item.feedback}</p>
+
+                          <p style={{ margin: '4px 0 2px 0' }}>📝 <b>नोट:</b> {item.note}</p>
+                          <p style={{ margin: '2px 0 0 0' }}>💬 <b>कस्टमर फीडबैक:</b> {item.feedback}</p>
                         </div>
                       )}
 
                       <div style={{ background: '#e9ecef', padding: '8px', borderRadius: '4px', marginTop: '8px', fontSize: '13px' }}>
                         <p style={{ margin: '0 0 3px 0' }}>🛠️ <b>स्टाफ:</b> {item.staffName} (Ph: {item.staffPhone})</p>
-                        <p style={{ margin: '0' }}>📍 <b>लोकेशन:</b> {item.location}</p>
+                        <p style={{ margin: '0' }}>📍 <b>GPS लोकेशन:</b> {item.location}</p>
                       </div>
 
                       <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
@@ -444,8 +483,8 @@ export default function App() {
           {!staffLoggedIn ? (
             <form onSubmit={handleStaffLogin}>
               <h3>स्टाफ लॉगिन (Staff Authentication)</h3>
-              <p>जॉब शीट भरने के लिए अपना नाम, मोबाइल नंबर और पिन दर्ज करें:</p>
-              <input type="text" placeholder="आपका नाम (जैसे: सकील / हम्माद)" value={staffName} onChange={(e) => setStaffName(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} required />
+              <p>जॉब शीट भरने के लिए अपना पूरा नाम, मोबाइल नंबर और पिन दर्ज करें:</p>
+              <input type="text" placeholder="आपका पूरा नाम (जैसे: राहुल कुमार)" value={staffName} onChange={(e) => setStaffName(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} required />
               <input type="tel" placeholder="स्टाफ मोबाइल नंबर" value={staffPhone} onChange={(e) => setStaffPhone(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }} required />
               <input type="password" maxLength="4" placeholder="4-Digit PIN (डिफ़ॉल्ट: 1234)" value={staffPin} onChange={(e) => setStaffPin(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} required />
               <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>लॉग इन करें</button>
@@ -458,7 +497,7 @@ export default function App() {
               </div>
               <hr style={{ margin: '15px 0' }} />
 
-              <h5>डिजिटल जॉब शीट भरें (लोकेशन ऑटो-कैप्चर होगी)</h5>
+              <h5>डिजिटल जॉब शीट भरें (GPS लोकेशन ऑटो-कैप्चर होगी)</h5>
               
               <div style={{ marginBottom: '10px' }}>
                 <label>कस्टमर का नाम:</label>
@@ -475,16 +514,48 @@ export default function App() {
                 <input type="text" placeholder="ग्राहक का पता" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
-              {/* मॉडल नंबर और सीरियल नंबर एक लाइन में */}
+              {/* इंडोर यूनिट मॉडल और सीरियल नंबर */}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <div style={{ flex: 1 }}>
-                  <label>Model No:</label>
-                  <input type="text" placeholder="जैसे Voltas / Samsung" value={modelNo} onChange={(e) => setModelNo(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <label>Indoor Model No:</label>
+                  <input type="text" placeholder="इंडोर मॉडल" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label>Serial No:</label>
-                  <input type="text" placeholder="सीरियल नंबर" value={serialNo} onChange={(e) => setSerialNo(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <label>Indoor Serial No:</label>
+                  <input type="text" placeholder="इंडोर सीरियल नंबर" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                 </div>
+              </div>
+
+              {/* आउटडोर यूनिट मॉडल और सीरियल नंबर */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Outdoor Model No:</label>
+                  <input type="text" placeholder="आउटडोर मॉडल" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Outdoor Serial No:</label>
+                  <input type="text" placeholder="आउटडोर सीरियल नंबर" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
+              </div>
+
+              {/* मोटर टाइप (AC/DC) और कंप्रेसर मॉडल/सीरियल */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Motor Type:</label>
+                  <select value={motorType} onChange={(e) => setMotorType(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                    <option value="AC">AC Motor</option>
+                    <option value="DC">DC Motor</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Compressor Model:</label>
+                  <input type="text" placeholder="कंप्रेसर मॉडल" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '10px' }}>
+                <label>Compressor Serial No:</label>
+                <input type="text" placeholder="कंप्रेसर सीरियल नंबर" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -509,7 +580,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* स्टेबलाइजर और स्टैंड टाइप एक लाइन में */}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <div style={{ flex: 1 }}>
                   <label>Stabilizer Status:</label>
@@ -534,18 +604,31 @@ export default function App() {
                 <input type="text" placeholder="जैसे A.C. Installation / Repair" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
-              {/* मटीरियल / पार्ट्स इस्तेमाल (Dynamic 1, 2, 3...) */}
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ fontWeight: 'bold' }}>मटीरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
+                <label style={{ fontWeight: 'bold' }}>मटेरियल / पार्ट्स इस्तेमाल (Materials Used):</label>
                 <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {materials.map((mat, index) => (
-                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontWeight: 'bold', width: '25px', color: '#555' }}>{index + 1}.</span>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: 'bold', width: '20px', color: '#555' }}>{index + 1}.</span>
                       <input 
                         type="text" 
-                        placeholder={'मटीरियल ' + (index + 1) + ' दर्ज करें'} 
-                        value={mat} 
-                        onChange={(e) => handleMaterialChange(index, e.target.value)} 
+                        placeholder="सामान का नाम" 
+                        value={mat.name} 
+                        onChange={(e) => handleMaterialFieldChange(index, 'name', e.target.value)} 
+                        style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="मात्रा (Qty)" 
+                        value={mat.qty} 
+                        onChange={(e) => handleMaterialFieldChange(index, 'qty', e.target.value)} 
+                        style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="दाम (₹)" 
+                        value={mat.price} 
+                        onChange={(e) => handleMaterialFieldChange(index, 'price', e.target.value)} 
                         style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
                       />
                     </div>
@@ -553,20 +636,22 @@ export default function App() {
                 </div>
               </div>
 
-              {/* कस्टमर फीडबैक */}
+              <div style={{ marginBottom: '10px' }}>
+                <label>विशेष नोट (Note):</label>
+                <input type="text" placeholder="कोई अतिरिक्त जानकारी या निर्देश..." value={jobNote} onChange={(e) => setJobNote(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              </div>
+
               <div style={{ marginBottom: '15px' }}>
                 <label>कस्टमर फीडबैक (Customer Feedback):</label>
                 <input type="text" placeholder="ग्राहक की प्रतिक्रिया लिखें..." value={customerFeedback} onChange={(e) => setCustomerFeedback(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
               </div>
 
-              {/* साइट फोटो */}
               <div style={{ marginBottom: '15px', background: '#e9ecef', padding: '10px', borderRadius: '6px' }}>
                 <label style={{ fontWeight: 'bold' }}>साइट की फोटो जोड़ें:</label><br />
                 <input type="file" accept="image/*" onChange={handleFileChange} style={{ marginTop: '5px' }} />
                 {imageFile && <p style={{ fontSize: '12px', color: 'green', margin: '5px 0 0 0' }}>फोटो चुनी गई है!</p>}
               </div>
 
-              {/* डिजिटल सिग्नेचर पैड */}
               <div style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                   <label style={{ fontWeight: 'bold' }}>कस्टमर सिग्नेचर (Customer Signature):</label>
@@ -607,12 +692,22 @@ export default function App() {
             jobSheets.map((item, index) => (
               <div key={index} style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '10px', borderLeft: '4px solid #ffc107' }}>
                 <p style={{ margin: '0 0 5px 0' }}><b>जॉब शीट नं:</b> {item.jobSheetNo} | <b>ग्राहक:</b> {item.customerName} ({item.customerPhone})</p>
-                <p style={{ margin: '0 0 5px 0' }}><b>प्रोडक्ट/मॉडल:</b> {item.product} | <b>काम:</b> {item.desc}</p>
+                <p style={{ margin: '0 0 5px 0' }}><b>काम:</b> {item.desc}</p>
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>🏠 <b>Indoor:</b> {item.indoorModel} ({item.indoorSerial}) | ☀️ <b>Outdoor:</b> {item.outdoorModel} ({item.outdoorSerial})</p>
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>⚡ <b>Motor:</b> {item.motorType} | 🌀 <b>Compressor:</b> {item.compressorModel} ({item.compressorSerial})</p>
                 <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📐 <b>स्टैंड:</b> {item.standType} | 🛡️ <b>स्टेबलाइजर:</b> {item.stabilizer}</p>
+                
                 {item.materials && item.materials.length > 0 && (
-                  <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📦 <b>मटीरियल:</b> {item.materials.join(', ')}</p>
+                  <div style={{ margin: '5px 0', fontSize: '13px', background: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                    <p style={{ margin: '0 0 2px 0', fontWeight: 'bold' }}>📦 <b>मटेरियल इस्तेमाल:</b></p>
+                    {item.materials.map((m, idx) => (
+                      <p key={idx} style={{ margin: '0 0 2px 10px' }}>• {m.name} (मात्रा: {m.qty}, दाम: ₹{m.price})</p>
+                    ))}
+                  </div>
                 )}
-                <p style={{ margin: '0 0 5px 0', fontSize: '13px', color: '#333' }}>👤 <b>स्टाफ:</b> {item.staffName} | 📍 <b>लोकेशन:</b> {item.location}</p>
+
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>📝 <b>नोट:</b> {item.note}</p>
+                <p style={{ margin: '0 0 5px 0', fontSize: '13px', color: '#333' }}>👤 <b>स्टाफ:</b> {item.staffName} | 📍 <b>GPS लोकेशन:</b> {item.location}</p>
                 <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}>💬 <b>फीडबैक:</b> {item.feedback}</p>
                 
                 <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
