@@ -43,7 +43,8 @@ export const compressImage = (file) => {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('customer');
+  // 'home' का मतलब ऐप खुलते ही होम स्क्रीन दिखेगी जिसपर तीनों आइकॉन होंगे
+  const [activeTab, setActiveTab] = useState('home');
   const [jobSheets, setJobSheets] = useState([]);
 
   const [custPhone, setCustPhone] = useState('');
@@ -88,7 +89,6 @@ export default function App() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
 
-    // बिना बैक-टिक के स्ट्रिंग कंस्ट्रक्शन
     const jobSheetNo = 'COMP' + custPhone + day + month + hours + minutes;
 
     const newEntry = {
@@ -175,7 +175,6 @@ export default function App() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
 
-    // बिना बैक-टिक के स्ट्रिंग कंस्ट्रक्शन
     const jobSheetNo = 'JS' + jobCustPhone.slice(-4) + day + month + hours + minutes;
 
     try {
@@ -243,13 +242,63 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: '700px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
-      <h2 style={{ textAlign: 'center', color: '#1a365d' }}>Manqube Field Service Management</h2>
+      <h2 style={{ textAlign: 'center', color: '#1a365d', marginBottom: '5px' }}>Manqube Field Service Management</h2>
+      <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '0', marginBottom: '20px' }}>Hindustan Refrigeration Service</p>
 
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px', background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <button onClick={() => setActiveTab('customer')} style={{ padding: '10px 15px', background: activeTab === 'customer' ? '#007bff' : '#eee', color: activeTab === 'customer' ? '#fff' : '#333', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>कस्टमर (Customer)</button>
-        <button onClick={() => setActiveTab('staff')} style={{ padding: '10px 15px', background: activeTab === 'staff' ? '#28a745' : '#eee', color: activeTab === 'staff' ? '#fff' : '#333', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>फ़ील्ड स्टाफ (Staff)</button>
-        <button onClick={() => setActiveTab('admin')} style={{ padding: '10px 15px', background: activeTab === 'admin' ? '#ffc107' : '#eee', color: '#333', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>एडमिन (Admin)</button>
-      </div>
+      {/* यदि होम स्क्रीन है तो केवल तीनों आइकॉन/बटन दिखेंगे */}
+      {activeTab === 'home' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '30px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+            <h3 style={{ color: '#333' }}>पोर्टल चुनें (Select Portal)</h3>
+            <p style={{ color: '#666', fontSize: '14px' }}>कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:</p>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('customer')}
+            style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #007bff' }}
+          >
+            <div style={{ fontSize: '35px' }}>👤</div>
+            <div>
+              <h3 style={{ margin: '0 0 5px 0', color: '#007bff' }}>कस्टमर पोर्टल (Customer Portal)</h3>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>अपनी शिकायत दर्ज करें और पुरानी जॉब-शीट्स देखें</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('staff')}
+            style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #28a745' }}
+          >
+            <div style={{ fontSize: '35px' }}>🛠️</div>
+            <div>
+              <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Portal)</h3>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>डिजिटल जॉब शीट भरें, लोकेशन और फोटो कैप्चर करें</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('admin')}
+            style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #ffc107' }}
+          >
+            <div style={{ fontSize: '35px' }}>📊</div>
+            <div>
+              <h3 style={{ margin: '0 0 5px 0', color: '#d39e00' }}>एडमिन पैनल (Admin Panel)</h3>
+              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>सभी रिकॉर्ड और कुल जॉब-शीट्स की सूची देखें</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* यदि कोई पोर्टल खुला है तो ऊपर 'होम पर वापस जाएं' (Back to Home) का बटन दिखेगा */}
+      {activeTab !== 'home' && (
+        <div style={{ marginBottom: '15px' }}>
+          <button 
+            onClick={() => setActiveTab('home')} 
+            style={{ padding: '8px 14px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+          >
+            ⬅️ मुख्य मेनू (Home) पर वापस जाएं
+          </button>
+        </div>
+      )}
 
       {activeTab === 'customer' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
