@@ -195,7 +195,7 @@ export default function ManqubeFSMApp() {
   );
 }
 
-// --- 1. स्टेप-बाय-स्टेप स्लाइड फॉर्म (Wizard UI with Plumbing) ---
+// --- 1. स्टेप-बाय-स्टेप स्लाइड फॉर्म (प्लंबिंग वर्क शामिल) ---
 function JobSheetSlideForm() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
