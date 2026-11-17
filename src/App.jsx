@@ -195,7 +195,7 @@ export default function ManqubeFSMApp() {
   );
 }
 
-// --- 1. स्टेप-बाय-स्टेप स्लाइड फॉर्म (Wizard UI) ---
+// --- 1. स्टेप-बाय-स्टेप स्लाइड फॉर्म (Wizard UI with Plumbing Included) ---
 function JobSheetSlideForm() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -244,10 +244,11 @@ function JobSheetSlideForm() {
 
       {step === 2 && (
         <div className="space-y-3">
+          <label className="text-xs font-semibold text-gray-600 block">सर्विस कैटेगरी चुनें:</label>
           <select name="serviceCategory" value={formData.serviceCategory} onChange={handleChange} className="w-full p-3 border rounded-lg text-sm">
             <option value="AC Repair">AC सर्विस / रिपेयर</option>
             <option value="Electrical">इलेक्ट्रिकल वर्क</option>
-            <option value="Plumbing">प्लंबिंग</option>
+            <option value="Plumbing">प्लंबिंग वर्क (Plumbing Work)</option>
             <option value="Civil">सिविल मेंटेनेंस</option>
           </select>
           <div className="flex gap-2">
