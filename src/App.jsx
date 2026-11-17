@@ -154,7 +154,6 @@ export default function ManqubeFSMApp() {
       <header className="bg-blue-700 text-white p-3 flex justify-between items-center shadow-md">
         <div className="flex items-center gap-3">
           <div className="bg-white w-10 h-10 rounded-full flex items-center justify-center p-1 shadow">
-            {/* यहाँ आप अपने लोगो की इमेज या बेस64 यूआरएल डाल सकते हैं */}
             <span className="text-blue-700 font-bold text-xs">MQ</span>
           </div>
           <div>
@@ -166,18 +165,20 @@ export default function ManqubeFSMApp() {
         <div className="flex gap-1.5 items-center">
           <button 
             onClick={() => setActiveTab('form')} 
-            className={px-2.5 py-1 rounded text-xs font-medium ${activeTab === 'form' ? 'bg-blue-900 shadow-inner' : 'bg-blue-600'}}
+            className="px-2.5 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-800"
           >
             नया जॉब
           </button>
+          
           {role === 'admin' && (
             <button 
               onClick={() => setActiveTab('admin')} 
-              className={px-2.5 py-1 rounded text-xs font-medium ${activeTab === 'admin' ? 'bg-blue-900 shadow-inner' : 'bg-blue-600'}}
+              className="px-2.5 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-800"
             >
               एडमिन पैनल
             </button>
           )}
+
           <button 
             onClick={handleLogout} 
             className="bg-red-500 hover:bg-red-600 text-white px-2.5 py-1 rounded text-xs font-medium"
@@ -229,7 +230,7 @@ function JobSheetSlideForm() {
   return (
     <div className="bg-white p-5 rounded-xl shadow-md space-y-4">
       <div className="w-full bg-gray-200 h-2 rounded-full mb-2">
-        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: ${(step / 4) * 100}% }}></div>
+        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: step === 1 ? '25%' : step === 2 ? '50%' : step === 3 ? '75%' : '100%' }}></div>
       </div>
       <h2 className="text-sm font-bold text-gray-700">स्टेप {step} / 4</h2>
 
