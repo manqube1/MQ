@@ -165,7 +165,7 @@ export default function ManqubeFSMApp() {
         <div className="flex gap-1.5 items-center">
           <button 
             onClick={() => setActiveTab('form')} 
-            className="px-2.5 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-800"
+            className={px-2.5 py-1 rounded text-xs font-medium ${activeTab === 'form' ? 'bg-blue-900 shadow-inner' : 'bg-blue-600'}}
           >
             नया जॉब
           </button>
@@ -173,7 +173,7 @@ export default function ManqubeFSMApp() {
           {role === 'admin' && (
             <button 
               onClick={() => setActiveTab('admin')} 
-              className="px-2.5 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-800"
+              className={px-2.5 py-1 rounded text-xs font-medium ${activeTab === 'admin' ? 'bg-blue-900 shadow-inner' : 'bg-blue-600'}}
             >
               एडमिन पैनल
             </button>
@@ -195,7 +195,7 @@ export default function ManqubeFSMApp() {
   );
 }
 
-// --- 1. स्टेप-बाय-स्टेप स्लाइड फॉर्म (प्लंबिंग वर्क शामिल) ---
+// --- 1. स्टेप-बाय-स्टेप स्लाइड फॉर्म (प्लंबिंग वर्क शामिल और पुराना वाला लुक) ---
 function JobSheetSlideForm() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -230,7 +230,7 @@ function JobSheetSlideForm() {
   return (
     <div className="bg-white p-5 rounded-xl shadow-md space-y-4">
       <div className="w-full bg-gray-200 h-2 rounded-full mb-2">
-        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: step === 1 ? '25%' : step === 2 ? '50%' : step === 3 ? '75%' : '100%' }}></div>
+        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: ${(step / 4) * 100}% }}></div>
       </div>
       <h2 className="text-sm font-bold text-gray-700">स्टेप {step} / 4</h2>
 
@@ -244,7 +244,6 @@ function JobSheetSlideForm() {
 
       {step === 2 && (
         <div className="space-y-3">
-          <label className="text-xs font-semibold text-gray-600 block">सर्विस कैटेगरी चुनें:</label>
           <select name="serviceCategory" value={formData.serviceCategory} onChange={handleChange} className="w-full p-3 border rounded-lg text-sm">
             <option value="AC Repair">AC सर्विस / रिपेयर</option>
             <option value="Electrical">इलेक्ट्रिकल वर्क</option>
