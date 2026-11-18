@@ -1,19 +1,4 @@
-import { initializeApp, getApps } from "firebase/app";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUUnfmXZSLOS2FrUAnr2eSFYAWnwURRfC",
-  authDomain: "mq-fsm-45ee9.firebaseapp.com",
-  projectId: "mq-fsm-45ee9",
-  storageBucket: "mq-fsm-45ee9.firebasestorage.app",
-  messagingSenderId: "527381468184",
-  appId: "1:527381468184:web:326741c5e9759c7799a36d"
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).send("Webhook Ready for Manqube Groups");
   }
@@ -59,36 +44,51 @@ export default async function handler(req, res) {
     const seconds = String(now.getSeconds()).padStart(2, '0');
 
     const jobSheetNo = 'WA' + day + month + hours + minutes + seconds;
+    const formattedDate = `${day}/${month}/${now.getFullYear()} ${hours}:${minutes}`;
 
-    const newComplaint = {
-      jobSheetNo,
-      customerName,
-      customerPhone: extractedPhone,
-      customerAddress,
-      product: "[HVAC & Refrigeration] " + productType,
-      faultDetails: messageText,
-      desc: `[${groupName}] ${messageText}`,
-      status: 'Pending',
-      pendingSubOption: '-',
-      date: `${day}/${month}/${now.getFullYear()} ${hours}:${minutes}`,
-      staffName: 'Not Assigned Yet',
-      staffPhone: '-',
-      location: 'Online Booking',
-      photoURL: '',
-      signatureURL: '',
-      categoryType: 'HVAC & Refrigeration',
-      productType,
-      materials: [],
-      sparePartOption: '-',
-      sparePartName: '-',
-      sparePartModel: '-'
+    // सीधे Firestore REST API के ज़रिए डेटा सेव करना (बिना किसी मॉड्यूल एरर के)
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/mq-fsm-45ee9/databases/(default)/documents/jobs?documentId=${jobSheetNo}`;
+
+    const firestorePayload = {
+      fields: {
+        jobSheetNo: { stringValue: jobSheetNo },
+        customerName: { stringValue: customerName },
+        customerPhone: { stringValue: extractedPhone },
+        customerAddress: { stringValue: customerAddress },
+        product: { stringValue: "[HVAC & Refrigeration] " + productType },
+        faultDetails: { stringValue: messageText },
+        desc: { stringValue: `[${groupName}] ${messageText}` },
+        status: { stringValue: "Pending" },
+        pendingSubOption: { stringValue: "-" },
+        date: { stringValue: formattedDate },
+        staffName: { stringValue: "Not Assigned Yet" },
+        staffPhone: { stringValue: "-" },
+        location: { stringValue: "Online Booking" },
+        photoURL: { stringValue: "" },
+        signatureURL: { stringValue: "" },
+        categoryType: { stringValue: "HVAC & Refrigeration" },
+        productType: { stringValue: productType },
+        materials: { arrayValue: { values: [] } },
+        sparePartOption: { stringValue: "-" },
+        sparePartName: { stringValue: "-" },
+        sparePartModel: { stringValue: "-" }
+      }
     };
 
-    await setDoc(doc(db, "jobs", jobSheetNo), newComplaint);
+    const fbRes = await fetch(firestoreUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(firestorePayload)
+    });
+
+    if (!fbRes.ok) {
+      const errText = await fbRes.text();
+      throw new Error("Firestore API Error: " + errText);
+    }
 
     return res.status(200).json({ replies: [] });
   } catch (error) {
     console.error("Webhook Error:", error);
     return res.status(500).json({ error: error.message });
   }
-}
+};
