@@ -36,7 +36,7 @@ export const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const maxWidth = 800;
+        const maxWidth = 600;
         const scaleSize = maxWidth / img.width;
         canvas.width = maxWidth;
         canvas.height = img.height * scaleSize;
@@ -46,7 +46,7 @@ export const compressImage = (file) => {
 
         canvas.toBlob((blob) => {
           resolve(blob);
-        }, "image/jpeg", 0.7);
+        }, "image/jpeg", 0.6);
       };
     };
   });
@@ -102,7 +102,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
       </div>
 
       <div id="printable-job-card" style={{ border: '2px solid #000', background: '#fff', overflowX: 'auto' }}>
-        {/* पूरे पेज के सेंटर में सबसे ऊपर कंपनी हेडर */}
         <div style={{ textAlign: 'center', padding: '10px 8px', borderBottom: '1px solid #000' }}>
           <div style={{ fontSize: '19px', fontWeight: 'bold', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
             MANQUBE PRIVATE LIMITED
@@ -112,7 +111,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
           </div>
         </div>
 
-        {/* कस्टमर और जॉब नंबर डिटेल्स */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr>
@@ -150,7 +148,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
           </tbody>
         </table>
 
-        {/* यूनिट, आउटडोर और कंप्रेसर (छोटे और हल्के Model/Serial लेबल्स के साथ) */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr>
@@ -198,7 +195,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
           </tbody>
         </table>
 
-        {/* फॉल्ट और किए गए कार्य का विवरण */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr className="js-sec-hdr">
@@ -228,7 +224,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
           </tbody>
         </table>
 
-        {/* टेक्निकल चेकलिस्ट और मोटर डिटेल्स */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr>
@@ -437,7 +432,6 @@ export default function App() {
   const [jobNote, setJobNote] = useState('');
   const [customerFeedback, setCustomerFeedback] = useState('');
   const [imageFile, setImageFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
 
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [savedSignatureURL, setSavedSignatureURL] = useState('');
@@ -468,7 +462,6 @@ export default function App() {
     };
   }, []);
 
-  // फुल-स्क्रीन सिग्नेचर कैनवास साइज़ सेट करना
   useEffect(() => {
     if (isSignatureModalOpen && fullCanvasRef.current) {
       const canvas = fullCanvasRef.current;
@@ -481,7 +474,7 @@ export default function App() {
     }
   }, [isSignatureModalOpen]);
 
-  const recordUserLogin = async (identifier, userRole, displayName) => {
+  const recordUserLogin = (identifier, userRole, displayName) => {
     const cleanId = identifier.trim();
     if (!cleanId) return;
 
@@ -509,19 +502,17 @@ export default function App() {
       }
     });
 
-    try {
-      const docId = userRole + "_" + cleanId.replace(/[^a-zA-Z0-9]/g, '_');
-      const userRef = doc(db, "login_logs", docId);
-      const docSnap = await getDoc(userRef);
-
+    const docId = userRole + "_" + cleanId.replace(/[^a-zA-Z0-9]/g, '_');
+    const userRef = doc(db, "login_logs", docId);
+    getDoc(userRef).then((docSnap) => {
       if (docSnap.exists()) {
-        await updateDoc(userRef, {
+        updateDoc(userRef, {
           loginCount: increment(1),
           lastLogin: serverTimestamp(),
           lastLoginText: new Date().toLocaleString()
         });
       } else {
-        await setDoc(userRef, {
+        setDoc(userRef, {
           phone: cleanId,
           role: userRole,
           name: displayName,
@@ -530,12 +521,9 @@ export default function App() {
           lastLoginText: new Date().toLocaleString()
         });
       }
-    } catch (error) {
-      console.error("Firestore login track error:", error);
-    }
+    }).catch((err) => console.error(err));
   };
 
-  // Full Screen Signature Drawing Handlers
   const getCoordinates = (e, canvas) => {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -577,22 +565,28 @@ export default function App() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
+  // सिग्नेचर को तुरंत बहुत छोटे साइज (300x110) में कंप्रेस करना
   const saveFullSignature = () => {
     const canvas = fullCanvasRef.current;
     if (canvas) {
-      setSavedSignatureURL(canvas.toDataURL('image/png'));
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 300;
+      tempCanvas.height = 110;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+      setSavedSignatureURL(tempCanvas.toDataURL('image/png'));
     }
     setIsSignatureModalOpen(false);
   };
 
-  const handleCustomerLogin = async (e) => {
+  const handleCustomerLogin = (e) => {
     e.preventDefault();
     if (custPhone.length < 10) {
       alert('कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें!');
       return;
     }
     setCustLoggedIn(true);
-    await recordUserLogin(custPhone, 'customer', 'Customer (' + custPhone + ')');
+    recordUserLogin(custPhone, 'customer', 'Customer (' + custPhone + ')');
   };
 
   const handleCategoryChange = (e) => {
@@ -604,7 +598,7 @@ export default function App() {
     else if (cat === 'Civil Work') setProductType('Flooring & Tiling');
   };
 
-  const handleNewComplaint = async (e) => {
+  const handleNewComplaint = (e) => {
     e.preventDefault();
     if (!custNameInput.trim() || !custAddressInput.trim()) {
       alert('कृपया कस्टमर का पूरा नाम और पता दर्ज करें!');
@@ -644,11 +638,7 @@ export default function App() {
     };
 
     setJobSheets([newEntry, ...jobSheets]);
-    try {
-      await setDoc(doc(db, "jobs", jobSheetNo), newEntry);
-    } catch (err) {
-      console.error(err);
-    }
+    setDoc(doc(db, "jobs", jobSheetNo), newEntry).catch((err) => console.error(err));
 
     setProblemDesc('');
     setCustNameInput('');
@@ -669,7 +659,7 @@ export default function App() {
     alert('[Manqube Security] आपके मोबाइल नंबर ' + staffPhoneInput + ' के लिए OTP है: ' + otp);
   };
 
-  const handleVerifyOtp = async (e) => {
+  const handleVerifyOtp = (e) => {
     e.preventDefault();
     if (enteredOtp === generatedOtp) {
       const staffLabel = 'Staff (' + staffPhoneInput + ')';
@@ -679,7 +669,7 @@ export default function App() {
       setOtpStep(1);
       setEnteredOtp('');
 
-      await recordUserLogin(staffPhoneInput, 'staff', staffLabel);
+      recordUserLogin(staffPhoneInput, 'staff', staffLabel);
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -700,11 +690,11 @@ export default function App() {
     }
   };
 
-  const handleAdminLogin = async (e) => {
+  const handleAdminLogin = (e) => {
     e.preventDefault();
     if (adminUser.toUpperCase() === 'ADMIN' && adminPass === '123456789') {
       setAdminLoggedIn(true);
-      await recordUserLogin(adminUser.toUpperCase(), 'office', 'Office Admin (' + adminUser.toUpperCase() + ')');
+      recordUserLogin(adminUser.toUpperCase(), 'office', 'Office Admin (' + adminUser.toUpperCase() + ')');
       alert('एडमिन / ऑफिस लॉगिन सफल!');
     } else {
       alert('गलत यूजरनेम या पासवर्ड!');
@@ -809,126 +799,117 @@ export default function App() {
     }
   };
 
+  // बिना रुके 0.1 सेकंड में तुरंत सेव होने वाला फ़ंक्शन (Instant Non-Blocking Save)
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert('कृपया कस्टमर का नाम और मोबाइल नंबर भरें!');
       return;
     }
 
-    setUploading(true);
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
 
-    const processSave = async (locStr) => {
-      let uploadedImageUrl = '';
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
+    const jobSheetNo = selectedComplaint
+      ? selectedComplaint.jobSheetNo
+      : ('JS' + jobCustPhone.slice(-4) + day + month + hours + minutes);
 
-      const jobSheetNo = selectedComplaint ? selectedComplaint.jobSheetNo : ('JS' + jobCustPhone.slice(-4) + day + month + hours + minutes);
+    const filteredMaterials = materials.filter(m => m.name.trim() !== '');
+    const finalStatus = jobStatusType === 'Completed'
+      ? 'Completed'
+      : (pendingSubOption === 'Part Pending' ? 'Part Pending' : 'Pending');
 
-      try {
-        if (imageFile) {
-          const storageRef = ref(storage, 'job_photos/' + Date.now() + '_' + imageFile.name);
-          const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
-          await new Promise((resolve, reject) => {
-            uploadTask.on(
-              'state_changed',
-              null,
-              (error) => reject(error),
-              () => {
-                getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-                  uploadedImageUrl = url;
-                  resolve();
-                });
-              }
-            );
-          });
-        }
-
-        const filteredMaterials = materials.filter(m => m.name.trim() !== '');
-        const finalStatus = jobStatusType === 'Completed' 
-          ? 'Completed' 
-          : (pendingSubOption === 'Part Pending' ? 'Part Pending' : 'Pending');
-
-        const updatedRecord = {
-          jobSheetNo,
-          billNo: billNo || '-',
-          amcDate: amcDate || '-',
-          customerName: jobCustName,
-          customerPhone: jobCustPhone,
-          customerAddress: jobCustAddress,
-          categoryType,
-          productType,
-          product: "[" + categoryType + "] " + productType,
-          faultDetails: faultDetails || workDone || '-',
-          desc: workDone || 'General Service / Repair',
-          status: finalStatus,
-          pendingSubOption: jobStatusType === 'Pending' ? pendingSubOption : '-',
-          date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
-          staffName: currentStaffName || 'Staff (Unknown)',
-          staffPhone: staffPhoneInput || '0000000000',
-          location: locStr,
-          photoURL: uploadedImageUrl,
-          signatureURL: savedSignatureURL,
-          indoorModel: indoorModel || '-',
-          indoorSerial: indoorSerial || '-',
-          outdoorModel: outdoorModel || '-',
-          outdoorSerial: outdoorSerial || '-',
-          compressorModel: compressorModel || '-',
-          compressorSerial: compressorSerial || '-',
-          indoorMotorModel: indoorMotorModel || '-',
-          indoorMotorSerial: indoorMotorSerial || '-',
-          outdoorMotorModel: outdoorMotorModel || '-',
-          outdoorMotorSerial: outdoorMotorSerial || '-',
-          filterClean: categoryType === 'HVAC & Refrigeration' ? filterClean : '-',
-          standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
-          swingFlapper: categoryType === 'HVAC & Refrigeration' ? swingFlapper : '-',
-          stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
-          remoteStatus: categoryType === 'HVAC & Refrigeration' ? remoteStatus : '-',
-          outdoorClean: categoryType === 'HVAC & Refrigeration' ? outdoorClean : '-',
-          sectionPressure: categoryType === 'HVAC & Refrigeration' ? (sectionPressure || '-') : '-',
-          roomTemp: categoryType === 'HVAC & Refrigeration' ? (roomTemp || '-') : '-',
-          voltage: categoryType !== 'Civil Work' ? (voltage || '-') : '-',
-          ampere: categoryType !== 'Civil Work' ? (ampere || '-') : '-',
-          compressorAmpere: categoryType === 'HVAC & Refrigeration' ? (compressorAmpere || '-') : '-',
-          drainSize: categoryType === 'HVAC & Refrigeration' ? (drainSize || '-') : '-',
-          copperPipeSize: categoryType === 'HVAC & Refrigeration' ? (copperPipeSize || '-') : '-',
-          wireSizeCore: categoryType !== 'Civil Work' ? (wireSizeCore || '-') : '-',
-          insulation: categoryType !== 'Civil Work' ? insulation : '-',
-          phaseR: phaseR || '-',
-          phaseY: phaseY || '-',
-          phaseB: phaseB || '-',
-          ampR: ampR || '-',
-          ampY: ampY || '-',
-          ampB: ampB || '-',
-          materials: filteredMaterials,
-          sparePartOption: sparePartOption,
-          sparePartName: sparePartName || '-',
-          sparePartModel: sparePartModel || '-',
-          note: jobNote || '-',
-          feedback: customerFeedback || 'OK'
-        };
-
-        const filteredList = jobSheets.filter(j => j.jobSheetNo !== jobSheetNo);
-        setJobSheets([updatedRecord, ...filteredList]);
-
-        await setDoc(doc(db, "jobs", jobSheetNo), updatedRecord);
-
-        setUploading(false);
-        setLastSubmittedJob(updatedRecord);
-        resetJobForm();
-        setStaffSubTab('menu');
-
-      } catch (error) {
-        console.error("Upload error:", error);
-        setUploading(false);
-        alert('जॉब सबमिट करने में कुछ गड़बड़ी हुई!');
-      }
+    const updatedRecord = {
+      jobSheetNo,
+      billNo: billNo || '-',
+      amcDate: amcDate || '-',
+      customerName: jobCustName,
+      customerPhone: jobCustPhone,
+      customerAddress: jobCustAddress,
+      categoryType,
+      productType,
+      product: "[" + categoryType + "] " + productType,
+      faultDetails: faultDetails || workDone || '-',
+      desc: workDone || 'General Service / Repair',
+      status: finalStatus,
+      pendingSubOption: jobStatusType === 'Pending' ? pendingSubOption : '-',
+      date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
+      staffName: currentStaffName || 'Staff (Unknown)',
+      staffPhone: staffPhoneInput || '0000000000',
+      location: staffGpsLocation,
+      photoURL: '',
+      signatureURL: savedSignatureURL,
+      indoorModel: indoorModel || '-',
+      indoorSerial: indoorSerial || '-',
+      outdoorModel: outdoorModel || '-',
+      outdoorSerial: outdoorSerial || '-',
+      compressorModel: compressorModel || '-',
+      compressorSerial: compressorSerial || '-',
+      indoorMotorModel: indoorMotorModel || '-',
+      indoorMotorSerial: indoorMotorSerial || '-',
+      outdoorMotorModel: outdoorMotorModel || '-',
+      outdoorMotorSerial: outdoorMotorSerial || '-',
+      filterClean: categoryType === 'HVAC & Refrigeration' ? filterClean : '-',
+      standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
+      swingFlapper: categoryType === 'HVAC & Refrigeration' ? swingFlapper : '-',
+      stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
+      remoteStatus: categoryType === 'HVAC & Refrigeration' ? remoteStatus : '-',
+      outdoorClean: categoryType === 'HVAC & Refrigeration' ? outdoorClean : '-',
+      sectionPressure: categoryType === 'HVAC & Refrigeration' ? (sectionPressure || '-') : '-',
+      roomTemp: categoryType === 'HVAC & Refrigeration' ? (roomTemp || '-') : '-',
+      voltage: categoryType !== 'Civil Work' ? (voltage || '-') : '-',
+      ampere: categoryType !== 'Civil Work' ? (ampere || '-') : '-',
+      compressorAmpere: categoryType === 'HVAC & Refrigeration' ? (compressorAmpere || '-') : '-',
+      drainSize: categoryType === 'HVAC & Refrigeration' ? (drainSize || '-') : '-',
+      copperPipeSize: categoryType === 'HVAC & Refrigeration' ? (copperPipeSize || '-') : '-',
+      wireSizeCore: categoryType !== 'Civil Work' ? (wireSizeCore || '-') : '-',
+      insulation: categoryType !== 'Civil Work' ? insulation : '-',
+      phaseR: phaseR || '-',
+      phaseY: phaseY || '-',
+      phaseB: phaseB || '-',
+      ampR: ampR || '-',
+      ampY: ampY || '-',
+      ampB: ampB || '-',
+      materials: filteredMaterials,
+      sparePartOption: sparePartOption,
+      sparePartName: sparePartName || '-',
+      sparePartModel: sparePartModel || '-',
+      note: jobNote || '-',
+      feedback: customerFeedback || 'OK'
     };
 
-    processSave(staffGpsLocation);
+    const fileToUpload = imageFile;
+
+    // 1. स्क्रीन पर तुरंत अपडेट दिखाएं (0 सेकंड इंतजार)
+    const filteredList = jobSheets.filter(j => j.jobSheetNo !== jobSheetNo);
+    setJobSheets([updatedRecord, ...filteredList]);
+    setLastSubmittedJob(updatedRecord);
+    resetJobForm();
+    setStaffSubTab('menu');
+
+    // 2. बैकग्राउंड में डेटाबेस (Firestore) में सेव करें
+    setDoc(doc(db, "jobs", jobSheetNo), updatedRecord)
+      .then(() => {
+        if (fileToUpload) {
+          const storageRef = ref(storage, 'job_photos/' + Date.now() + '_' + fileToUpload.name);
+          const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+          uploadTask.on(
+            'state_changed',
+            null,
+            (err) => console.error("Photo upload bg error:", err),
+            () => {
+              getDownloadURL(uploadTask.snapshot.ref).then((url) => {
+                updateDoc(doc(db, "jobs", jobSheetNo), { photoURL: url });
+              });
+            }
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Background Firestore sync error:", error);
+      });
   };
 
   const handleAddStockItem = (e) => {
@@ -980,7 +961,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
       
-      {/* फुल-स्क्रीन मोबाइल सिग्नेचर मॉडल (Full Screen Signature Pad) */}
+      {/* फुल-स्क्रीन मोबाइल/लैपटॉप सिग्नेचर मॉडल */}
       {isSignatureModalOpen && (
         <div style={{
           position: 'fixed',
@@ -999,7 +980,7 @@ export default function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
             <div>
               <h3 style={{ margin: 0, color: '#0f172a', fontSize: '18px' }}>✍️ कस्टमर हस्ताक्षर (Customer Signature)</h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>नीचे खाली बॉक्स में अपनी उंगली से हस्ताक्षर करें</p>
+              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>नीचे खाली बॉक्स में हस्ताक्षर करें</p>
             </div>
             <button
               type="button"
@@ -1422,7 +1403,7 @@ export default function App() {
                     <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Wizard Step: {wizardStep} / 5</span>
                   </div>
 
-                  {/* स्टेप 1: कस्टमर और उत्पाद */}
+                  {/* स्टेप 1 */}
                   {wizardStep === 1 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 1: कस्टमर और प्रॉडक्ट विवरण</h4>
@@ -1509,7 +1490,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 2: संपूर्ण HVAC एवं टेक्निकल चेकलिस्ट */}
+                  {/* स्टेप 2 */}
                   {wizardStep === 2 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट</h4>
@@ -1655,7 +1636,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स */}
+                  {/* स्टेप 3 */}
                   {wizardStep === 3 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स</h4>
@@ -1681,7 +1662,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 4: मैटेरियल्स एवं रेट */}
+                  {/* स्टेप 4 */}
                   {wizardStep === 4 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 4: मैटेरियल्स / पार्ट्स एवं रेट लिस्ट</h4>
@@ -1718,7 +1699,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 5: स्टेटस, फोटो और वन-क्लिक फुल-स्क्रीन सिग्नेचर */}
+                  {/* स्टेप 5 */}
                   {wizardStep === 5 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 5: स्टेटस, फोटो और कस्टमर हस्ताक्षर</h4>
@@ -1773,10 +1754,10 @@ export default function App() {
                       <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                         <button onClick={() => setWizardStep(4)} style={{ flex: 1, padding: '12px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
                         <button 
+                          type="button"
                           onClick={handleJobSubmit} 
-                          disabled={uploading}
-                          style={{ flex: 2, padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px' }}>
-                          {uploading ? 'सेव हो रहा है...' : '✅ जॉब शीट फाइनल सेव करें'}
+                          style={{ flex: 2, padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>
+                          ✅ जॉब शीट फाइनल सेव करें
                         </button>
                       </div>
                     </div>
