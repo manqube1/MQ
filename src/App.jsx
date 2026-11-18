@@ -52,6 +52,245 @@ export const compressImage = (file) => {
   });
 };
 
+// प्रिंटेड रसीद जैसा जॉब शीट टेम्पलेट कंपोनेंट
+const PrintableJobSheet = ({ job, onClose }) => {
+  if (!job) return null;
+
+  return (
+    <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-job-card, #printable-job-card * { visibility: visible; }
+          #printable-job-card {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+          .no-print { display: none !important; }
+        }
+        .js-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #000; }
+        .js-table td, .js-table th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+        .js-bold { font-weight: bold; }
+        .js-sec-hdr { background: #f1f5f9; font-weight: bold; text-align: center; }
+      `}</style>
+
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+        {onClose && (
+          <button onClick={onClose} style={{ padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+            ← वापस जाएं
+          </button>
+        )}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => window.print()} style={{ padding: '6px 12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+            🖨️ Print Job Sheet
+          </button>
+          <button
+            onClick={() => {
+              const msg = `नमस्ते ${job.customerName}, MANQUBE PRIVATE LIMITED की आपकी जॉब शीट (${job.jobSheetNo}) तैयार है। उत्पाद: ${job.productType || job.product}, कार्य: ${job.desc}, स्टेटस: ${job.status}, दिनांक: ${job.date}`;
+              window.open(`https://wa.me/91${job.customerPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+            }}
+            style={{ padding: '6px 12px', background: '#166534', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            💬 WhatsApp करें
+          </button>
+        </div>
+      </div>
+
+      <div id="printable-job-card" style={{ border: '2px solid #000', background: '#fff', overflowX: 'auto' }}>
+        <table className="js-table">
+          <tbody>
+            <tr>
+              <td rowSpan="6" style={{ width: '58%' }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '0.4px' }}>MANQUBE PRIVATE LIMITED</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', lineHeight: '1.5' }}>
+                  <strong>Address:</strong> 212 Naini, Prayagraj<br />
+                  ravindragupta.tech@gmail.com | manqube@aol.com<br />
+                  <strong>Mobile No:</strong> 9415522032, 9335172129<br />
+                  <strong>COMPLAINT CALL US:</strong> 05324022800
+                </div>
+              </td>
+              <td style={{ width: '18%' }} className="js-bold">JOB NO.</td>
+              <td style={{ width: '24%', fontWeight: 'bold' }}>{job.jobSheetNo}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">BILL NO.</td>
+              <td>{job.billNo || '-'}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">AMC DATE</td>
+              <td>{job.amcDate || '-'}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">DATE IN</td>
+              <td>{job.date || '-'}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">DATE OUT</td>
+              <td>{job.status === 'Completed' ? job.date : 'Pending'}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">PRODUCT</td>
+              <td>{job.productType || job.product}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="js-table" style={{ borderTop: 'none' }}>
+          <tbody>
+            <tr>
+              <td rowSpan="3" style={{ width: '45%', borderTop: 'none' }}>
+                <div className="js-bold">CUSTOMER NAME :-</div>
+                <div style={{ marginBottom: '6px' }}>{job.customerName}</div>
+                <div className="js-bold">MOBILE :-</div>
+                <div style={{ marginBottom: '6px' }}>{job.customerPhone}</div>
+                <div className="js-bold">ADDRESS :-</div>
+                <div>{job.customerAddress}</div>
+              </td>
+              <td style={{ width: '18%', verticalAlign: 'middle', textAlign: 'center', borderTop: 'none' }} className="js-bold">INDOOR</td>
+              <td style={{ width: '37%', padding: 0, borderTop: 'none' }}>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.indoorModel || '-'}</div>
+                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.indoorSerial || '-'}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ verticalAlign: 'middle', textAlign: 'center' }} className="js-bold">OUT DOOR</td>
+              <td style={{ padding: 0 }}>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.outdoorModel || '-'}</div>
+                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.outdoorSerial || '-'}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ verticalAlign: 'middle', textAlign: 'center' }} className="js-bold">COMPRESSOR</td>
+              <td style={{ padding: 0 }}>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.compressorModel || '-'}</div>
+                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.compressorSerial || '-'}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="js-table" style={{ borderTop: 'none' }}>
+          <tbody>
+            <tr className="js-sec-hdr">
+              <td style={{ width: '45%', borderTop: 'none' }}>FAULT / PROBLEM DETAILS</td>
+              <td style={{ width: '42%', borderTop: 'none' }}>WORK / ACTION TAKEN AND USE PART</td>
+              <td style={{ width: '13%', borderTop: 'none' }}>RATE</td>
+            </tr>
+            <tr>
+              <td style={{ minHeight: '45px' }}>1. {job.faultDetails || job.desc || '-'}</td>
+              <td>
+                1. {job.desc || '-'}
+                {job.sparePartName && job.sparePartName !== '-' && (
+                  <div style={{ marginTop: '4px' }}>
+                    2. Part ({job.sparePartOption}): {job.sparePartName} {job.sparePartModel !== '-' ? `(${job.sparePartModel})` : ''}
+                  </div>
+                )}
+                {job.materials && job.materials.length > 0 && job.materials.map((m, i) => (
+                  <div key={i}>{i + 3}. {m.name} (Qty: {m.qty})</div>
+                ))}
+              </td>
+              <td>
+                {job.materials && job.materials.length > 0
+                  ? job.materials.map((m, i) => <div key={i}>₹{m.price || '0'}</div>)
+                  : '-'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="js-table" style={{ borderTop: 'none' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '30%', borderTop: 'none' }} className="js-bold">FILTER CLEAN</td>
+              <td style={{ width: '15%', borderTop: 'none' }}>{job.filterClean || '-'}</td>
+              <td rowSpan="2" style={{ width: '18%', verticalAlign: 'middle', textAlign: 'center', borderTop: 'none' }} className="js-bold">IN-DOOR<br />MOTOR</td>
+              <td rowSpan="2" style={{ width: '37%', padding: 0, borderTop: 'none' }}>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.indoorMotorModel || '-'}</div>
+                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.indoorMotorSerial || '-'}</div>
+              </td>
+            </tr>
+            <tr>
+              <td className="js-bold">STAND TYPE</td>
+              <td>{job.standType || '-'}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">SWING / FLAPPER</td>
+              <td>{job.swingFlapper || '-'}</td>
+              <td rowSpan="2" style={{ verticalAlign: 'middle', textAlign: 'center' }} className="js-bold">OUT-DOOR<br />MOTOR</td>
+              <td rowSpan="2" style={{ padding: 0 }}>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.outdoorMotorModel || '-'}</div>
+                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.outdoorMotorSerial || '-'}</div>
+              </td>
+            </tr>
+            <tr>
+              <td className="js-bold">STABILIZER</td>
+              <td>{job.stabilizer || '-'}</td>
+            </tr>
+            <tr>
+              <td className="js-bold">REMOTE</td>
+              <td>{job.remoteStatus || '-'}</td>
+              <td colSpan="2" style={{ padding: 0 }}>
+                <div style={{ display: 'flex' }}>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>R (Volt):</strong> {job.phaseR || '-'}</div>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>Y (Volt):</strong> {job.phaseY || '-'}</div>
+                  <div style={{ flex: 1, padding: '3px 5px' }}><strong>B (Volt):</strong> {job.phaseB || '-'}</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td className="js-bold">ROOM TEMP.</td>
+              <td>{job.roomTemp || '-'}</td>
+              <td colSpan="2" style={{ padding: 0 }}>
+                <div style={{ display: 'flex' }}>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>R (Amp):</strong> {job.ampR || '-'}</div>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>Y (Amp):</strong> {job.ampY || '-'}</div>
+                  <div style={{ flex: 1, padding: '3px 5px' }}><strong>B (Amp):</strong> {job.ampB || '-'}</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td className="js-bold">VOLTAGE</td>
+              <td>{job.voltage || '-'}</td>
+              <td colSpan="2" style={{ padding: '3px 5px' }}>
+                <strong>TECHNICIAN:</strong> {job.staffName || '-'} | <strong>STATUS:</strong> {job.status}
+              </td>
+            </tr>
+            <tr>
+              <td className="js-bold">AMPERE</td>
+              <td>{job.ampere || '-'}</td>
+              <td colSpan="2" rowSpan="8" style={{ padding: '6px' }}>
+                <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
+                {job.signatureURL ? (
+                  <div style={{ margin: '6px 0', borderBottom: '1px dashed #94a3b8', paddingBottom: '4px' }}>
+                    <img src={job.signatureURL} alt="Customer Signature" style={{ maxHeight: '70px', maxWidth: '100%', objectFit: 'contain' }} />
+                  </div>
+                ) : (
+                  <div style={{ height: '45px', borderBottom: '1px dashed #cbd5e1', margin: '6px 0' }}></div>
+                )}
+                <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>REMARK:</strong> {job.feedback || job.note || '-'}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>MOBILE:</strong> {job.customerPhone}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>DATE:</strong> {job.date}</div>
+                <div style={{ fontSize: '9px', color: '#475569', marginTop: '4px' }}>GPS: {job.location}</div>
+              </td>
+            </tr>
+            <tr><td className="js-bold">COMPRESSOR AMPERE</td><td>{job.compressorAmpere || '-'}</td></tr>
+            <tr><td className="js-bold">DRAIN WITH SIZE</td><td>{job.drainSize || '-'}</td></tr>
+            <tr><td className="js-bold">COPPER PIPE SIZE</td><td>{job.copperPipeSize || '-'}</td></tr>
+            <tr><td className="js-bold">OUTDOOR CLEAN</td><td>{job.outdoorClean || '-'}</td></tr>
+            <tr><td className="js-bold">SUCTION PRESSURE</td><td>{job.sectionPressure || '-'}</td></tr>
+            <tr><td className="js-bold">WIRE SIZE &amp; CORE</td><td>{job.wireSizeCore || '-'}</td></tr>
+            <tr><td className="js-bold">INSULATION</td><td>{job.insulation || '-'}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [jobSheets, setJobSheets] = useState([]);
@@ -86,12 +325,9 @@ export default function App() {
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  
   const [adminMainTab, setAdminMainTab] = useState('jobs');
-  const [adminJobSubTab, setAdminJobSubTab] = useState('completed'); // 'completed' or 'pending'
-  const [adminSpareSubTab, setAdminSpareSubTab] = useState('stock'); // 'stock' or 'pending'
-
-  // Staff folder selection in admin view
+  const [adminJobSubTab, setAdminJobSubTab] = useState('completed');
+  const [adminSpareSubTab, setAdminSpareSubTab] = useState('stock');
   const [selectedStaffFolder, setSelectedStaffFolder] = useState(null);
 
   // New Stock Form State
@@ -100,47 +336,74 @@ export default function App() {
   const [newStockDesc, setNewStockDesc] = useState('');
   const [newStockRate, setNewStockRate] = useState('');
 
-  // Detailed modal view for Admin or after submission
+  // Detailed view states
   const [inspectedJob, setInspectedJob] = useState(null);
   const [lastSubmittedJob, setLastSubmittedJob] = useState(null);
 
-  // Job Form State
+  // Job Form State (Step 1)
   const [jobCustName, setJobCustName] = useState('');
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
-  
+  const [billNo, setBillNo] = useState('');
+  const [amcDate, setAmcDate] = useState('');
+  const [faultDetails, setFaultDetails] = useState('');
+
+  // Job Form State (Step 2 - Complete HVAC Technical Checklist)
   const [indoorModel, setIndoorModel] = useState('');
   const [indoorSerial, setIndoorSerial] = useState('');
   const [outdoorModel, setOutdoorModel] = useState('');
   const [outdoorSerial, setOutdoorSerial] = useState('');
-  const [motorType, setMotorType] = useState('AC');
   const [compressorModel, setCompressorModel] = useState('');
   const [compressorSerial, setCompressorSerial] = useState('');
+  const [indoorMotorModel, setIndoorMotorModel] = useState('');
+  const [indoorMotorSerial, setIndoorMotorSerial] = useState('');
+  const [outdoorMotorModel, setOutdoorMotorModel] = useState('');
+  const [outdoorMotorSerial, setOutdoorMotorSerial] = useState('');
+
+  const [filterClean, setFilterClean] = useState('OK');
+  const [standType, setStandType] = useState('Wall Stand');
+  const [swingFlapper, setSwingFlapper] = useState('OK');
+  const [stabilizer, setStabilizer] = useState('OK');
+  const [remoteStatus, setRemoteStatus] = useState('OK');
+  const [outdoorClean, setOutdoorClean] = useState('OK');
+
   const [sectionPressure, setSectionPressure] = useState('');
   const [roomTemp, setRoomTemp] = useState('');
   const [voltage, setVoltage] = useState('230V');
   const [ampere, setAmpere] = useState('');
+  const [compressorAmpere, setCompressorAmpere] = useState('');
+  const [drainSize, setDrainSize] = useState('');
+  const [copperPipeSize, setCopperPipeSize] = useState('');
+  const [wireSizeCore, setWireSizeCore] = useState('');
+  const [insulation, setInsulation] = useState('OK');
+  const [phaseR, setPhaseR] = useState('');
+  const [phaseY, setPhaseY] = useState('');
+  const [phaseB, setPhaseB] = useState('');
+  const [ampR, setAmpR] = useState('');
+  const [ampY, setAmpY] = useState('');
+  const [ampB, setAmpB] = useState('');
 
+  // Step 3 & 4
   const [workDone, setWorkDone] = useState('');
   const [sparePartOption, setSparePartOption] = useState('Used Part');
   const [sparePartName, setSparePartName] = useState('');
   const [sparePartModel, setSparePartModel] = useState('');
-
-  const [jobStatusType, setJobStatusType] = useState('Completed');
-  const [pendingSubOption, setPendingSubOption] = useState('Part Pending');
-  const [otherReason, setOtherReason] = useState('');
-  const [jobNote, setJobNote] = useState('');
-
   const [materials, setMaterials] = useState([
     { name: '', qty: '', price: '' },
     { name: '', qty: '', price: '' }
   ]);
 
+  // Step 5 & Full-Screen Signature Modal
+  const [jobStatusType, setJobStatusType] = useState('Completed');
+  const [pendingSubOption, setPendingSubOption] = useState('Part Pending');
+  const [jobNote, setJobNote] = useState('');
   const [customerFeedback, setCustomerFeedback] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const canvasRef = useRef(null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [savedSignatureURL, setSavedSignatureURL] = useState('');
+  const fullCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   // Firestore Real-time Sync
@@ -166,6 +429,19 @@ export default function App() {
       unsubLogs();
     };
   }, []);
+
+  // फुल-स्क्रीन सिग्नेचर कैनवास साइज़ सेट करना
+  useEffect(() => {
+    if (isSignatureModalOpen && fullCanvasRef.current) {
+      const canvas = fullCanvasRef.current;
+      canvas.width = window.innerWidth - 30;
+      canvas.height = window.innerHeight - 160;
+      const ctx = canvas.getContext('2d');
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#0f172a';
+    }
+  }, [isSignatureModalOpen]);
 
   const recordUserLogin = async (identifier, userRole, displayName) => {
     const cleanId = identifier.trim();
@@ -221,36 +497,54 @@ export default function App() {
     }
   };
 
-  const startDrawing = (e) => {
-    const canvas = canvasRef.current;
+  // Full Screen Signature Drawing Handlers
+  const getCoordinates = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
+
+  const startFullDrawing = (e) => {
+    const canvas = fullCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    const { x, y } = getCoordinates(e, canvas);
     ctx.beginPath();
-    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    ctx.moveTo(x, y);
     setIsDrawing(true);
   };
 
-  const draw = (e) => {
+  const drawFull = (e) => {
     if (!isDrawing) return;
-    const canvas = canvasRef.current;
+    const canvas = fullCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    const { x, y } = getCoordinates(e, canvas);
+    ctx.lineTo(x, y);
     ctx.stroke();
   };
 
-  const stopDrawing = () => { setIsDrawing(false); };
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
+  const stopFullDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearFullSignature = () => {
+    const canvas = fullCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const saveFullSignature = () => {
+    const canvas = fullCanvasRef.current;
+    if (canvas) {
+      setSavedSignatureURL(canvas.toDataURL('image/png'));
+    }
+    setIsSignatureModalOpen(false);
   };
 
   const handleCustomerLogin = async (e) => {
@@ -293,6 +587,7 @@ export default function App() {
       customerPhone: custPhone,
       customerAddress: custAddressInput,
       product: "[" + categoryType + "] " + productType,
+      faultDetails: problemDesc,
       desc: problemDesc,
       status: 'Pending',
       pendingSubOption: '-',
@@ -304,24 +599,10 @@ export default function App() {
       signatureURL: '',
       categoryType,
       productType,
-      indoorModel: '-',
-      indoorSerial: '-',
-      outdoorModel: '-',
-      outdoorSerial: '-',
-      motorType: '-',
-      compressorModel: '-',
-      compressorSerial: '-',
-      sectionPressure: '-',
-      roomTemp: '-',
-      voltage: '-',
-      ampere: '-',
       materials: [],
       sparePartOption: '-',
       sparePartName: '-',
-      sparePartModel: '-',
-      otherReason: '-',
-      note: '-',
-      feedback: '-'
+      sparePartModel: '-'
     };
 
     setJobSheets([newEntry, ...jobSheets]);
@@ -392,39 +673,79 @@ export default function App() {
     }
   };
 
-  const handleOpenBlankNewJob = () => {
+  const resetJobForm = () => {
     setSelectedComplaint(null);
     setJobCustName('');
     setJobCustPhone('');
     setJobCustAddress('');
+    setBillNo('');
+    setAmcDate('');
+    setFaultDetails('');
+    setIndoorModel('');
+    setIndoorSerial('');
+    setOutdoorModel('');
+    setOutdoorSerial('');
+    setCompressorModel('');
+    setCompressorSerial('');
+    setIndoorMotorModel('');
+    setIndoorMotorSerial('');
+    setOutdoorMotorModel('');
+    setOutdoorMotorSerial('');
+    setFilterClean('OK');
+    setStandType('Wall Stand');
+    setSwingFlapper('OK');
+    setStabilizer('OK');
+    setRemoteStatus('OK');
+    setOutdoorClean('OK');
+    setSectionPressure('');
+    setRoomTemp('');
+    setVoltage('230V');
+    setAmpere('');
+    setCompressorAmpere('');
+    setDrainSize('');
+    setCopperPipeSize('');
+    setWireSizeCore('');
+    setInsulation('OK');
+    setPhaseR('');
+    setPhaseY('');
+    setPhaseB('');
+    setAmpR('');
+    setAmpY('');
+    setAmpB('');
     setWorkDone('');
     setSparePartOption('Used Part');
     setSparePartName('');
     setSparePartModel('');
-    setOtherReason('');
     setJobNote('');
+    setCustomerFeedback('');
+    setSavedSignatureURL('');
+    setImageFile(null);
+    setMaterials([{ name: '', qty: '', price: '' }, { name: '', qty: '', price: '' }]);
     setCategoryType('HVAC & Refrigeration');
     setProductType('Split / Window AC');
     setJobStatusType('Completed');
     setPendingSubOption('Part Pending');
     setWizardStep(1);
+  };
+
+  const handleOpenBlankNewJob = () => {
+    resetJobForm();
     setStaffSubTab('newJobForm');
   };
 
   const handleFillComplaintToNewJob = (comp) => {
+    resetJobForm();
     setSelectedComplaint(comp);
     setJobCustName(comp.customerName || 'Customer');
     setJobCustPhone(comp.customerPhone || '');
     setJobCustAddress(comp.customerAddress || '');
     setCategoryType(comp.categoryType || 'HVAC & Refrigeration');
     setProductType(comp.productType || 'Split / Window AC');
+    setFaultDetails(comp.faultDetails || comp.desc || '');
     setWorkDone(comp.desc || '');
     setSparePartOption(comp.sparePartOption && comp.sparePartOption !== '-' ? comp.sparePartOption : 'Used Part');
     setSparePartName(comp.sparePartName && comp.sparePartName !== '-' ? comp.sparePartName : '');
     setSparePartModel(comp.sparePartModel && comp.sparePartModel !== '-' ? comp.sparePartModel : '');
-    setOtherReason(comp.otherReason && comp.otherReason !== '-' ? comp.otherReason : '');
-    setJobNote(comp.note && comp.note !== '-' ? comp.note : '');
-    setWizardStep(1);
     setStaffSubTab('newJobForm');
   };
 
@@ -457,9 +778,6 @@ export default function App() {
     }
 
     setUploading(true);
-
-    const canvas = canvasRef.current;
-    const signatureDataURL = canvas ? canvas.toDataURL('image/png') : '';
 
     const processSave = async (locStr) => {
       let uploadedImageUrl = '';
@@ -498,12 +816,15 @@ export default function App() {
 
         const updatedRecord = {
           jobSheetNo,
+          billNo: billNo || '-',
+          amcDate: amcDate || '-',
           customerName: jobCustName,
           customerPhone: jobCustPhone,
           customerAddress: jobCustAddress,
           categoryType,
           productType,
           product: "[" + categoryType + "] " + productType,
+          faultDetails: faultDetails || workDone || '-',
           desc: workDone || 'General Service / Repair',
           status: finalStatus,
           pendingSubOption: jobStatusType === 'Pending' ? pendingSubOption : '-',
@@ -512,25 +833,44 @@ export default function App() {
           staffPhone: staffPhoneInput || '0000000000',
           location: locStr,
           photoURL: uploadedImageUrl,
-          signatureURL: signatureDataURL,
+          signatureURL: savedSignatureURL,
           indoorModel: indoorModel || '-',
           indoorSerial: indoorSerial || '-',
           outdoorModel: outdoorModel || '-',
           outdoorSerial: outdoorSerial || '-',
-          motorType: motorType,
           compressorModel: compressorModel || '-',
           compressorSerial: compressorSerial || '-',
-          sectionPressure: categoryType === 'HVAC & Refrigeration' ? sectionPressure : '-',
-          roomTemp: categoryType === 'HVAC & Refrigeration' ? roomTemp : '-',
-          voltage: categoryType !== 'Civil Work' ? voltage : '-',
-          ampere: categoryType !== 'Civil Work' ? ampere : '-',
+          indoorMotorModel: indoorMotorModel || '-',
+          indoorMotorSerial: indoorMotorSerial || '-',
+          outdoorMotorModel: outdoorMotorModel || '-',
+          outdoorMotorSerial: outdoorMotorSerial || '-',
+          filterClean: categoryType === 'HVAC & Refrigeration' ? filterClean : '-',
+          standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
+          swingFlapper: categoryType === 'HVAC & Refrigeration' ? swingFlapper : '-',
+          stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
+          remoteStatus: categoryType === 'HVAC & Refrigeration' ? remoteStatus : '-',
+          outdoorClean: categoryType === 'HVAC & Refrigeration' ? outdoorClean : '-',
+          sectionPressure: categoryType === 'HVAC & Refrigeration' ? (sectionPressure || '-') : '-',
+          roomTemp: categoryType === 'HVAC & Refrigeration' ? (roomTemp || '-') : '-',
+          voltage: categoryType !== 'Civil Work' ? (voltage || '-') : '-',
+          ampere: categoryType !== 'Civil Work' ? (ampere || '-') : '-',
+          compressorAmpere: categoryType === 'HVAC & Refrigeration' ? (compressorAmpere || '-') : '-',
+          drainSize: categoryType === 'HVAC & Refrigeration' ? (drainSize || '-') : '-',
+          copperPipeSize: categoryType === 'HVAC & Refrigeration' ? (copperPipeSize || '-') : '-',
+          wireSizeCore: categoryType !== 'Civil Work' ? (wireSizeCore || '-') : '-',
+          insulation: categoryType !== 'Civil Work' ? insulation : '-',
+          phaseR: phaseR || '-',
+          phaseY: phaseY || '-',
+          phaseB: phaseB || '-',
+          ampR: ampR || '-',
+          ampY: ampY || '-',
+          ampB: ampB || '-',
           materials: filteredMaterials,
           sparePartOption: sparePartOption,
           sparePartName: sparePartName || '-',
           sparePartModel: sparePartModel || '-',
-          otherReason: otherReason || '-',
           note: jobNote || '-',
-          feedback: customerFeedback || 'Good Service'
+          feedback: customerFeedback || 'OK'
         };
 
         const filteredList = jobSheets.filter(j => j.jobSheetNo !== jobSheetNo);
@@ -540,32 +880,7 @@ export default function App() {
 
         setUploading(false);
         setLastSubmittedJob(updatedRecord);
-        alert('जॉब शीट सफलतापूर्वक सेव हो गई!\nजॉब शीट नंबर: ' + jobSheetNo);
-        
-        setSelectedComplaint(null);
-        setJobCustName('');
-        setJobCustAddress('');
-        setJobCustPhone('');
-        setIndoorModel('');
-        setIndoorSerial('');
-        setOutdoorModel('');
-        setOutdoorSerial('');
-        setCompressorModel('');
-        setCompressorSerial('');
-        setWorkDone('');
-        setSparePartOption('Used Part');
-        setSparePartName('');
-        setSparePartModel('');
-        setOtherReason('');
-        setJobNote('');
-        setSectionPressure('');
-        setRoomTemp('');
-        setAmpere('');
-        setCustomerFeedback('');
-        setImageFile(null);
-        setMaterials([{ name: '', qty: '', price: '' }, { name: '', qty: '', price: '' }]);
-        clearSignature();
-        setWizardStep(1);
+        resetJobForm();
         setStaffSubTab('menu');
 
       } catch (error) {
@@ -624,23 +939,87 @@ export default function App() {
     return acc;
   }, {});
 
-  const sendWhatsAppToCustomer = (job) => {
-    const msg = `नमस्ते ${job.customerName}, आपकी मैनक्यूब (Manqube) जॉब शीट (${job.jobSheetNo}) पूर्ण हो गई है। उत्पाद: ${job.product}, विवरण: ${job.desc}, दिनांक: ${job.date}. धन्यवाद!`;
-    const url = `https://wa.me/91${job.customerPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
-  };
-
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: '750px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
+    <div style={{ fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
       
+      {/* फुल-स्क्रीन मोबाइल सिग्नेचर मॉडल (Full Screen Signature Pad) */}
+      {isSignatureModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#ffffff',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '15px',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
+            <div>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '18px' }}>✍️ कस्टमर हस्ताक्षर (Customer Signature)</h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>नीचे खाली बॉक्स में अपनी उंगली से हस्ताक्षर करें</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsSignatureModalOpen(false)}
+              style={{ padding: '6px 12px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}
+            >
+              ✕ बंद करें
+            </button>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '10px 0' }}>
+            <canvas
+              ref={fullCanvasRef}
+              onMouseDown={startFullDrawing}
+              onMouseMove={drawFull}
+              onMouseUp={stopFullDrawing}
+              onMouseLeave={stopFullDrawing}
+              onTouchStart={startFullDrawing}
+              onTouchMove={drawFull}
+              onTouchEnd={stopFullDrawing}
+              style={{
+                border: '2px dashed #2563eb',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                touchAction: 'none',
+                cursor: 'crosshair'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={clearFullSignature}
+              style={{ flex: 1, padding: '14px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px' }}
+            >
+              🔄 साफ करें (Clear)
+            </button>
+            <button
+              type="button"
+              onClick={saveFullSignature}
+              style={{ flex: 2, padding: '14px', background: '#166534', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px' }}
+            >
+              ✔ हस्ताक्षर सेव करें (Done)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* हेडर */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', background: '#fff', borderRadius: '8px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
         <img 
           src="/1000384854.jpg" 
           alt="Manqube Logo" 
           style={{ width: '70px', height: '70px', objectFit: 'contain', borderRadius: '50%', marginBottom: '8px' }}
         />
-        <h2 style={{ margin: '0', color: '#1e293b', fontSize: '20px' }}>MANQUBE</h2>
-        <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b' }}>We Build. Your Trust.</p>
+        <h2 style={{ margin: '0', color: '#1e293b', fontSize: '20px' }}>MANQUBE PRIVATE LIMITED</h2>
+        <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b' }}>We Build. Your Trust. | 212 Naini, Prayagraj</p>
       </div>
 
       {activeTab !== 'home' && (
@@ -687,6 +1066,7 @@ export default function App() {
         </div>
       )}
 
+      {/* 1. कस्टमर पोर्टल */}
       {activeTab === 'complaint' && (
         <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           <h3>कस्टमर पोर्टल</h3>
@@ -755,7 +1135,6 @@ export default function App() {
                       <option value="VRV / VRF System">VRV / VRF System</option>
                       <option value="AHU Unit (Air Handling Unit)">AHU Unit (Air Handling Unit)</option>
                       <option value="Chiller Unit">Chiller Unit (चिलर यूनिट)</option>
-                      <option value="Tower / Cassette AC">Tower / Cassette AC</option>
                       <option value="Air Cooler (Honeywool/Iron)">Air Cooler (Honeywool/Iron)</option>
                       <option value="Deep Freezer / Refrigerator">Deep Freezer / Refrigerator</option>
                       <option value="Water Cooler">Water Cooler</option>
@@ -829,6 +1208,7 @@ export default function App() {
         </div>
       )}
 
+      {/* 2. फ़ील्ड स्टाफ पोर्टल */}
       {activeTab === 'staff' && (
         <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           <h3>फ़ील्ड स्टाफ लॉगिन</h3>
@@ -878,19 +1258,12 @@ export default function App() {
                 <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>लॉग आउट</button>
               </div>
 
+              {/* सबमिट होने के तुरंत बाद पूरी प्रिंटेड फॉर्मेट वाली जॉब शीट दिखेगी */}
               {lastSubmittedJob && (
-                <div style={{ background: '#dcfce7', padding: '12px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #86efac' }}>
-                  <h4 style={{ margin: '0 0 8px 0', color: '#166534' }}>✅ जॉब सफलतापूर्वक सबमिट हो गई!</h4>
-                  <p style={{ margin: '0 0 10px 0', fontSize: '12px' }}>जॉब नंबर: <strong>{lastSubmittedJob.jobSheetNo}</strong></p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => window.print()} style={{ padding: '6px 12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                      🖨️ प्रिंट करें (Print)
-                    </button>
-                    <button onClick={() => sendWhatsAppToCustomer(lastSubmittedJob)} style={{ padding: '6px 12px', background: '#166534', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                      💬 व्हाट्सएप पर भेजें (WhatsApp)
-                    </button>
-                  </div>
-                </div>
+                <PrintableJobSheet
+                  job={lastSubmittedJob}
+                  onClose={() => setLastSubmittedJob(null)}
+                />
               )}
 
               {staffSubTab === 'menu' && (
@@ -966,12 +1339,14 @@ export default function App() {
                   ) : (
                     completedJobsList.map((job) => (
                       <div key={job.jobSheetNo} style={{ border: '1px solid #86efac', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f0fdf4' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div><strong>जॉब नंबर:</strong> {job.jobSheetNo}</div>
-                          <div>
-                            <button onClick={() => window.print()} style={{ marginRight: '5px', padding: '2px 6px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '10px' }}>प्रिंट</button>
-                            <button onClick={() => sendWhatsAppToCustomer(job)} style={{ padding: '2px 6px', background: '#166534', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '10px' }}>व्हाट्सएप</button>
-                          </div>
+                          <button
+                            onClick={() => setLastSubmittedJob(job)}
+                            style={{ padding: '4px 8px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}
+                          >
+                            📄 जॉब शीट खोलें / प्रिंट करें
+                          </button>
                         </div>
                         <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
                         <div><strong>उत्पाद:</strong> {job.product}</div>
@@ -1010,19 +1385,31 @@ export default function App() {
                     <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Wizard Step: {wizardStep} / 5</span>
                   </div>
 
+                  {/* स्टेप 1: कस्टमर और उत्पाद */}
                   {wizardStep === 1 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 1: कस्टमर और प्रॉडक्ट विवरण</h4>
-                      <label>कस्टमर का नाम:</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px', fontWeight: 'bold' }}>बिल नं (Bill No. - वैकल्पिक):</label>
+                          <input type="text" placeholder="Bill No." value={billNo} onChange={(e) => setBillNo(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px', fontWeight: 'bold' }}>AMC दिनांक (AMC Date):</label>
+                          <input type="text" placeholder="DD/MM/YYYY" value={amcDate} onChange={(e) => setAmcDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                      </div>
+
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>कस्टमर का नाम:</label>
                       <input type="text" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
 
-                      <label>कस्टमर मोबाइल नंबर:</label>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>कस्टमर मोबाइल नंबर:</label>
                       <input type="tel" maxLength="10" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
 
-                      <label>कस्टमर का पूरा पता (Address):</label>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>कस्टमर का पूरा पता (Address):</label>
                       <textarea rows="2" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
 
-                      <label>श्रेणी (Category):</label>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>श्रेणी (Category):</label>
                       <select value={categoryType} onChange={handleCategoryChange} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                         <option value="HVAC & Refrigeration">HVAC & Refrigeration</option>
                         <option value="Electrical Work">Electrical Work</option>
@@ -1030,7 +1417,7 @@ export default function App() {
                         <option value="Civil Work">Civil Work</option>
                       </select>
 
-                      <label>संबंधित कार्य / उत्पाद (Sub-Option):</label>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>संबंधित कार्य / उत्पाद (Sub-Option):</label>
                       <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                         {categoryType === 'HVAC & Refrigeration' && (
                           <>
@@ -1042,7 +1429,7 @@ export default function App() {
                             <option value="AHU Unit">AHU Unit</option>
                             <option value="Chiller Unit">Chiller Unit</option>
                             <option value="Air Cooler">Air Cooler</option>
-                            <option value="Refrigerator">Refrigerator</option>
+                            <option value="Refrigerator / Deep Freezer">Refrigerator / Deep Freezer</option>
                           </>
                         )}
                         {categoryType === 'Electrical Work' && (
@@ -1076,45 +1463,152 @@ export default function App() {
                         )}
                       </select>
 
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>फॉल्ट / समस्या विवरण (Fault / Problem Details):</label>
+                      <input type="text" placeholder="जैसे: No Cooling, Water Leakage..." value={faultDetails} onChange={(e) => setFaultDetails(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+
                       <button onClick={() => setWizardStep(2)} style={{ marginTop: '10px', padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
                         अगला (Next) →
                       </button>
                     </div>
                   )}
 
+                  {/* स्टेप 2: संपूर्ण HVAC एवं टेक्निकल चेकलिस्ट */}
                   {wizardStep === 2 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <h4>स्टेप 2: टेक्निकल पैरामीटर्स</h4>
+                      <h4>स्टेप 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट</h4>
+
                       {categoryType === 'HVAC & Refrigeration' && (
                         <>
-                          <label>इंडोर मॉडल / सीरियल:</label>
-                          <div style={{ display: 'flex', gap: '5px' }}>
-                            <input type="text" placeholder="Indoor Model" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ flex: 1, padding: '8px' }} />
-                            <input type="text" placeholder="Indoor Serial" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <strong style={{ fontSize: '12px', color: '#0f172a' }}>1. यूनिट और कंप्रेसर विवरण:</strong>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input type="text" placeholder="Indoor Model" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                              <input type="text" placeholder="Indoor Serial" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input type="text" placeholder="Outdoor Model" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                              <input type="text" placeholder="Outdoor Serial" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input type="text" placeholder="Compressor Model" value={compressorModel} onChange={(e) => setCompressorModel(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                              <input type="text" placeholder="Compressor Serial" value={compressorSerial} onChange={(e) => setCompressorSerial(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input type="text" placeholder="In-Door Motor Model" value={indoorMotorModel} onChange={(e) => setIndoorMotorModel(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                              <input type="text" placeholder="In-Door Motor Serial" value={indoorMotorSerial} onChange={(e) => setIndoorMotorSerial(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input type="text" placeholder="Out-Door Motor Model" value={outdoorMotorModel} onChange={(e) => setOutdoorMotorModel(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                              <input type="text" placeholder="Out-Door Motor Serial" value={outdoorMotorSerial} onChange={(e) => setOutdoorMotorSerial(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            </div>
                           </div>
 
-                          <label>आउटडोर मॉडल / सीरियल:</label>
-                          <div style={{ display: 'flex', gap: '5px' }}>
-                            <input type="text" placeholder="Outdoor Model" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ flex: 1, padding: '8px' }} />
-                            <input type="text" placeholder="Outdoor Serial" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div style={{ gridColumn: '1 / -1' }}><strong style={{ fontSize: '12px', color: '#0f172a' }}>2. सर्विस एवं फिजिकल चेकलिस्ट:</strong></div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>FILTER CLEAN:</label>
+                              <select value={filterClean} onChange={(e) => setFilterClean(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="OK">OK (साफ किया)</option>
+                                <option value="Not OK">Not OK / Damaged</option>
+                                <option value="NA">N/A</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>STAND TYPE:</label>
+                              <select value={standType} onChange={(e) => setStandType(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="Wall Stand">Wall Stand</option>
+                                <option value="Floor Stand">Floor Stand</option>
+                                <option value="Hanging / Ceiling">Hanging / Ceiling</option>
+                                <option value="Not Required">Not Required</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>SWING / FLAPPER:</label>
+                              <select value={swingFlapper} onChange={(e) => setSwingFlapper(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="OK">OK</option>
+                                <option value="Not Working">Not Working</option>
+                                <option value="Broken">Broken</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>STABILIZER:</label>
+                              <select value={stabilizer} onChange={(e) => setStabilizer(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="OK">OK</option>
+                                <option value="Faulty">Faulty</option>
+                                <option value="Not Installed">Not Installed</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>REMOTE:</label>
+                              <select value={remoteStatus} onChange={(e) => setRemoteStatus(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="OK">OK</option>
+                                <option value="Not Working">Not Working</option>
+                                <option value="Missing">Missing</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>OUTDOOR CLEAN:</label>
+                              <select value={outdoorClean} onChange={(e) => setOutdoorClean(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="OK">OK (सर्विस की गई)</option>
+                                <option value="Pending">Pending</option>
+                                <option value="NA">N/A</option>
+                              </select>
+                            </div>
                           </div>
 
-                          <label>सेक्शन प्रेशर (PSI):</label>
-                          <input type="text" placeholder="e.g. 120 PSI" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ padding: '8px' }} />
-
-                          <label>रूम टेम्परेचर (°C):</label>
-                          <input type="text" placeholder="e.g. 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ padding: '8px' }} />
+                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div style={{ gridColumn: '1 / -1' }}><strong style={{ fontSize: '12px', color: '#0f172a' }}>3. गैस, पाइपिंग एवं इलेक्ट्रिकल माप:</strong></div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>ROOM TEMP (°C):</label>
+                              <input type="text" placeholder="e.g. 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>SUCTION PRESSURE:</label>
+                              <input type="text" placeholder="e.g. 120 PSI" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>COMPRESSOR AMPERE:</label>
+                              <input type="text" placeholder="e.g. 6.5 A" value={compressorAmpere} onChange={(e) => setCompressorAmpere(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>DRAIN WITH SIZE:</label>
+                              <input type="text" placeholder="e.g. 1 inch PVC" value={drainSize} onChange={(e) => setDrainSize(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>COPPER PIPE SIZE:</label>
+                              <input type="text" placeholder="e.g. 1/4 & 1/2" value={copperPipeSize} onChange={(e) => setCopperPipeSize(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold' }}>INSULATION:</label>
+                              <select value={insulation} onChange={(e) => setInsulation(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '12px' }}>
+                                <option value="OK">OK</option>
+                                <option value="Damaged">Damaged</option>
+                                <option value="Replaced">Replaced</option>
+                              </select>
+                            </div>
+                          </div>
                         </>
                       )}
 
                       {categoryType !== 'Civil Work' && (
-                        <>
-                          <label>वोल्टेज और एम्पीयर:</label>
+                        <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <strong style={{ fontSize: '12px', color: '#0f172a' }}>वोल्टेज, एम्पीयर एवं 3-फ़ेज़ रीडिंग (R / Y / B):</strong>
                           <div style={{ display: 'flex', gap: '5px' }}>
-                            <input type="text" placeholder="Voltage" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ flex: 1, padding: '8px' }} />
-                            <input type="text" placeholder="Ampere" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                            <input type="text" placeholder="Voltage (230V)" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            <input type="text" placeholder="Total Ampere" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            <input type="text" placeholder="Wire Size & Core" value={wireSizeCore} onChange={(e) => setWireSizeCore(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
                           </div>
-                        </>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <input type="text" placeholder="R Voltage" value={phaseR} onChange={(e) => setPhaseR(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            <input type="text" placeholder="Y Voltage" value={phaseY} onChange={(e) => setPhaseY(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            <input type="text" placeholder="B Voltage" value={phaseB} onChange={(e) => setPhaseB(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                          </div>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <input type="text" placeholder="R Ampere" value={ampR} onChange={(e) => setAmpR(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            <input type="text" placeholder="Y Ampere" value={ampY} onChange={(e) => setAmpY(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                            <input type="text" placeholder="B Ampere" value={ampB} onChange={(e) => setAmpB(e.target.value)} style={{ flex: 1, padding: '7px', fontSize: '12px' }} />
+                          </div>
+                        </div>
                       )}
 
                       <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -1124,19 +1618,20 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स */}
                   {wizardStep === 3 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4>स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स</h4>
-                      <label>किया गया कार्य (Work Done):</label>
-                      <textarea rows="3" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ padding: '8px' }} />
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>किया गया कार्य (Work Done):</label>
+                      <textarea rows="3" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
 
-                      <label>स्पेयर पार्ट विकल्प:</label>
-                      <select value={sparePartOption} onChange={(e) => setSparePartOption(e.target.value)} style={{ padding: '8px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>स्पेयर पार्ट विकल्प:</label>
+                      <select value={sparePartOption} onChange={(e) => setSparePartOption(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                         <option value="Used Part">Used Part (इस्तेमाल किया गया)</option>
                         <option value="Pending Part">Pending Part (पार्ट मंगवाना है)</option>
                       </select>
 
-                      <label>स्पेयर पार्ट का नाम और मॉडल:</label>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>स्पेयर पार्ट का नाम और मॉडल:</label>
                       <div style={{ display: 'flex', gap: '5px' }}>
                         <input type="text" placeholder="Part Name" value={sparePartName} onChange={(e) => setSparePartName(e.target.value)} style={{ flex: 1, padding: '8px' }} />
                         <input type="text" placeholder="Model / No." value={sparePartModel} onChange={(e) => setSparePartModel(e.target.value)} style={{ flex: 1, padding: '8px' }} />
@@ -1149,9 +1644,10 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* स्टेप 4: मैटेरियल्स एवं रेट */}
                   {wizardStep === 4 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <h4>स्टेप 4: मैटेरियल्स / पार्ट्स लिस्ट</h4>
+                      <h4>स्टेप 4: मैटेरियल्स / पार्ट्स एवं रेट लिस्ट</h4>
                       {materials.map((mat, idx) => (
                         <div key={idx} style={{ display: 'flex', gap: '5px', marginBottom: '5px' }}>
                           <input 
@@ -1170,7 +1666,7 @@ export default function App() {
                           />
                           <input 
                             type="text" 
-                            placeholder="Price" 
+                            placeholder="Rate ₹" 
                             value={mat.price} 
                             onChange={(e) => handleMaterialFieldChange(idx, 'price', e.target.value)}
                             style={{ flex: 1, padding: '6px' }} 
@@ -1185,10 +1681,11 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* स्टेप 5: स्टेटस, फोटो और वन-क्लिक फुल-स्क्रीन सिग्नेचर */}
                   {wizardStep === 5 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <h4>स्टेप 5: स्टेटस, फोटो और डिजिटल हस्ताक्षर</h4>
-                      <label>जॉब स्टेटस:</label>
+                      <h4>स्टेप 5: स्टेटस, फोटो और कस्टमर हस्ताक्षर</h4>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>जॉब स्टेटस:</label>
                       <select value={jobStatusType} onChange={(e) => setJobStatusType(e.target.value)} style={{ padding: '8px' }}>
                         <option value="Completed">Completed (पूर्ण)</option>
                         <option value="Pending">Pending (लंबित)</option>
@@ -1196,7 +1693,7 @@ export default function App() {
 
                       {jobStatusType === 'Pending' && (
                         <>
-                          <label>पेंडिंग का कारण:</label>
+                          <label style={{ fontSize: '12px', fontWeight: 'bold' }}>पेंडिंग का कारण:</label>
                           <select value={pendingSubOption} onChange={(e) => setPendingSubOption(e.target.value)} style={{ padding: '8px' }}>
                             <option value="Part Pending">Part Pending (पार्ट प्रतीक्षित)</option>
                             <option value="Repeat Complaint">Repeat Complaint</option>
@@ -1205,34 +1702,44 @@ export default function App() {
                         </>
                       )}
 
-                      <label>फोटो अपलोड करें:</label>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>कस्टमर रिमार्क / फीडबैक (Customer Remark):</label>
+                      <input type="text" placeholder="जैसे: Working Fine / Good Service" value={customerFeedback} onChange={(e) => setCustomerFeedback(e.target.value)} style={{ padding: '8px' }} />
+
+                      <label style={{ fontSize: '12px', fontWeight: 'bold' }}>साइट फोटो अपलोड करें:</label>
                       <input type="file" accept="image/*" onChange={handleFileChange} style={{ padding: '6px' }} />
 
-                      <label>कस्टमर हस्ताक्षर (Sign Below):</label>
-                      <div style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '4px', touchAction: 'none' }}>
-                        <canvas 
-                          ref={canvasRef} 
-                          width={320} 
-                          height={120} 
-                          onMouseDown={startDrawing}
-                          onMouseMove={draw}
-                          onMouseUp={stopDrawing}
-                          onMouseLeave={stopDrawing}
-                          onTouchStart={startDrawing}
-                          onTouchMove={draw}
-                          onTouchEnd={stopDrawing}
-                          style={{ display: 'block', margin: '0 auto', cursor: 'crosshair' }}
-                        />
-                      </div>
-                      <button type="button" onClick={clearSignature} style={{ padding: '4px 8px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', alignSelf: 'flex-start' }}>हस्ताक्षर साफ करें</button>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>कस्टमर हस्ताक्षर (Customer Signature):</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsSignatureModalOpen(true)}
+                        style={{
+                          padding: '14px',
+                          backgroundColor: savedSignatureURL ? '#0284c7' : '#2563eb',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {savedSignatureURL ? '✍️ हस्ताक्षर बदलें (Edit Full-Screen Signature)' : '✍️ कस्टमर हस्ताक्षर करें (Open Full Screen)'}
+                      </button>
 
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                        <button onClick={() => setWizardStep(4)} style={{ flex: 1, padding: '10px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
+                      {savedSignatureURL && (
+                        <div style={{ border: '1px solid #cbd5e1', background: '#f8fafc', padding: '8px', borderRadius: '6px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#166534', marginBottom: '4px', fontWeight: 'bold' }}>✅ कस्टमर का हस्ताक्षर सेव हो चुका है:</div>
+                          <img src={savedSignatureURL} alt="Saved Signature Preview" style={{ maxHeight: '80px', border: '1px solid #e2e8f0', background: '#fff' }} />
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                        <button onClick={() => setWizardStep(4)} style={{ flex: 1, padding: '12px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
                         <button 
                           onClick={handleJobSubmit} 
                           disabled={uploading}
-                          style={{ flex: 2, padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
-                          {uploading ? 'सेव हो रहा है...' : 'जॉब शीट फाइनल सेव करें (Submit)'}
+                          style={{ flex: 2, padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px' }}>
+                          {uploading ? 'सेव हो रहा है...' : '✅ जॉब शीट फाइनल सेव करें'}
                         </button>
                       </div>
                     </div>
@@ -1244,6 +1751,7 @@ export default function App() {
         </div>
       )}
 
+      {/* 3. एडमिन कंट्रोल पैनल */}
       {activeTab === 'admin' && (
         <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           <h3>📊 एडमिन कंट्रोल पैनल</h3>
@@ -1274,31 +1782,10 @@ export default function App() {
           ) : (
             <div>
               {inspectedJob !== null ? (
-                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                  <button onClick={() => setInspectedJob(null)} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← लिस्ट पर वापस जाएं</button>
-                  <h4 style={{ color: '#166534', margin: '0 0 10px 0' }}>जॉब शीट विवरण: {inspectedJob.jobSheetNo}</h4>
-                  <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div><strong>कस्टमर नाम:</strong> {inspectedJob.customerName}</div>
-                    <div><strong>मोबाइल नंबर:</strong> {inspectedJob.customerPhone}</div>
-                    <div><strong>पता:</strong> {inspectedJob.customerAddress}</div>
-                    <div><strong>उत्पाद / श्रेणी:</strong> {inspectedJob.product}</div>
-                    <div><strong>कार्य विवरण:</strong> {inspectedJob.desc}</div>
-                    <div><strong>स्टाफ नाम:</strong> {inspectedJob.staffName}</div>
-                    <div><strong>जॉब स्टेटस:</strong> <span style={{ color: inspectedJob.status === 'Completed' ? 'green' : 'orange' }}>{inspectedJob.status}</span></div>
-                    <div><strong>GPS लोकेशन:</strong> {inspectedJob.location}</div>
-                    <div><strong>स्पेयर पार्ट:</strong> {inspectedJob.sparePartName} ({inspectedJob.sparePartOption})</div>
-                    <div><strong>तारीख:</strong> {inspectedJob.date}</div>
-                    {inspectedJob.photoURL && (
-                      <div style={{ marginTop: '5px' }}>
-                        <a href={inspectedJob.photoURL} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>📸 अपलोड की गई फोटो देखें</a>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                      <button onClick={() => window.print()} style={{ padding: '6px 12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>🖨️ प्रिंट करें</button>
-                      <button onClick={() => sendWhatsAppToCustomer(inspectedJob)} style={{ padding: '6px 12px', background: '#166534', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>💬 व्हाट्सएप करें</button>
-                    </div>
-                  </div>
-                </div>
+                <PrintableJobSheet
+                  job={inspectedJob}
+                  onClose={() => setInspectedJob(null)}
+                />
               ) : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '15px' }}>
@@ -1349,9 +1836,7 @@ export default function App() {
                               ) : (
                                 Object.keys(completedByStaff).map((staffName) => (
                                   <div key={staffName} onClick={() => setSelectedStaffFolder(staffName)} style={{ border: '1px solid #cbd5e1', padding: '12px', borderRadius: '6px', marginBottom: '8px', background: '#f8fafc', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                      📁 <strong>{staffName}</strong>
-                                    </div>
+                                    <div>📁 <strong>{staffName}</strong></div>
                                     <span style={{ background: '#0284c7', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>
                                       {completedByStaff[staffName].length} जॉब्स
                                     </span>
@@ -1384,9 +1869,7 @@ export default function App() {
                               ) : (
                                 Object.keys(pendingByStaff).map((staffName) => (
                                   <div key={staffName} onClick={() => setSelectedStaffFolder(staffName)} style={{ border: '1px solid #cbd5e1', padding: '12px', borderRadius: '6px', marginBottom: '8px', background: '#fffbeb', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                      📁 <strong>{staffName}</strong>
-                                    </div>
+                                    <div>📁 <strong>{staffName}</strong></div>
                                     <span style={{ background: '#d97706', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>
                                       {pendingByStaff[staffName].length} जॉब्स
                                     </span>
