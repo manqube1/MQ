@@ -76,6 +76,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
         .js-table td, .js-table th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
         .js-bold { font-weight: bold; }
         .js-sec-hdr { background: #f1f5f9; font-weight: bold; text-align: center; }
+        .faint-label { font-size: 8.5px; color: #888888; font-weight: normal; margin-right: 4px; }
       `}</style>
 
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
@@ -101,36 +102,46 @@ const PrintableJobSheet = ({ job, onClose }) => {
       </div>
 
       <div id="printable-job-card" style={{ border: '2px solid #000', background: '#fff', overflowX: 'auto' }}>
-        <table className="js-table">
+        {/* पूरे पेज के सेंटर में सबसे ऊपर कंपनी हेडर */}
+        <div style={{ textAlign: 'center', padding: '10px 8px', borderBottom: '1px solid #000' }}>
+          <div style={{ fontSize: '19px', fontWeight: 'bold', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+            MANQUBE PRIVATE LIMITED
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '3px' }}>
+            Mobile No: 9415522032, 9335172129
+          </div>
+        </div>
+
+        {/* कस्टमर और जॉब नंबर डिटेल्स */}
+        <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr>
-              <td rowSpan="6" style={{ width: '58%' }}>
-                <div style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '0.4px' }}>MANQUBE PRIVATE LIMITED</div>
-                <div style={{ fontSize: '11px', marginTop: '4px', lineHeight: '1.5' }}>
-                  <strong>Address:</strong> 212 Naini, Prayagraj<br />
-                  ravindragupta.tech@gmail.com | manqube@aol.com<br />
-                  <strong>Mobile No:</strong> 9415522032, 9335172129<br />
-                  <strong>COMPLAINT CALL US:</strong> 05324022800
-                </div>
+              <td rowSpan="6" style={{ width: '55%', borderTop: 'none' }}>
+                <div className="js-bold">CUSTOMER NAME :-</div>
+                <div style={{ marginBottom: '8px', minHeight: '16px' }}>{job.customerName}</div>
+                <div className="js-bold">MOBILE :-</div>
+                <div style={{ marginBottom: '8px', minHeight: '16px' }}>{job.customerPhone}</div>
+                <div className="js-bold">ADDRESS :-</div>
+                <div style={{ minHeight: '24px' }}>{job.customerAddress}</div>
               </td>
-              <td style={{ width: '18%' }} className="js-bold">JOB NO.</td>
-              <td style={{ width: '24%', fontWeight: 'bold' }}>{job.jobSheetNo}</td>
+              <td style={{ width: '18%', borderTop: 'none' }} className="js-bold">JOB NO.</td>
+              <td style={{ width: '27%', fontWeight: 'bold', borderTop: 'none' }}>{job.jobSheetNo}</td>
             </tr>
             <tr>
               <td className="js-bold">BILL NO.</td>
-              <td>{job.billNo || '-'}</td>
+              <td>{job.billNo && job.billNo !== '-' ? job.billNo : ''}</td>
             </tr>
             <tr>
               <td className="js-bold">AMC DATE</td>
-              <td>{job.amcDate || '-'}</td>
+              <td>{job.amcDate && job.amcDate !== '-' ? job.amcDate : ''}</td>
             </tr>
             <tr>
               <td className="js-bold">DATE IN</td>
-              <td>{job.date || '-'}</td>
+              <td>{job.date || ''}</td>
             </tr>
             <tr>
               <td className="js-bold">DATE OUT</td>
-              <td>{job.status === 'Completed' ? job.date : 'Pending'}</td>
+              <td>{job.status === 'Completed' ? job.date : ''}</td>
             </tr>
             <tr>
               <td className="js-bold">PRODUCT</td>
@@ -139,40 +150,55 @@ const PrintableJobSheet = ({ job, onClose }) => {
           </tbody>
         </table>
 
+        {/* यूनिट, आउटडोर और कंप्रेसर (छोटे और हल्के Model/Serial लेबल्स के साथ) */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr>
-              <td rowSpan="3" style={{ width: '45%', borderTop: 'none' }}>
-                <div className="js-bold">CUSTOMER NAME :-</div>
-                <div style={{ marginBottom: '6px' }}>{job.customerName}</div>
-                <div className="js-bold">MOBILE :-</div>
-                <div style={{ marginBottom: '6px' }}>{job.customerPhone}</div>
-                <div className="js-bold">ADDRESS :-</div>
-                <div>{job.customerAddress}</div>
-              </td>
+              <td style={{ width: '45%', borderTop: 'none', borderBottom: 'none' }}></td>
               <td style={{ width: '18%', verticalAlign: 'middle', textAlign: 'center', borderTop: 'none' }} className="js-bold">INDOOR</td>
               <td style={{ width: '37%', padding: 0, borderTop: 'none' }}>
-                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.indoorModel || '-'}</div>
-                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.indoorSerial || '-'}</div>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Model:</span>
+                  <span>{job.indoorModel && job.indoorModel !== '-' ? job.indoorModel : ''}</span>
+                </div>
+                <div style={{ padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Serial:</span>
+                  <span>{job.indoorSerial && job.indoorSerial !== '-' ? job.indoorSerial : ''}</span>
+                </div>
               </td>
             </tr>
             <tr>
+              <td style={{ borderTop: 'none', borderBottom: 'none' }}></td>
               <td style={{ verticalAlign: 'middle', textAlign: 'center' }} className="js-bold">OUT DOOR</td>
               <td style={{ padding: 0 }}>
-                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.outdoorModel || '-'}</div>
-                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.outdoorSerial || '-'}</div>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Model:</span>
+                  <span>{job.outdoorModel && job.outdoorModel !== '-' ? job.outdoorModel : ''}</span>
+                </div>
+                <div style={{ padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Serial:</span>
+                  <span>{job.outdoorSerial && job.outdoorSerial !== '-' ? job.outdoorSerial : ''}</span>
+                </div>
               </td>
             </tr>
             <tr>
+              <td style={{ borderTop: 'none' }}></td>
               <td style={{ verticalAlign: 'middle', textAlign: 'center' }} className="js-bold">COMPRESSOR</td>
               <td style={{ padding: 0 }}>
-                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.compressorModel || '-'}</div>
-                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.compressorSerial || '-'}</div>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Model:</span>
+                  <span>{job.compressorModel && job.compressorModel !== '-' ? job.compressorModel : ''}</span>
+                </div>
+                <div style={{ padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Serial:</span>
+                  <span>{job.compressorSerial && job.compressorSerial !== '-' ? job.compressorSerial : ''}</span>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
 
+        {/* फॉल्ट और किए गए कार्य का विवरण */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr className="js-sec-hdr">
@@ -181,9 +207,9 @@ const PrintableJobSheet = ({ job, onClose }) => {
               <td style={{ width: '13%', borderTop: 'none' }}>RATE</td>
             </tr>
             <tr>
-              <td style={{ minHeight: '45px' }}>1. {job.faultDetails || job.desc || '-'}</td>
+              <td style={{ minHeight: '45px' }}>1. {job.faultDetails || job.desc || ''}</td>
               <td>
-                1. {job.desc || '-'}
+                1. {job.desc || ''}
                 {job.sparePartName && job.sparePartName !== '-' && (
                   <div style={{ marginTop: '4px' }}>
                     2. Part ({job.sparePartOption}): {job.sparePartName} {job.sparePartModel !== '-' ? `(${job.sparePartModel})` : ''}
@@ -196,72 +222,85 @@ const PrintableJobSheet = ({ job, onClose }) => {
               <td>
                 {job.materials && job.materials.length > 0
                   ? job.materials.map((m, i) => <div key={i}>₹{m.price || '0'}</div>)
-                  : '-'}
+                  : ''}
               </td>
             </tr>
           </tbody>
         </table>
 
+        {/* टेक्निकल चेकलिस्ट और मोटर डिटेल्स */}
         <table className="js-table" style={{ borderTop: 'none' }}>
           <tbody>
             <tr>
               <td style={{ width: '30%', borderTop: 'none' }} className="js-bold">FILTER CLEAN</td>
-              <td style={{ width: '15%', borderTop: 'none' }}>{job.filterClean || '-'}</td>
+              <td style={{ width: '15%', borderTop: 'none' }}>{job.filterClean && job.filterClean !== '-' ? job.filterClean : ''}</td>
               <td rowSpan="2" style={{ width: '18%', verticalAlign: 'middle', textAlign: 'center', borderTop: 'none' }} className="js-bold">IN-DOOR<br />MOTOR</td>
               <td rowSpan="2" style={{ width: '37%', padding: 0, borderTop: 'none' }}>
-                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.indoorMotorModel || '-'}</div>
-                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.indoorMotorSerial || '-'}</div>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Model:</span>
+                  <span>{job.indoorMotorModel && job.indoorMotorModel !== '-' ? job.indoorMotorModel : ''}</span>
+                </div>
+                <div style={{ padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Serial:</span>
+                  <span>{job.indoorMotorSerial && job.indoorMotorSerial !== '-' ? job.indoorMotorSerial : ''}</span>
+                </div>
               </td>
             </tr>
             <tr>
               <td className="js-bold">STAND TYPE</td>
-              <td>{job.standType || '-'}</td>
+              <td>{job.standType && job.standType !== '-' ? job.standType : ''}</td>
             </tr>
             <tr>
               <td className="js-bold">SWING / FLAPPER</td>
-              <td>{job.swingFlapper || '-'}</td>
+              <td>{job.swingFlapper && job.swingFlapper !== '-' ? job.swingFlapper : ''}</td>
               <td rowSpan="2" style={{ verticalAlign: 'middle', textAlign: 'center' }} className="js-bold">OUT-DOOR<br />MOTOR</td>
               <td rowSpan="2" style={{ padding: 0 }}>
-                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px' }}><strong>Model:</strong> {job.outdoorMotorModel || '-'}</div>
-                <div style={{ padding: '3px 5px' }}><strong>Serial:</strong> {job.outdoorMotorSerial || '-'}</div>
+                <div style={{ borderBottom: '1px solid #000', padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Model:</span>
+                  <span>{job.outdoorMotorModel && job.outdoorMotorModel !== '-' ? job.outdoorMotorModel : ''}</span>
+                </div>
+                <div style={{ padding: '3px 5px', textAlign: 'left' }}>
+                  <span className="faint-label">Serial:</span>
+                  <span>{job.outdoorMotorSerial && job.outdoorMotorSerial !== '-' ? job.outdoorMotorSerial : ''}</span>
+                </div>
               </td>
             </tr>
             <tr>
               <td className="js-bold">STABILIZER</td>
-              <td>{job.stabilizer || '-'}</td>
+              <td>{job.stabilizer && job.stabilizer !== '-' ? job.stabilizer : ''}</td>
             </tr>
             <tr>
               <td className="js-bold">REMOTE</td>
-              <td>{job.remoteStatus || '-'}</td>
+              <td>{job.remoteStatus && job.remoteStatus !== '-' ? job.remoteStatus : ''}</td>
               <td colSpan="2" style={{ padding: 0 }}>
                 <div style={{ display: 'flex' }}>
-                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>R (Volt):</strong> {job.phaseR || '-'}</div>
-                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>Y (Volt):</strong> {job.phaseY || '-'}</div>
-                  <div style={{ flex: 1, padding: '3px 5px' }}><strong>B (Volt):</strong> {job.phaseB || '-'}</div>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>R:</strong> {job.phaseR && job.phaseR !== '-' ? job.phaseR : ''}</div>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>Y:</strong> {job.phaseY && job.phaseY !== '-' ? job.phaseY : ''}</div>
+                  <div style={{ flex: 1, padding: '3px 5px' }}><strong>B:</strong> {job.phaseB && job.phaseB !== '-' ? job.phaseB : ''}</div>
                 </div>
               </td>
             </tr>
             <tr>
               <td className="js-bold">ROOM TEMP.</td>
-              <td>{job.roomTemp || '-'}</td>
+              <td>{job.roomTemp && job.roomTemp !== '-' ? job.roomTemp : ''}</td>
               <td colSpan="2" style={{ padding: 0 }}>
                 <div style={{ display: 'flex' }}>
-                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>R (Amp):</strong> {job.ampR || '-'}</div>
-                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>Y (Amp):</strong> {job.ampY || '-'}</div>
-                  <div style={{ flex: 1, padding: '3px 5px' }}><strong>B (Amp):</strong> {job.ampB || '-'}</div>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>R:</strong> {job.ampR && job.ampR !== '-' ? job.ampR : ''}</div>
+                  <div style={{ flex: 1, borderRight: '1px solid #000', padding: '3px 5px' }}><strong>Y:</strong> {job.ampY && job.ampY !== '-' ? job.ampY : ''}</div>
+                  <div style={{ flex: 1, padding: '3px 5px' }}><strong>B:</strong> {job.ampB && job.ampB !== '-' ? job.ampB : ''}</div>
                 </div>
               </td>
             </tr>
             <tr>
               <td className="js-bold">VOLTAGE</td>
-              <td>{job.voltage || '-'}</td>
+              <td>{job.voltage && job.voltage !== '-' ? job.voltage : ''}</td>
               <td colSpan="2" style={{ padding: '3px 5px' }}>
-                <strong>TECHNICIAN:</strong> {job.staffName || '-'} | <strong>STATUS:</strong> {job.status}
+                <strong>TECHNICIAN:</strong> {job.staffName || ''} | <strong>STATUS:</strong> {job.status}
               </td>
             </tr>
             <tr>
               <td className="js-bold">AMPERE</td>
-              <td>{job.ampere || '-'}</td>
+              <td>{job.ampere && job.ampere !== '-' ? job.ampere : ''}</td>
               <td colSpan="2" rowSpan="8" style={{ padding: '6px' }}>
                 <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
                 {job.signatureURL ? (
@@ -271,19 +310,18 @@ const PrintableJobSheet = ({ job, onClose }) => {
                 ) : (
                   <div style={{ height: '45px', borderBottom: '1px dashed #cbd5e1', margin: '6px 0' }}></div>
                 )}
-                <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>REMARK:</strong> {job.feedback || job.note || '-'}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>REMARK:</strong> {job.feedback && job.feedback !== '-' ? job.feedback : ''}</div>
                 <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>MOBILE:</strong> {job.customerPhone}</div>
                 <div style={{ fontSize: '11px', marginTop: '4px' }}><strong>DATE:</strong> {job.date}</div>
-                <div style={{ fontSize: '9px', color: '#475569', marginTop: '4px' }}>GPS: {job.location}</div>
               </td>
             </tr>
-            <tr><td className="js-bold">COMPRESSOR AMPERE</td><td>{job.compressorAmpere || '-'}</td></tr>
-            <tr><td className="js-bold">DRAIN WITH SIZE</td><td>{job.drainSize || '-'}</td></tr>
-            <tr><td className="js-bold">COPPER PIPE SIZE</td><td>{job.copperPipeSize || '-'}</td></tr>
-            <tr><td className="js-bold">OUTDOOR CLEAN</td><td>{job.outdoorClean || '-'}</td></tr>
-            <tr><td className="js-bold">SUCTION PRESSURE</td><td>{job.sectionPressure || '-'}</td></tr>
-            <tr><td className="js-bold">WIRE SIZE &amp; CORE</td><td>{job.wireSizeCore || '-'}</td></tr>
-            <tr><td className="js-bold">INSULATION</td><td>{job.insulation || '-'}</td></tr>
+            <tr><td className="js-bold">COMPRESSOR AMPERE</td><td>{job.compressorAmpere && job.compressorAmpere !== '-' ? job.compressorAmpere : ''}</td></tr>
+            <tr><td className="js-bold">DRAIN WITH SIZE</td><td>{job.drainSize && job.drainSize !== '-' ? job.drainSize : ''}</td></tr>
+            <tr><td className="js-bold">COPPER PIPE SIZE</td><td>{job.copperPipeSize && job.copperPipeSize !== '-' ? job.copperPipeSize : ''}</td></tr>
+            <tr><td className="js-bold">OUTDOOR CLEAN</td><td>{job.outdoorClean && job.outdoorClean !== '-' ? job.outdoorClean : ''}</td></tr>
+            <tr><td className="js-bold">SUCTION PRESSURE</td><td>{job.sectionPressure && job.sectionPressure !== '-' ? job.sectionPressure : ''}</td></tr>
+            <tr><td className="js-bold">WIRE SIZE &amp; CORE</td><td>{job.wireSizeCore && job.wireSizeCore !== '-' ? job.wireSizeCore : ''}</td></tr>
+            <tr><td className="js-bold">INSULATION</td><td>{job.insulation && job.insulation !== '-' ? job.insulation : ''}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1258,7 +1296,6 @@ export default function App() {
                 <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>लॉग आउट</button>
               </div>
 
-              {/* सबमिट होने के तुरंत बाद पूरी प्रिंटेड फॉर्मेट वाली जॉब शीट दिखेगी */}
               {lastSubmittedJob && (
                 <PrintableJobSheet
                   job={lastSubmittedJob}
