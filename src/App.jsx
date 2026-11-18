@@ -56,6 +56,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [jobSheets, setJobSheets] = useState([]);
   const [loginLogs, setLoginLogs] = useState([]);
+  const [spareStock, setSpareStock] = useState([
+    { name: 'Compressor 1.5 Ton', qty: '5', desc: 'Rotary Compressor', rate: '6500' },
+    { name: 'AC Capacitor 36 MFD', qty: '12', desc: 'Dual Run Capacitor', rate: '450' }
+  ]);
 
   // Customer Portal State
   const [custPhone, setCustPhone] = useState('');
@@ -74,7 +78,6 @@ export default function App() {
   const [staffLoggedIn, setStaffLoggedIn] = useState(false);
   const [currentStaffName, setCurrentStaffName] = useState('');
   const [staffGpsLocation, setStaffGpsLocation] = useState('Fetching GPS...');
-  
   const [staffSubTab, setStaffSubTab] = useState('menu');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
@@ -83,9 +86,20 @@ export default function App() {
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminSection, setAdminSection] = useState('jobs');
-  const [loginFilterTab, setLoginFilterTab] = useState('all');
-  const [adminExpandedJobId, setAdminExpandedJobId] = useState(null);
+  
+  // Admin 4 Main Tabs: 'jobs', 'spares', 'attendance', 'logins'
+  const [adminMainTab, setAdminMainTab] = useState('jobs');
+  const [adminJobSubTab, setAdminJobSubTab] = useState('completed'); // 'completed' or 'pending'
+  const [adminSpareSubTab, setAdminSpareSubTab] = useState('stock'); // 'stock' or 'pending'
+
+  // New Stock Form State
+  const [newStockName, setNewStockName] = useState('');
+  const [newStockQty, setNewStockQty] = useState('');
+  const [newStockDesc, setNewStockDesc] = useState('');
+  const [newStockRate, setNewStockRate] = useState('');
+
+  // Detailed modal view for Admin
+  const [inspectedJob, setInspectedJob] = useState(null);
 
   // Job Form State
   const [jobCustName, setJobCustName] = useState('');
@@ -491,8 +505,8 @@ export default function App() {
           status: finalStatus,
           pendingSubOption: jobStatusType === 'Pending' ? pendingSubOption : '-',
           date: day + '/' + month + '/' + now.getFullYear() + ' ' + hours + ':' + minutes,
-          staffName: currentStaffName,
-          staffPhone: staffPhoneInput,
+          staffName: currentStaffName || 'Staff (Unknown)',
+          staffPhone: staffPhoneInput || '0000000000',
           location: locStr,
           photoURL: uploadedImageUrl,
           signatureURL: signatureDataURL,
@@ -560,17 +574,53 @@ export default function App() {
     processSave(staffGpsLocation);
   };
 
+  const handleAddStockItem = (e) => {
+    e.preventDefault();
+    if (!newStockName.trim() || !newStockQty.trim() || !newStockRate.trim()) {
+      alert('कृपया पार्ट का नाम, मात्रा और रेट भरें!');
+      return;
+    }
+    const newItem = {
+      name: newStockName,
+      qty: newStockQty,
+      desc: newStockDesc || '-',
+      rate: newStockRate
+    };
+    setSpareStock([newItem, ...spareStock]);
+    setNewStockName('');
+    setNewStockQty('');
+    setNewStockDesc('');
+    setNewStockRate('');
+    alert('स्पेयर पार्ट स्टॉक में सफलतापूर्वक जोड़ दिया गया!');
+  };
+
   const onlineComplaintsList = jobSheets.filter(j => j.status === 'Pending' && j.location === 'Online Booking');
   const pendingJobsList = jobSheets.filter(j => j.status === 'Pending' || j.status === 'Part Pending');
   const completedJobsList = jobSheets.filter(j => j.status === 'Completed');
   const partPendingJobsList = jobSheets.filter(j => j.status === 'Part Pending' || j.sparePartOption === 'Pending Part' || j.sparePartOption === 'Pending');
 
-  const filteredLoginLogs = loginLogs.filter(log => {
-    if (loginFilterTab === 'customer') return log.role === 'customer';
-    if (loginFilterTab === 'office') return log.role === 'office';
-    if (loginFilterTab === 'staff') return log.role === 'staff';
-    return true;
-  });
+  // Group Completed and Pending jobs by Staff Name for Admin Panel
+  const completedByStaff = completedJobsList.reduce((acc, job) => {
+    const sName = job.staffName || 'Unknown Staff';
+    if (!acc[sName]) acc[sName] = [];
+    acc[sName].push(job);
+    return acc;
+  }, {});
+
+  const pendingByStaff = pendingJobsList.reduce((acc, job) => {
+    const sName = job.staffName || 'Unknown Staff';
+    if (!acc[sName]) acc[sName] = [];
+    acc[sName].push(job);
+    return acc;
+  }, {});
+
+  // Group Pending Spare Parts by Part Name
+  const partsPendingByName = partPendingJobsList.reduce((acc, job) => {
+    const pName = job.sparePartName && job.sparePartName !== '-' ? job.sparePartName : 'General Part Pending';
+    if (!acc[pName]) acc[pName] = [];
+    acc[pName].push(job);
+    return acc;
+  }, {});
 
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: '750px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
@@ -589,7 +639,7 @@ export default function App() {
       {activeTab !== 'home' && (
         <div style={{ marginBottom: '15px' }}>
           <button 
-            onClick={() => setActiveTab('home')}
+            onClick={() => { setActiveTab('home'); setInspectedJob(null); }}
             style={{ padding: '8px 14px', backgroundColor: '#475569', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
             ⬅ मुख्य मेनू (Home) पर वापस जाएं
           </button>
@@ -627,12 +677,12 @@ export default function App() {
             onClick={() => setActiveTab('admin')}
             style={{ background: '#fff', borderLeft: '5px solid #d97706', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
             <h3 style={{ margin: '0 0 5px 0', color: '#d97706', fontSize: '18px' }}>📊 एडमिन & ऑफिस स्टाफ पैनल (Office Login)</h3>
-            <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>ऑफिस स्टाफ लॉगिन करके पेंडिंग जॉब्स, स्पेयर पार्ट्स और लॉगिन रिकॉर्ड देखें</p>
+            <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>जॉब शीट, स्पेयर पार्ट्स स्टॉक, अटेंडेंस और लॉगिन हिस्ट्री देखें</p>
           </div>
         </div>
       )}
 
-      {/* 1. शिकायत दर्ज करें टैब (कस्टमर पोर्टल) */}
+      {/* 1. कस्टमर पोर्टल टैब */}
       {activeTab === 'complaint' && (
         <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
           <h3>कस्टमर पोर्टल</h3>
@@ -696,12 +746,11 @@ export default function App() {
                     <>
                       <option value="Split / Window AC">Split / Window AC</option>
                       <option value="Inverter AC">Inverter AC</option>
-                      <option value="Cassette AC">Cassette AC (cómo / कैसेट एसी)</option>
+                      <option value="Cassette AC">Cassette AC (कैसेट एसी)</option>
                       <option value="Ductable AC">Ductable AC (डक्टेबल एसी)</option>
                       <option value="VRV / VRF System">VRV / VRF System</option>
                       <option value="AHU Unit (Air Handling Unit)">AHU Unit (Air Handling Unit)</option>
                       <option value="Chiller Unit">Chiller Unit (चिलर यूनिट)</option>
-                      <option value="Tower / Cassette AC">Tower / Cassette AC</option>
                       <option value="Air Cooler (Honeywool/Iron)">Air Cooler (Honeywool/Iron)</option>
                       <option value="Deep Freezer / Refrigerator">Deep Freezer / Refrigerator</option>
                       <option value="Water Cooler">Water Cooler</option>
@@ -813,29 +862,20 @@ export default function App() {
 
               {staffSubTab === 'menu' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {/* विकल्प 1: नई जॉब शीट */}
                   <button onClick={handleOpenBlankNewJob} style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
                     ➕ नई जॉब शीट भरें (New Job Sheet)
                   </button>
-                  
-                  {/* विकल्प 2: ऑनलाइन शिकायतें */}
                   <button onClick={() => setStaffSubTab('onlineComplaints')} style={{ padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
-                    📋 ऑनलाइन शिकायतें देखें ({onlineComplaintsList.length})[span_4](start_span)[span_4](end_span)
+                    📋 ऑनलाइन शिकायतें देखें ({onlineComplaintsList.length})
                   </button>
-                  
-                  {/* विकल्प 3: पेंडिंग जॉब्स */}
                   <button onClick={() => setStaffSubTab('pending')} style={{ padding: '12px', backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
-                    ⏳ पेंडिंग जॉब्स ({pendingJobsList.length})[span_5](start_span)[span_5](end_span)
+                    ⏳ पेंडिंग जॉब्स ({pendingJobsList.length})
                   </button>
-
-                  {/* विकल्प 4: कम्पलीट जॉब्स */}
                   <button onClick={() => setStaffSubTab('completed')} style={{ padding: '12px', backgroundColor: '#0ea5e9', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
-                    ✅ कम्पलीट जॉब्स ({completedJobsList.length})[span_6](start_span)[span_6](end_span)
+                    ✅ कम्पलीट जॉब्स ({completedJobsList.length})
                   </button>
-                  
-                  {/* विकल्प 5: स्पेयर पार्ट पेंडिंग */}
                   <button onClick={() => setStaffSubTab('partPending')} style={{ padding: '12px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
-                    ⚙️ स्पेयर पार्ट पेंडिंग ({partPendingJobsList.length})[span_7](start_span)[span_7](end_span)
+                    ⚙️ स्पेयर पार्ट पेंडिंग ({partPendingJobsList.length})
                   </button>
                 </div>
               )}
@@ -887,7 +927,7 @@ export default function App() {
               {staffSubTab === 'completed' && (
                 <div>
                   <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← पीछे जाएं</button>
-                  <h4>कम्पलीट जॉब्स (Completed Jobs - OK)</h4>
+                  <h4>कम्पलीट जॉब्स (Completed Jobs)</h4>
                   {completedJobsList.length === 0 ? (
                     <p style={{ color: '#64748b' }}>अभी तक कोई जॉब कम्पलीट नहीं हुई है।</p>
                   ) : (
@@ -897,8 +937,6 @@ export default function App() {
                         <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
                         <div><strong>उत्पाद:</strong> {job.product}</div>
                         <div><strong>कार्य विवरण:</strong> {job.desc}</div>
-                        <div><strong>स्टाफ:</strong> {job.staffName}</div>
-                        <div style={{ fontSize: '11px', color: '#166534', marginTop: '4px' }}>तारीख: {job.date} | स्टेटस: Completed ✅</div>
                       </div>
                     ))
                   )}
@@ -908,7 +946,7 @@ export default function App() {
               {staffSubTab === 'partPending' && (
                 <div>
                   <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← पीछे जाएं</button>
-                  <h4>स्पेयर पार्ट पेंडिंग जॉब्स (Spare Part Pending)</h4>
+                  <h4>स्पेयर पार्ट पेंडिंग</h4>
                   {partPendingJobsList.length === 0 ? (
                     <p style={{ color: '#64748b' }}>कोई स्पेयर पार्ट पेंडिंग जॉब नहीं है।</p>
                   ) : (
@@ -1121,10 +1159,10 @@ export default function App() {
         </div>
       )}
 
-      {/* 3. ऑफिस एडमिन टैब */}
+      {/* 3. एडमिन / ऑफिस कंट्रोल पैनल (4 मुख्य ऑप्शंस के साथ) */}
       {activeTab === 'admin' && (
         <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-          <h3>ऑफिस एडमिन पोर्टल</h3>
+          <h3>📊 एडमिन कंट्रोल पैनल</h3>
           {!adminLoggedIn ? (
             <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <label style={{ fontWeight: 'bold' }}>यूजरनेम (Username):</label>
@@ -1151,80 +1189,226 @@ export default function App() {
             </form>
           ) : (
             <div>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
-                <button 
-                  onClick={() => setAdminSection('jobs')}
-                  style={{ flex: 1, padding: '8px', backgroundColor: adminSection === 'jobs' ? '#166534' : '#e2e8f0', color: adminSection === 'jobs' ? '#fff' : '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-                  जॉब शीट्स ({jobSheets.length})
-                </button>
-                <button 
-                  onClick={() => setAdminSection('logins')}
-                  style={{ flex: 1, padding: '8px', backgroundColor: adminSection === 'logins' ? '#166534' : '#e2e8f0', color: adminSection === 'logins' ? '#fff' : '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-                  लॉगिन लॉग्स ({loginLogs.length})
-                </button>
-              </div>
-
-              {adminSection === 'jobs' && (
-                <div>
-                  <h4>सभी जॉब शीट्स</h4>
-                  {jobSheets.length === 0 ? (
-                    <p style={{ color: '#64748b' }}>कोई जॉब शीट उपलब्ध नहीं है।</p>
-                  ) : (
-                    jobSheets.map((job) => (
-                      <div key={job.jobSheetNo} style={{ border: '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f8fafc' }}>
-                        <div><strong>जॉब नंबर:</strong> {job.jobSheetNo}</div>
-                        <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
-                        <div><strong>पता:</strong> {job.customerAddress}</div>
-                        <div><strong>उत्पाद:</strong> {job.product}</div>
-                        <div><strong>स्टाफ:</strong> {job.staffName}</div>
-                        <div><strong>स्थिति:</strong> <span style={{ color: job.status === 'Completed' ? 'green' : 'orange' }}>{job.status}</span></div>
-
-                        {adminExpandedJobId === job.jobSheetNo && (
-                          <div style={{ marginTop: '10px', borderTop: '1px dashed #cbd5e1', paddingTop: '8px', fontSize: '13px' }}>
-                            <div><strong>विवरण:</strong> {job.desc}</div>
-                            <div><strong>GPS:</strong> {job.location}</div>
-                            <div><strong>पार्ट:</strong> {job.sparePartName} ({job.sparePartOption})</div>
-                            {job.photoURL && (
-                              <div style={{ marginTop: '5px' }}>
-                                <a href={job.photoURL} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>📸 अपलोड की गई फोटो देखें</a>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <button 
-                          onClick={() => setAdminExpandedJobId(adminExpandedJobId === job.jobSheetNo ? null : job.jobSheetNo)}
-                          style={{ marginTop: '8px', padding: '5px 10px', background: '#475569', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>
-                          {adminExpandedJobId === job.jobSheetNo ? 'कम दिखाएं' : 'विस्तार से देखें'}
-                        </button>
+              {/* यदि किसी विशिष्ट जॉब की डिटेल देखी जा रही है */}
+              {inspectedJob !== null ? (
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                  <button onClick={() => setInspectedJob(null)} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← लिस्ट पर वापस जाएं</button>
+                  <h4 style={{ color: '#166534', margin: '0 0 10px 0' }}>जॉब शीट विवरण: {inspectedJob.jobSheetNo}</h4>
+                  <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div><strong>कस्टमर नाम:</strong> {inspectedJob.customerName}</div>
+                    <div><strong>मोबाइल नंबर:</strong> {inspectedJob.customerPhone}</div>
+                    <div><strong>पता:</strong> {inspectedJob.customerAddress}</div>
+                    <div><strong>उत्पाद / श्रेणी:</strong> {inspectedJob.product}</div>
+                    <div><strong>कार्य विवरण:</strong> {inspectedJob.desc}</div>
+                    <div><strong>स्टाफ नाम:</strong> {inspectedJob.staffName}</div>
+                    <div><strong>जॉब स्टेटस:</strong> <span style={{ color: inspectedJob.status === 'Completed' ? 'green' : 'orange' }}>{inspectedJob.status}</span></div>
+                    <div><strong>GPS लोकेशन:</strong> {inspectedJob.location}</div>
+                    <div><strong>स्पेयर पार्ट:</strong> {inspectedJob.sparePartName} ({inspectedJob.sparePartOption})</div>
+                    <div><strong>तारीख:</strong> {inspectedJob.date}</div>
+                    {inspectedJob.photoURL && (
+                      <div style={{ marginTop: '5px' }}>
+                        <a href={inspectedJob.photoURL} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>📸 अपलोड की गई फोटो देखें</a>
                       </div>
-                    ))
-                  )}
+                    )}
+                  </div>
                 </div>
-              )}
-
-              {adminSection === 'logins' && (
+              ) : (
                 <div>
-                  <h4>यूजर लॉगिन हिस्ट्री (Login Logs)</h4>
-                  <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
-                    <button onClick={() => setLoginFilterTab('all')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'all' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'all' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>सभी</button>
-                    <button onClick={() => setLoginFilterTab('customer')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'customer' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'customer' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>कस्टमर</button>
-                    <button onClick={() => setLoginFilterTab('staff')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'staff' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'staff' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>स्टाफ</button>
-                    <button onClick={() => setLoginFilterTab('office')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'office' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'office' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>ऑफिस</button>
+                  {/* एडमिन के 4 मुख्य विकल्प: जॉब शीट, स्पेयर पार्ट, अटेंडेंस, लॉगिन */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '15px' }}>
+                    <button 
+                      onClick={() => setAdminMainTab('jobs')}
+                      style={{ padding: '10px', backgroundColor: adminMainTab === 'jobs' ? '#166534' : '#e2e8f0', color: adminMainTab === 'jobs' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                      📋 जॉब शीट ({jobSheets.length})
+                    </button>
+                    <button 
+                      onClick={() => setAdminMainTab('spares')}
+                      style={{ padding: '10px', backgroundColor: adminMainTab === 'spares' ? '#166534' : '#e2e8f0', color: adminMainTab === 'spares' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                      ⚙️ स्पेयर पार्ट
+                    </button>
+                    <button 
+                      onClick={() => setAdminMainTab('attendance')}
+                      style={{ padding: '10px', backgroundColor: adminMainTab === 'attendance' ? '#166534' : '#e2e8f0', color: adminMainTab === 'attendance' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                      📅 अटेंडेंस ({loginLogs.filter(l => l.role === 'staff').length})
+                    </button>
+                    <button 
+                      onClick={() => setAdminMainTab('logins')}
+                      style={{ padding: '10px', backgroundColor: adminMainTab === 'logins' ? '#166534' : '#e2e8f0', color: adminMainTab === 'logins' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                      🔐 लॉगिन हिस्ट्री ({loginLogs.length})
+                    </button>
                   </div>
 
-                  {filteredLoginLogs.length === 0 ? (
-                    <p style={{ color: '#64748b' }}>कोई लॉगिन रिकॉर्ड नहीं मिला।</p>
-                  ) : (
-                    filteredLoginLogs.map((log, idx) => (
-                      <div key={idx} style={{ border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', marginBottom: '8px', background: '#fff', fontSize: '13px' }}>
-                        <div><strong>नाम/आईडी:</strong> {log.name || log.phone}</div>
-                        <div><strong>मोबाइल/आईडी:</strong> {log.phone}</div>
-                        <div><strong>रोल:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{log.role}</span></div>
-                        <div><strong>कुल लॉगिन:</strong> {log.loginCount || 1} बार</div>
-                        <div><strong>अंतिम लॉगिन:</strong> {log.lastLabel || log.lastLoginText || 'Just now'}</div>
+                  {/* 1. जॉब शीट टैब (कम्पलीट और पेंडिंग सब-ऑप्शंस) */}
+                  {adminMainTab === 'jobs' && (
+                    <div>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <button 
+                          onClick={() => setAdminJobSubTab('completed')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: adminJobSubTab === 'completed' ? '#0284c7' : '#f1f5f9', color: adminJobSubTab === 'completed' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                          कम्पलीट जॉब्स ({completedJobsList.length})
+                        </button>
+                        <button 
+                          onClick={() => setAdminJobSubTab('pending')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: adminJobSubTab === 'pending' ? '#d97706' : '#f1f5f9', color: adminJobSubTab === 'pending' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                          पेंडिंग जॉब्स ({pendingJobsList.length})
+                        </button>
                       </div>
-                    ))
+
+                      {adminJobSubTab === 'completed' && (
+                        <div>
+                          {Object.keys(completedByStaff).length === 0 ? (
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>कोई कम्पलीट जॉब उपलब्ध नहीं है।</p>
+                          ) : (
+                            Object.keys(completedByStaff).map((staffName) => (
+                              <div key={staffName} style={{ border: '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f8fafc' }}>
+                                <h4 style={{ margin: '0 0 8px 0', color: '#166534' }}>👨‍🔧 स्टाफ: {staffName}</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  {completedByStaff[staffName].map((job) => (
+                                    <div key={job.jobSheetNo} onClick={() => setInspectedJob(job)} style={{ background: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div>
+                                        <strong style={{ color: '#2563eb' }}>{job.jobSheetNo}</strong> - {job.customerName} ({job.product})
+                                      </div>
+                                      <span style={{ fontSize: '11px', color: '#64748b' }}>देखें →</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {adminJobSubTab === 'pending' && (
+                        <div>
+                          {Object.keys(pendingByStaff).length === 0 ? (
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>कोई पेंडिंग जॉब उपलब्ध नहीं है।</p>
+                          ) : (
+                            Object.keys(pendingByStaff).map((staffName) => (
+                              <div key={staffName} style={{ border: '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f8fafc' }}>
+                                <h4 style={{ margin: '0 0 8px 0', color: '#d97706' }}>👨‍🔧 स्टाफ: {staffName}</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  {pendingByStaff[staffName].map((job) => (
+                                    <div key={job.jobSheetNo} onClick={() => setInspectedJob(job)} style={{ background: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div>
+                                        <strong style={{ color: '#d97706' }}>{job.jobSheetNo}</strong> - {job.customerName} ({job.product})
+                                      </div>
+                                      <span style={{ fontSize: '11px', color: '#64748b' }}>देखें →</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 2. स्पेयर पार्ट टैब (स्टॉक और पेंडिंग सब-ऑप्शंस) */}
+                  {adminMainTab === 'spares' && (
+                    <div>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <button 
+                          onClick={() => setAdminSpareSubTab('stock')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: adminSpareSubTab === 'stock' ? '#166534' : '#f1f5f9', color: adminSpareSubTab === 'stock' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                          📦 स्पेयर पार्ट स्टॉक
+                        </button>
+                        <button 
+                          onClick={() => setAdminSpareSubTab('pending')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: adminSpareSubTab === 'pending' ? '#8b5cf6' : '#f1f5f9', color: adminSpareSubTab === 'pending' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                          ⚙️ पेंडिंग पार्ट्स ({partPendingJobsList.length})
+                        </button>
+                      </div>
+
+                      {adminSpareSubTab === 'stock' && (
+                        <div>
+                          {/* नया पार्ट जोड़ने का फॉर्म */}
+                          <form onSubmit={handleAddStockItem} style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <h4 style={{ margin: '0', fontSize: '13px', color: '#166534' }}>➕ नया स्पेयर पार्ट स्टॉक में जोड़ें</h4>
+                            <input type="text" placeholder="पार्ट का नाम (Part Name)" value={newStockName} onChange={(e) => setNewStockName(e.target.value)} style={{ padding: '6px', fontSize: '12px' }} required />
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input type="text" placeholder="क्वांटिटी (Qty)" value={newStockQty} onChange={(e) => setNewStockQty(e.target.value)} style={{ flex: 1, padding: '6px', fontSize: '12px' }} required />
+                              <input type="text" placeholder="रेट (Rate ₹)" value={newStockRate} onChange={(e) => setNewStockRate(e.target.value)} style={{ flex: 1, padding: '6px', fontSize: '12px' }} required />
+                            </div>
+                            <input type="text" placeholder="विवरण / मॉडल (Description)" value={newStockDesc} onChange={(e) => setNewStockDesc(e.target.value)} style={{ padding: '6px', fontSize: '12px' }} />
+                            <button type="submit" style={{ padding: '8px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px' }}>स्टॉक में सेव करें</button>
+                          </form>
+
+                          {/* स्टॉक लिस्ट */}
+                          <h4 style={{ margin: '0 0 8px 0', fontSize: '13px' }}>मौजूदा स्टॉक लिस्ट:</h4>
+                          {spareStock.map((st, idx) => (
+                            <div key={idx} style={{ border: '1px solid #cbd5e1', padding: '8px', borderRadius: '4px', marginBottom: '6px', background: '#fff', fontSize: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                              <div>
+                                <strong>{st.name}</strong> ({st.desc})<br/>
+                                मात्रा: {st.qty} पीस | रेट: ₹{st.rate}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {adminSpareSubTab === 'pending' && (
+                        <div>
+                          {Object.keys(partsPendingByName).length === 0 ? (
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>कोई स्पेयर पार्ट पेंडिंग नहीं है।</p>
+                          ) : (
+                            Object.keys(partsPendingByName).map((partName) => (
+                              <div key={partName} style={{ border: '1px solid #c4b5fd', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f5f3ff' }}>
+                                <h4 style={{ margin: '0 0 8px 0', color: '#7c3aed' }}>⚙️ पार्ट नाम: {partName}</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  {partsPendingByName[partName].map((job) => (
+                                    <div key={job.jobSheetNo} onClick={() => setInspectedJob(job)} style={{ background: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div>
+                                        <strong style={{ color: '#7c3aed' }}>{job.jobSheetNo}</strong> - {job.customerName} (मॉडल: {job.sparePartModel})
+                                      </div>
+                                      <span style={{ fontSize: '11px', color: '#64748b' }}>जॉब देखें →</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 3. अटेंडेंस टैब */}
+                  {adminMainTab === 'attendance' && (
+                    <div>
+                      <h4>📅 स्टाफ दैनिक अटेंडेंस रिकॉर्ड</h4>
+                      {loginLogs.filter(l => l.role === 'staff').length === 0 ? (
+                        <p style={{ color: '#64748b', fontSize: '13px' }}>कोई अटेंडेंस रिकॉर्ड नहीं मिला।</p>
+                      ) : (
+                        loginLogs.filter(l => l.role === 'staff').map((log, idx) => (
+                          <div key={idx} style={{ border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', marginBottom: '8px', background: '#fff', fontSize: '13px' }}>
+                            <div><strong>स्टाफ नाम:</strong> {log.name || log.phone}</div>
+                            <div><strong>मोबाइल नंबर:</strong> {log.phone}</div>
+                            <div><strong>कुल लॉगिन:</strong> {log.loginCount || 1} बार</div>
+                            <div><strong>अंतिम अटेंडेंस/लॉगिन:</strong> {log.lastLoginText || 'Today'}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* 4. लॉगिन हिस्ट्री टैब */}
+                  {adminMainTab === 'logins' && (
+                    <div>
+                      <h4>🔐 यूजर लॉगिन हिस्ट्री</h4>
+                      {loginLogs.length === 0 ? (
+                        <p style={{ color: '#64748b', fontSize: '13px' }}>कोई लॉगिन रिकॉर्ड नहीं मिला।</p>
+                      ) : (
+                        loginLogs.map((log, idx) => (
+                          <div key={idx} style={{ border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', marginBottom: '8px', background: '#fff', fontSize: '13px' }}>
+                            <div><strong>आईडी / नाम:</strong> {log.name || log.phone}</div>
+                            <div><strong>रोल:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{log.role}</span></div>
+                            <div><strong>लॉगिन काउंट:</strong> {log.loginCount || 1} बार</div>
+                            <div><strong>समय:</strong> {log.lastLoginText || 'Just now'}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   )}
                 </div>
               )}
