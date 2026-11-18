@@ -9,8 +9,7 @@ import {
   updateDoc, 
   increment, 
   serverTimestamp, 
-  onSnapshot, 
-  addDoc 
+  onSnapshot 
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
@@ -61,6 +60,8 @@ export default function App() {
   // Customer Portal State
   const [custPhone, setCustPhone] = useState('');
   const [custLoggedIn, setCustLoggedIn] = useState(false);
+  const [custNameInput, setCustNameInput] = useState('');
+  const [custAddressInput, setCustAddressInput] = useState('');
   const [categoryType, setCategoryType] = useState('HVAC & Refrigeration');
   const [productType, setProductType] = useState('Split / Window AC');
   const [problemDesc, setProblemDesc] = useState('');
@@ -74,25 +75,19 @@ export default function App() {
   const [currentStaffName, setCurrentStaffName] = useState('');
   const [staffGpsLocation, setStaffGpsLocation] = useState('Fetching GPS...');
   
-  // Staff Sub-tabs: 'menu', 'new', 'pending', 'partPending'
   const [staffSubTab, setStaffSubTab] = useState('menu');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
-
-  // Staff Slide-by-Slide Wizard Step (1 to 5)
   const [wizardStep, setWizardStep] = useState(1);
 
-  // Admin / Office Staff Login State
+  // Admin Login State
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminSection, setAdminSection] = useState('jobs'); // 'jobs' or 'logins'
-  const [loginFilterTab, setLoginFilterTab] = useState('all'); // 'all', 'customer', 'office', 'staff'
-
-  // Expanded items state for click-to-view details
-  const [expandedJobId, setExpandedJobId] = useState(null);
+  const [adminSection, setAdminSection] = useState('jobs');
+  const [loginFilterTab, setLoginFilterTab] = useState('all');
   const [adminExpandedJobId, setAdminExpandedJobId] = useState(null);
 
-  // Job Submission Form State
+  // Job Form State
   const [jobCustName, setJobCustName] = useState('');
   const [jobCustAddress, setJobCustAddress] = useState('');
   const [jobCustPhone, setJobCustPhone] = useState('');
@@ -108,20 +103,14 @@ export default function App() {
   const [roomTemp, setRoomTemp] = useState('');
   const [voltage, setVoltage] = useState('230V');
   const [ampere, setAmpere] = useState('');
-  const [stabilizer, setStabilizer] = useState('OK');
-  const [standType, setStandType] = useState('Wall Type');
 
   const [workDone, setWorkDone] = useState('');
-  
-  // Spare Part Selection: 'Used Part' or 'Pending Part'
   const [sparePartOption, setSparePartOption] = useState('Used Part');
   const [sparePartName, setSparePartName] = useState('');
   const [sparePartModel, setSparePartModel] = useState('');
 
-  // Status & Pending Sub-Options
-  const [jobStatusType, setJobStatusType] = useState('Completed'); // 'Completed' or 'Pending'
-  const [pendingSubOption, setPendingSubOption] = useState('Part Pending'); // 'Part Pending', 'Repeat Complaint', 'OK'
-  
+  const [jobStatusType, setJobStatusType] = useState('Completed');
+  const [pendingSubOption, setPendingSubOption] = useState('Part Pending');
   const [otherReason, setOtherReason] = useState('');
   const [jobNote, setJobNote] = useState('');
 
@@ -137,7 +126,7 @@ export default function App() {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Firestore Real-time Sync for Jobs & Login Logs
+  // Firestore Real-time Sync
   useEffect(() => {
     const unsubJobs = onSnapshot(collection(db, "jobs"), (snapshot) => {
       const list = [];
@@ -161,12 +150,10 @@ export default function App() {
     };
   }, []);
 
-  // Track Login Function (Customer, Staff, Office)
   const recordUserLogin = async (identifier, userRole, displayName) => {
     const cleanId = identifier.trim();
     if (!cleanId) return;
 
-    // Update Local State immediately for instant UI feedback
     setLoginLogs((prev) => {
       const existingIndex = prev.findIndex((item) => item.phone === cleanId && item.role === userRole);
       if (existingIndex > -1) {
@@ -191,7 +178,6 @@ export default function App() {
       }
     });
 
-    // Save to Firestore
     try {
       const docId = userRole + "_" + cleanId.replace(/[^a-zA-Z0-9]/g, '_');
       const userRef = doc(db, "login_logs", docId);
@@ -218,7 +204,6 @@ export default function App() {
     }
   };
 
-  // Signature Pad Handlers
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -243,10 +228,7 @@ export default function App() {
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
+  const stopDrawing = () => { setIsDrawing(false); };
   const clearSignature = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -254,7 +236,6 @@ export default function App() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  // Customer Portal Login
   const handleCustomerLogin = async (e) => {
     e.preventDefault();
     if (custPhone.length < 10) {
@@ -276,6 +257,11 @@ export default function App() {
 
   const handleNewComplaint = async (e) => {
     e.preventDefault();
+    if (!custNameInput.trim() || !custAddressInput.trim()) {
+      alert('कृपया कस्टमर का पूरा नाम और पता दर्ज करें!');
+      return;
+    }
+
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -286,9 +272,9 @@ export default function App() {
 
     const newEntry = {
       jobSheetNo,
-      customerName: 'Customer',
+      customerName: custNameInput,
       customerPhone: custPhone,
-      customerAddress: 'Prayagraj Main Location',
+      customerAddress: custAddressInput,
       product: "[" + categoryType + "] " + productType,
       desc: problemDesc,
       status: 'Pending',
@@ -312,8 +298,6 @@ export default function App() {
       roomTemp: '-',
       voltage: '-',
       ampere: '-',
-      stabilizer: '-',
-      standType: '-',
       materials: [],
       sparePartOption: '-',
       sparePartName: '-',
@@ -331,10 +315,11 @@ export default function App() {
     }
 
     setProblemDesc('');
+    setCustNameInput('');
+    setCustAddressInput('');
     alert('शिकायत सफलतापूर्वक दर्ज हो गई!\nआपका कंप्लेंट नंबर है:\n' + jobSheetNo);
   };
 
-  // Staff Portal OTP Login
   const handleSendOtp = (e) => {
     e.preventDefault();
     if (staffPhoneInput.length < 10) {
@@ -365,7 +350,7 @@ export default function App() {
           (position) => {
             const lat = position.coords.latitude.toFixed(4);
             const lng = position.coords.longitude.toFixed(4);
-            setStaffGpsLocation('Lat: ' + lat + ', Lng: ' + lng + ' (GPS Active)');
+            setStaffGpsLocation(`Lat: ${lat}, Lng: ${lng} (GPS Active)`);
           },
           () => {
             setStaffGpsLocation('Prayagraj (GPS Default)');
@@ -379,7 +364,6 @@ export default function App() {
     }
   };
 
-  // Admin / Office Login
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     if (adminUser.toUpperCase() === 'ADMIN' && adminPass === '123456789') {
@@ -407,7 +391,7 @@ export default function App() {
     setJobStatusType('Completed');
     setPendingSubOption('Part Pending');
     setWizardStep(1);
-    setStaffSubTab('new');
+    setStaffSubTab('newJobForm');
   };
 
   const handleFillComplaintToNewJob = (comp) => {
@@ -424,7 +408,7 @@ export default function App() {
     setOtherReason(comp.otherReason && comp.otherReason !== '-' ? comp.otherReason : '');
     setJobNote(comp.note && comp.note !== '-' ? comp.note : '');
     setWizardStep(1);
-    setStaffSubTab('new');
+    setStaffSubTab('newJobForm');
   };
 
   const handleFileChange = async (e) => {
@@ -523,8 +507,6 @@ export default function App() {
           roomTemp: categoryType === 'HVAC & Refrigeration' ? roomTemp : '-',
           voltage: categoryType !== 'Civil Work' ? voltage : '-',
           ampere: categoryType !== 'Civil Work' ? ampere : '-',
-          stabilizer: categoryType === 'HVAC & Refrigeration' ? stabilizer : '-',
-          standType: categoryType === 'HVAC & Refrigeration' ? standType : '-',
           materials: filteredMaterials,
           sparePartOption: sparePartOption,
           sparePartName: sparePartName || '-',
@@ -578,10 +560,10 @@ export default function App() {
     processSave(staffGpsLocation);
   };
 
-  // Filtered Lists for Staff & Admin
-  const pendingJobsList = jobSheets.filter(j => j.status === 'Pending');
-  const partPendingJobsList = jobSheets.filter(j => j.status === 'Part Pending' || j.sparePartOption === 'Pending Part');
-  const usedPartsJobsList = jobSheets.filter(j => j.sparePartOption === 'Used Part' && j.sparePartName && j.sparePartName !== '-');
+  const onlineComplaintsList = jobSheets.filter(j => j.status === 'Pending' && j.location === 'Online Booking');
+  const pendingJobsList = jobSheets.filter(j => j.status === 'Pending' || j.status === 'Part Pending');
+  const completedJobsList = jobSheets.filter(j => j.status === 'Completed');
+  const partPendingJobsList = jobSheets.filter(j => j.status === 'Part Pending' || j.sparePartOption === 'Pending Part' || j.sparePartOption === 'Pending');
 
   const filteredLoginLogs = loginLogs.filter(log => {
     if (loginFilterTab === 'customer') return log.role === 'customer';
@@ -593,93 +575,134 @@ export default function App() {
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: '750px', margin: '0 auto', padding: '15px', background: '#f4f6f9', minHeight: '100vh' }}>
       
-      {/* हेडर: कंपनी का लोगो और टैगलाइन केवल "We Build. Your Trust." तक */}
+      {/* हेडर */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', background: '#fff', borderRadius: '8px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
         <img 
           src="/1000384854.jpg" 
           alt="Manqube Logo" 
-          style={{ height: '70px', width: '70px', objectFit: 'contain', borderRadius: '12px', marginBottom: '8px' }} 
+          style={{ width: '70px', height: '70px', objectFit: 'contain', borderRadius: '50%', marginBottom: '8px' }}
         />
-        <h1 style={{ margin: '0', color: '#1a365d', fontSize: '26px', fontWeight: '800', letterSpacing: '1px' }}>MANQUBE</h1>
-        <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: '13px', fontWeight: '600' }}>We Build. Your Trust.</p>
+        <h2 style={{ margin: '0', color: '#1e293b', fontSize: '20px' }}>MANQUBE</h2>
+        <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b' }}>We Build. Your Trust.</p>
       </div>
-
-      {/* मुख्य मेनू (Home Portal Selection) */}
-      {activeTab === 'home' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '10px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '5px' }}>
-            <h3 style={{ color: '#333', margin: '0 0 5px 0' }}>पोर्टल चुनें (Select Portal)</h3>
-            <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:</p>
-          </div>
-
-          <div onClick={() => setActiveTab('customer')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #007bff' }}>
-            <div style={{ fontSize: '35px' }}>👤</div>
-            <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#007bff' }}>कस्टमर पोर्टल (Customer Portal)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>अपनी शिकायत दर्ज करें और पुरानी जॉब-शीट्स देखें</p>
-            </div>
-          </div>
-
-          <div onClick={() => setActiveTab('staff')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #28a745' }}>
-            <div style={{ fontSize: '35px' }}>🛠️</div>
-            <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#28a745' }}>फ़ील्ड स्टाफ पोर्टल (Staff Mobile & GPS Login)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>मोबाइल नंबर, OTP और GPS लोकेशन के साथ लॉगिन करें</p>
-            </div>
-          </div>
-
-          <div onClick={() => setActiveTab('admin')} style={{ background: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '20px', borderLeft: '6px solid #ffc107' }}>
-            <div style={{ fontSize: '35px' }}>📊</div>
-            <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#d39e00' }}>एडमिन & ऑफिस स्टाफ पैनल (Office Login)</h3>
-              <p style={{ margin: '0', color: '#666', fontSize: '13px' }}>ऑफिस स्टाफ लॉगिन करके पेंडिंग जॉब्स, स्पेयर पार्ट्स और लॉगिन रिकॉर्ड देखें</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {activeTab !== 'home' && (
         <div style={{ marginBottom: '15px' }}>
-          <button onClick={() => setActiveTab('home')} style={{ padding: '8px 14px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
-            ⬅️ मुख्य मेनू (Home) पर वापस जाएं
+          <button 
+            onClick={() => setActiveTab('home')}
+            style={{ padding: '8px 14px', backgroundColor: '#475569', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+            ⬅ मुख्य मेनू (Home) पर वापस जाएं
           </button>
         </div>
       )}
 
-      {/* ==================== 1. कस्टमर पोर्टल ==================== */}
-      {activeTab === 'customer' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+      {/* GPS लोकेशन स्टेटस */}
+      <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '12px', color: '#166534' }}>
+        <strong>GPS:</strong> {staffGpsLocation}
+      </div>
+
+      {/* होम पेज / पोर्टल सिलेक्शन */}
+      {activeTab === 'home' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '5px' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#1e293b' }}>पोर्टल चुनें (Select Portal)</h3>
+            <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:</p>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('complaint')}
+            style={{ background: '#fff', borderLeft: '5px solid #2563eb', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#2563eb', fontSize: '18px' }}>👤 कस्टमर पोर्टल (Customer Portal)</h3>
+            <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>अपनी शिकायत दर्ज करें और पुरानी जॉब-शीट्स देखें</p>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('staff')}
+            style={{ background: '#fff', borderLeft: '5px solid #166534', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#166534', fontSize: '18px' }}>🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile & GPS Login)</h3>
+            <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>मोबाइल नंबर, OTP और GPS लोकेशन के साथ लॉगिन करें</p>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('admin')}
+            style={{ background: '#fff', borderLeft: '5px solid #d97706', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#d97706', fontSize: '18px' }}>📊 एडमिन & ऑफिस स्टाफ पैनल (Office Login)</h3>
+            <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>ऑफिस स्टाफ लॉगिन करके पेंडिंग जॉब्स, स्पेयर पार्ट्स और लॉगिन रिकॉर्ड देखें</p>
+          </div>
+        </div>
+      )}
+
+      {/* 1. शिकायत दर्ज करें टैब (कस्टमर पोर्टल) */}
+      {activeTab === 'complaint' && (
+        <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+          <h3>कस्टमर पोर्टल</h3>
           {!custLoggedIn ? (
-            <form onSubmit={handleCustomerLogin}>
-              <h3>कस्टमर पोर्टल</h3>
-              <p style={{ fontSize: '13px', color: '#555' }}>अपनी शिकायतें और पूरी हुई जॉब-शीट देखने के लिए अपना मोबाइल नंबर दर्ज करें:</p>
-              <input type="tel" placeholder="मोबाइल नंबर दर्ज करें" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} required />
-              <button type="submit" style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>आगे बढ़ें</button>
+            <form onSubmit={handleCustomerLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>अपनी शिकायतें और पूरी हुई जॉब-शीट देखने के लिए अपना मोबाइल नंबर दर्ज करें:</p>
+              <input 
+                type="tel" 
+                maxLength="10" 
+                placeholder="मोबाइल नंबर दर्ज करें" 
+                value={custPhone} 
+                onChange={(e) => setCustPhone(e.target.value)}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                required 
+              />
+              <button type="submit" style={{ padding: '12px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                आगे बढ़ें
+              </button>
             </form>
           ) : (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>
-                <h4 style={{ margin: 0 }}>स्वागत है! मोबाइल: {custPhone}</h4>
-                <button onClick={() => setCustLoggedIn(false)} style={{ padding: '5px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>लॉगआउट</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f1f5f9', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', marginBottom: '15px' }}>
+                <span>स्वागत है! मोबाइल: <strong>{custPhone}</strong></span>
+                <button onClick={() => setCustLoggedIn(false)} style={{ padding: '4px 8px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px' }}>लॉगआउट</button>
               </div>
 
-              <form onSubmit={handleNewComplaint} style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h4 style={{ marginTop: 0, color: '#007bff' }}>नई शिकायत दर्ज करें (New Complaint)</h4>
+              <form onSubmit={handleNewComplaint} style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px', marginBottom: '15px' }}>
+                <h4 style={{ margin: '0', color: '#007bff' }}>नई शिकायत दर्ज करें (New Complaint)</h4>
                 
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>मुख्य श्रेणी (Main Category):</label>
-                <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }}>
-                  <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
-                  <option value="Electrical Work">Electrical Work (इलेक्ट्रिकल वर्क)</option>
-                  <option value="Plumbing Work">Plumbing Work (प्लंबिंग वर्क)</option>
-                  <option value="Civil Work">Civil Work (सिविल वर्क)</option>
+                <label style={{ fontWeight: 'bold', fontSize: '13px' }}>कस्टमर का पूरा नाम (Customer Name):</label>
+                <input 
+                  type="text" 
+                  placeholder="अपना पूरा नाम दर्ज करें" 
+                  value={custNameInput} 
+                  onChange={(e) => setCustNameInput(e.target.value)}
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  required 
+                />
+
+                <label style={{ fontWeight: 'bold', fontSize: '13px' }}>कस्टमर का पूरा पता (Full Address):</label>
+                <textarea 
+                  rows="2" 
+                  placeholder="लोकेशन/पता विस्तार से लिखें..." 
+                  value={custAddressInput} 
+                  onChange={(e) => setCustAddressInput(e.target.value)}
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  required 
+                />
+
+                <label style={{ fontWeight: 'bold', fontSize: '13px' }}>मुख्य श्रेणी (Main Category):</label>
+                <select value={categoryType} onChange={handleCategoryChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                  <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज, चिलर, VRV)</option>
+                  <option value="Electrical Work">Electrical Work (इलेक्ट्रिकल कार्य)</option>
+                  <option value="Plumbing Work">Plumbing Work (प्लंबिंग)</option>
+                  <option value="Civil Work">Civil Work (सिविल कार्य)</option>
                 </select>
 
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>संबंधित कार्य (Sub-Option):</label>
-                <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc' }}>
+                <label style={{ fontWeight: 'bold', fontSize: '13px' }}>संबंधित कार्य / उत्पाद (Sub-Option):</label>
+                <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
                   {categoryType === 'HVAC & Refrigeration' && (
                     <>
                       <option value="Split / Window AC">Split / Window AC</option>
-                      <option value="Air Cooler">Air Cooler</option>
+                      <option value="Inverter AC">Inverter AC</option>
+                      <option value="Cassette AC">Cassette AC (cómo / कैसेट एसी)</option>
+                      <option value="Ductable AC">Ductable AC (डक्टेबल एसी)</option>
+                      <option value="VRV / VRF System">VRV / VRF System</option>
+                      <option value="AHU Unit (Air Handling Unit)">AHU Unit (Air Handling Unit)</option>
+                      <option value="Chiller Unit">Chiller Unit (चिलर यूनिट)</option>
+                      <option value="Tower / Cassette AC">Tower / Cassette AC</option>
+                      <option value="Air Cooler (Honeywool/Iron)">Air Cooler (Honeywool/Iron)</option>
                       <option value="Deep Freezer / Refrigerator">Deep Freezer / Refrigerator</option>
                       <option value="Water Cooler">Water Cooler</option>
                     </>
@@ -687,126 +710,152 @@ export default function App() {
                   {categoryType === 'Electrical Work' && (
                     <>
                       <option value="House Wiring & Panel">House Wiring & Panel</option>
-                      <option value="Inverter / Stabilizer">Inverter / Stabilizer</option>
-                      <option value="Motor & Pump">Motor & Pump</option>
+                      <option value="DB / MCB / MCCB Work">DB / MCB / MCCB Work</option>
+                      <option value="Earthing & Lightning Arrester">Earthing & Lightning Arrester</option>
+                      <option value="Three Phase Industrial Panel">Three Phase Industrial Panel</option>
+                      <option value="Inverter / UPS / Battery Setup">Inverter / UPS / Battery Setup</option>
                     </>
                   )}
                   {categoryType === 'Plumbing Work' && (
-                    <>
-                      <option value="Pipe Fitting & Leakage Repair">Pipe Fitting & Leakage Repair</option>
-                      <option value="Tap, Mixer & Sanitary Fitting">Tap, Mixer & Sanitary Fitting</option>
-                      <option value="Water Tank & Motor Line">Water Tank & Motor Line</option>
-                    </>
+                    <option value="Pipe Fitting & Leakage Repair">Pipe Fitting & Leakage Repair</option>
                   )}
                   {categoryType === 'Civil Work' && (
-                    <>
-                      <option value="Flooring & Tiling">Flooring & Tiling</option>
-                      <option value="Plaster & Painting">Plaster & Painting</option>
-                      <option value="General Civil Maintenance">General Civil Maintenance</option>
-                    </>
+                    <option value="Flooring & Tiling">Flooring & Tiling</option>
                   )}
                 </select>
 
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>समस्या का विवरण:</label>
-                <textarea placeholder="क्या समस्या आ रही है विस्तार से लिखें..." value={problemDesc} onChange={(e) => setProblemDesc(e.target.value)} rows="3" style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} required />
-                
-                <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>शिकायत सबमिट करें</button>
+                <label style={{ fontWeight: 'bold', fontSize: '13px' }}>समस्या का विवरण:</label>
+                <textarea 
+                  rows="3" 
+                  placeholder="क्या समस्या आ रही है विस्तार से लिखें..." 
+                  value={problemDesc} 
+                  onChange={(e) => setProblemDesc(e.target.value)}
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  required 
+                />
+
+                <button type="submit" style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                  शिकायत सबमिट करें
+                </button>
               </form>
 
-              <h4>आपकी शिकायतें और जॉब हिस्ट्री:</h4>
-              {jobSheets.filter(j => j.customerPhone === custPhone).length === 0 ? (
-                <p style={{ color: '#777', fontSize: '13px' }}>इस नंबर पर अभी तक कोई रिकॉर्ड नहीं मिला।</p>
-              ) : (
-                jobSheets.filter(j => j.customerPhone === custPhone).map((job, i) => (
-                  <div key={i} style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '6px', marginBottom: '10px', background: '#fff' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '13px' }}>
-                      <span>{job.jobSheetNo}</span>
-                      <span style={{ color: job.status === 'Completed' ? 'green' : '#d97706' }}>{job.status}</span>
+              <div>
+                <h4 style={{ margin: '0 0 10px 0' }}>आपकी शिकायतें और जॉब हिस्ट्री:</h4>
+                {jobSheets.filter(j => j.customerPhone === custPhone).length === 0 ? (
+                  <p style={{ color: '#64748b', fontSize: '13px' }}>कोई पुरानी शिकायत या जॉब शीट नहीं मिली।</p>
+                ) : (
+                  jobSheets.filter(j => j.customerPhone === custPhone).map((job) => (
+                    <div key={job.jobSheetNo} style={{ border: '1px solid #e2e8f0', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#fafafa' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 'bold' }}>
+                        <span>{job.jobSheetNo} ({job.customerName})</span>
+                        <span style={{ color: job.status === 'Completed' ? 'green' : 'orange' }}>{job.status}</span>
+                      </div>
+                      <div style={{ fontSize: '13px', marginTop: '4px' }}>{job.product} - {job.desc}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>पता: {job.customerAddress} | तारीख: {job.date}</div>
                     </div>
-                    <p style={{ margin: '5px 0', fontSize: '13px', color: '#333' }}>{job.product} - {job.desc}</p>
-                    <small style={{ color: '#777' }}>तारीख: {job.date}</small>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* ==================== 2. फ़ील्ड स्टाफ पोर्टल (स्लाइड-बाय-स्लाइड फॉर्म के साथ) ==================== */}
+      {/* 2. स्टाफ पोर्टल टैब */}
       {activeTab === 'staff' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+          <h3>फ़ील्ड स्टाफ लॉगिन</h3>
           {!staffLoggedIn ? (
             <div>
-              <h3 style={{ marginTop: 0, color: '#28a745' }}>🛠️ फ़ील्ड स्टाफ लॉगिन</h3>
               {otpStep === 1 ? (
-                <form onSubmit={handleSendOtp}>
-                  <p style={{ fontSize: '13px', color: '#555' }}>अपना रजिस्टर्ड मोबाइल नंबर दर्ज करें:</p>
-                  <input type="tel" placeholder="10 अंकों का मोबाइल नंबर" value={staffPhoneInput} onChange={(e) => setStaffPhoneInput(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} required />
-                  <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>OTP भेजें</button>
+                <form onSubmit={handleSendOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>अपना रजिस्टर्ड मोबाइल नंबर दर्ज करें:</p>
+                  <input 
+                    type="tel" 
+                    maxLength="10" 
+                    placeholder="10 अंकों का मोबाइल नंबर" 
+                    value={staffPhoneInput} 
+                    onChange={(e) => setStaffPhoneInput(e.target.value)}
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    required 
+                  />
+                  <button type="submit" style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                    OTP भेजें
+                  </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp}>
-                  <p style={{ fontSize: '13px', color: '#555' }}>मोबाइल नंबर {staffPhoneInput} पर भेजा गया 4-अंकों का OTP दर्ज करें:</p>
-                  <input type="text" placeholder="OTP दर्ज करें" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} required />
-                  <button type="submit" style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>सत्यापित करें और लॉगिन करें</button>
-                  <button type="button" onClick={() => setOtpStep(1)} style={{ width: '100%', padding: '8px', marginTop: '8px', background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '12px' }}>नंबर बदलें</button>
+                <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '13px', color: '#475569' }}>
+                    नंबर <strong>{staffPhoneInput}</strong> पर OTP भेजा गया है।
+                  </div>
+                  <label style={{ fontWeight: 'bold' }}>OTP दर्ज करें:</label>
+                  <input 
+                    type="text" 
+                    maxLength="4" 
+                    placeholder="4 अंकों का OTP" 
+                    value={enteredOtp} 
+                    onChange={(e) => setEnteredOtp(e.target.value)}
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    required 
+                  />
+                  <button type="submit" style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                    OTP सत्यापित करें और लॉगिन करें
+                  </button>
                 </form>
               )}
             </div>
           ) : (
             <div>
-              {/* Staff Header Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#e9f7ef', padding: '10px 12px', borderRadius: '6px', marginBottom: '15px' }}>
-                <div>
-                  <strong style={{ color: '#155724', fontSize: '14px' }}>{currentStaffName}</strong>
-                  <div style={{ fontSize: '11px', color: '#28a745' }}>📍 {staffGpsLocation}</div>
-                </div>
-                <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '6px 12px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>लॉगआउट</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', background: '#f8fafc', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '13px' }}>स्टाफ: <strong>{currentStaffName}</strong></span>
+                <button onClick={() => setStaffLoggedIn(false)} style={{ padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>लॉग आउट</button>
               </div>
 
-              {/* Staff Sub-Menu */}
               {staffSubTab === 'menu' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button onClick={handleOpenBlankNewJob} style={{ padding: '16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>📝 नई जॉब शीट भरें (Slide-by-Slide)</span>
-                    <span>➡️</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* विकल्प 1: नई जॉब शीट */}
+                  <button onClick={handleOpenBlankNewJob} style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
+                    ➕ नई जॉब शीट भरें (New Job Sheet)
+                  </button>
+                  
+                  {/* विकल्प 2: ऑनलाइन शिकायतें */}
+                  <button onClick={() => setStaffSubTab('onlineComplaints')} style={{ padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
+                    📋 ऑनलाइन शिकायतें देखें ({onlineComplaintsList.length})[span_4](start_span)[span_4](end_span)
+                  </button>
+                  
+                  {/* विकल्प 3: पेंडिंग जॉब्स */}
+                  <button onClick={() => setStaffSubTab('pending')} style={{ padding: '12px', backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
+                    ⏳ पेंडिंग जॉब्स ({pendingJobsList.length})[span_5](start_span)[span_5](end_span)
                   </button>
 
-                  <button onClick={() => setStaffSubTab('pending')} style={{ padding: '16px', background: '#ffc107', color: '#212529', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>⏳ पेंडिंग शिकायतें / जॉब्स ({pendingJobsList.length})</span>
-                    <span>➡️</span>
+                  {/* विकल्प 4: कम्पलीट जॉब्स */}
+                  <button onClick={() => setStaffSubTab('completed')} style={{ padding: '12px', backgroundColor: '#0ea5e9', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
+                    ✅ कम्पलीट जॉब्स ({completedJobsList.length})[span_6](start_span)[span_6](end_span)
                   </button>
-
-                  <button onClick={() => setStaffSubTab('partPending')} style={{ padding: '16px', background: '#fd7e14', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>⚙️ पार्ट पेंडिंग जॉब्स ({partPendingJobsList.length})</span>
-                    <span>➡️</span>
+                  
+                  {/* विकल्प 5: स्पेयर पार्ट पेंडिंग */}
+                  <button onClick={() => setStaffSubTab('partPending')} style={{ padding: '12px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', textAlign: 'left' }}>
+                    ⚙️ स्पेयर पार्ट पेंडिंग ({partPendingJobsList.length})[span_7](start_span)[span_7](end_span)
                   </button>
                 </div>
               )}
 
-              {/* Pending & Part Pending Lists for Staff */}
-              {(staffSubTab === 'pending' || staffSubTab === 'partPending') && (
+              {staffSubTab === 'onlineComplaints' && (
                 <div>
-                  <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '12px', padding: '6px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>⬅️ स्टाफ मेनू पर वापस</button>
-                  <h4 style={{ margin: '0 0 10px 0' }}>{staffSubTab === 'pending' ? 'पेंडिंग शिकायतें (Pending Jobs)' : 'पार्ट पेंडिंग जॉब्स (Part Pending)'}</h4>
-                  
-                  {(staffSubTab === 'pending' ? pendingJobsList : partPendingJobsList).length === 0 ? (
-                    <p style={{ color: '#777', fontSize: '13px' }}>इस श्रेणी में कोई जॉब नहीं है।</p>
+                  <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← पीछे जाएं</button>
+                  <h4>ऑनलाइन प्राप्त शिकायतें (Online Complaints)</h4>
+                  {onlineComplaintsList.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>कोई नई ऑनलाइन शिकायत उपलब्ध नहीं है।</p>
                   ) : (
-                    (staffSubTab === 'pending' ? pendingJobsList : partPendingJobsList).map((item, idx) => (
-                      <div key={idx} style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '6px', marginBottom: '10px', background: '#fafafa' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '13px' }}>
-                          <span>{item.jobSheetNo} - {item.customerName}</span>
-                          <span style={{ color: '#d97706' }}>{item.status}</span>
-                        </div>
-                        <p style={{ margin: '4px 0', fontSize: '12px' }}>📞 {item.customerPhone} | 📍 {item.customerAddress}</p>
-                        <p style={{ margin: '4px 0', fontSize: '12px', color: '#444' }}>कार्य: {item.product} - {item.desc}</p>
-                        {item.sparePartName && item.sparePartName !== '-' && (
-                          <p style={{ margin: '4px 0', fontSize: '12px', color: '#c0392b', fontWeight: 'bold' }}>पार्ट: {item.sparePartName} (Model: {item.sparePartModel})</p>
-                        )}
-                        <button onClick={() => handleFillComplaintToNewJob(item)} style={{ marginTop: '8px', padding: '8px 12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
-                          जॉब शीट अपडेट / क्लोज करें ➡️
+                    onlineComplaintsList.map((job) => (
+                      <div key={job.jobSheetNo} style={{ border: '1px solid #e2e8f0', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#fafafa' }}>
+                        <div><strong>कम्प्लेंट नं:</strong> {job.jobSheetNo}</div>
+                        <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
+                        <div><strong>पता:</strong> {job.customerAddress}</div>
+                        <div><strong>उत्पाद:</strong> {job.product}</div>
+                        <div><strong>विवरण:</strong> {job.desc}</div>
+                        <button onClick={() => handleFillComplaintToNewJob(job)} style={{ marginTop: '8px', padding: '6px 12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>
+                          इस शिकायत पर जॉब शीट भरें
                         </button>
                       </div>
                     ))
@@ -814,312 +863,253 @@ export default function App() {
                 </div>
               )}
 
-              {/* ==================== स्लाइड-बाय-स्लाइड जॉब शीट फॉर्म (Wizard UI) ==================== */}
-              {staffSubTab === 'new' && (
+              {staffSubTab === 'pending' && (
+                <div>
+                  <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← पीछे जाएं</button>
+                  <h4>पेंडिंग जॉब्स (Pending Jobs)</h4>
+                  {pendingJobsList.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>कोई पेंडिंग जॉब नहीं है।</p>
+                  ) : (
+                    pendingJobsList.map((job) => (
+                      <div key={job.jobSheetNo} style={{ border: '1px solid #fcd34d', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#fffbeb' }}>
+                        <div><strong>नंबर:</strong> {job.jobSheetNo}</div>
+                        <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
+                        <div><strong>विवरण:</strong> {job.desc}</div>
+                        <button onClick={() => handleFillComplaintToNewJob(job)} style={{ marginTop: '8px', padding: '6px 12px', backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>
+                          जारी रखें / अपडेट करें
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {staffSubTab === 'completed' && (
+                <div>
+                  <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← पीछे जाएं</button>
+                  <h4>कम्पलीट जॉब्स (Completed Jobs - OK)</h4>
+                  {completedJobsList.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>अभी तक कोई जॉब कम्पलीट नहीं हुई है।</p>
+                  ) : (
+                    completedJobsList.map((job) => (
+                      <div key={job.jobSheetNo} style={{ border: '1px solid #86efac', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f0fdf4' }}>
+                        <div><strong>जॉब नंबर:</strong> {job.jobSheetNo}</div>
+                        <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
+                        <div><strong>उत्पाद:</strong> {job.product}</div>
+                        <div><strong>कार्य विवरण:</strong> {job.desc}</div>
+                        <div><strong>स्टाफ:</strong> {job.staffName}</div>
+                        <div style={{ fontSize: '11px', color: '#166534', marginTop: '4px' }}>तारीख: {job.date} | स्टेटस: Completed ✅</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {staffSubTab === 'partPending' && (
+                <div>
+                  <button onClick={() => setStaffSubTab('menu')} style={{ marginBottom: '10px', padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← पीछे जाएं</button>
+                  <h4>स्पेयर पार्ट पेंडिंग जॉब्स (Spare Part Pending)</h4>
+                  {partPendingJobsList.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>कोई स्पेयर पार्ट पेंडिंग जॉब नहीं है।</p>
+                  ) : (
+                    partPendingJobsList.map((job) => (
+                      <div key={job.jobSheetNo} style={{ border: '1px solid #c4b5fd', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f5f3ff' }}>
+                        <div><strong>नंबर:</strong> {job.jobSheetNo}</div>
+                        <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
+                        <div><strong>मंगवाना है पार्ट:</strong> {job.sparePartName} (मॉडल: {job.sparePartModel})</div>
+                        <button onClick={() => handleFillComplaintToNewJob(job)} style={{ marginTop: '8px', padding: '6px 12px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>
+                          पार्ट स्टेटस अपडेट करें
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {staffSubTab === 'newJobForm' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <h4 style={{ margin: 0, color: '#007bff' }}>नई जॉब शीट / सर्विस रिपोर्ट</h4>
-                    <button onClick={() => setStaffSubTab('menu')} style={{ padding: '5px 10px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>बैक मेनू</button>
+                    <button onClick={() => setStaffSubTab('menu')} style={{ padding: '6px 12px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px' }}>← मेनू पर वापस जाएं</button>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Wizard Step: {wizardStep} / 5</span>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div style={{ width: '100%', background: '#e9ecef', height: '8px', borderRadius: '4px', marginBottom: '8px', overflow: 'hidden' }}>
-                    <div style={{ 
-                      width: wizardStep === 1 ? '20%' : wizardStep === 2 ? '40%' : wizardStep === 3 ? '60%' : wizardStep === 4 ? '80%' : '100%', 
-                      background: '#007bff', 
-                      height: '100%', 
-                      transition: 'width 0.3s ease' 
-                    }}></div>
-                  </div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#555', marginBottom: '15px' }}>
-                    स्लाइड (Step) {wizardStep} / 5
-                  </div>
-
-                  {/* SLIDE 1: मुख्य श्रेणी + कस्टमर नाम + मोबाइल नंबर */}
                   {wizardStep === 1 && (
-                    <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px', color: '#1a365d' }}>मुख्य श्रेणी (Category):</label>
-                      <select value={categoryType} onChange={handleCategoryChange} style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '5px', border: '1px solid #ccc' }}>
-                        <option value="HVAC & Refrigeration">HVAC & Refrigeration (एसी, कूलर, फ्रिज आदि)</option>
-                        <option value="Electrical Work">Electrical Work (इलेक्ट्रिकल वर्क)</option>
-                        <option value="Plumbing Work">Plumbing Work (प्लंबिंग वर्क)</option>
-                        <option value="Civil Work">Civil Work (सिविल वर्क)</option>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <h4>स्टेप 1: कस्टमर और प्रॉडक्ट विवरण</h4>
+                      <label>कस्टमर का नाम:</label>
+                      <input type="text" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+
+                      <label>कस्टमर मोबाइल नंबर:</label>
+                      <input type="tel" maxLength="10" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+
+                      <label>कस्टमर का पूरा पता (Address):</label>
+                      <textarea rows="2" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+
+                      <label>श्रेणी (Category):</label>
+                      <select value={categoryType} onChange={(e) => setCategoryType(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <option value="HVAC & Refrigeration">HVAC & Refrigeration</option>
+                        <option value="Electrical Work">Electrical Work</option>
+                        <option value="Plumbing Work">Plumbing Work</option>
+                        <option value="Civil Work">Civil Work</option>
                       </select>
 
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px', color: '#1a365d' }}>संबंधित प्रोडक्ट / कार्य (Sub-Option):</label>
-                      <select value={productType} onChange={(e) => setProductType(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '5px', border: '1px solid #ccc' }}>
-                        {categoryType === 'HVAC & Refrigeration' && (
-                          <>
-                            <option value="Split / Window AC">Split / Window AC</option>
-                            <option value="Air Cooler">Air Cooler</option>
-                            <option value="Deep Freezer / Refrigerator">Deep Freezer / Refrigerator</option>
-                            <option value="Water Cooler">Water Cooler</option>
-                          </>
-                        )}
-                        {categoryType === 'Electrical Work' && (
-                          <>
-                            <option value="House Wiring & Panel">House Wiring & Panel</option>
-                            <option value="Inverter / Stabilizer">Inverter / Stabilizer</option>
-                            <option value="Motor & Pump">Motor & Pump</option>
-                          </>
-                        )}
-                        {categoryType === 'Plumbing Work' && (
-                          <>
-                            <option value="Pipe Fitting & Leakage Repair">Pipe Fitting & Leakage Repair</option>
-                            <option value="Tap, Mixer & Sanitary Fitting">Tap, Mixer & Sanitary Fitting</option>
-                            <option value="Water Tank & Motor Line">Water Tank & Motor Line</option>
-                          </>
-                        )}
-                        {categoryType === 'Civil Work' && (
-                          <>
-                            <option value="Flooring & Tiling">Flooring & Tiling</option>
-                            <option value="Plaster & Painting">Plaster & Painting</option>
-                            <option value="General Civil Maintenance">General Civil Maintenance</option>
-                          </>
-                        )}
-                      </select>
-
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>कस्टमर का नाम (Customer Name):</label>
-                      <input type="text" placeholder="ग्राहक का नाम दर्ज करें" value={jobCustName} onChange={(e) => setJobCustName(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>कस्टमर का मोबाइल नंबर (Mobile Number):</label>
-                      <input type="tel" placeholder="मोबाइल नंबर दर्ज करें" value={jobCustPhone} onChange={(e) => setJobCustPhone(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          if (!jobCustName || !jobCustPhone) {
-                            alert('कृपया कस्टमर का नाम और मोबाइल नंबर भरें!');
-                            return;
-                          }
-                          setWizardStep(2);
-                        }} 
-                        style={{ width: '100%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}
-                      >
-                        अगला स्लाइड (पता भरें) ➡️
+                      <button onClick={() => setWizardStep(2)} style={{ marginTop: '10px', padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                        अगला (Next) →
                       </button>
                     </div>
                   )}
 
-                  {/* SLIDE 2: पता (Address) */}
                   {wizardStep === 2 && (
-                    <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>साइट / ग्राहक का पूरा पता (Address):</label>
-                      <textarea placeholder="पूरा पता दर्ज करें..." rows="3" value={jobCustAddress} onChange={(e) => setJobCustAddress(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button type="button" onClick={() => setWizardStep(1)} style={{ width: '50%', padding: '12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>⬅️ पिछला स्लाइड</button>
-                        <button type="button" onClick={() => setWizardStep(3)} style={{ width: '50%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>अगला स्लाइड ➡️</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SLIDE 3: प्रॉब्लम क्या थी और किया गया काम + टेक्निकल डिटेल्स */}
-                  {wizardStep === 3 && (
-                    <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>प्रॉब्लम क्या थी / किया गया काम (Problem & Work Done):</label>
-                      <textarea placeholder="क्या समस्या थी और क्या काम किया गया विस्तार से लिखें..." rows="3" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <h4>स्टेप 2: टेक्निकल पैरामीटर्स</h4>
                       {categoryType === 'HVAC & Refrigeration' && (
-                        <div style={{ background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', marginBottom: '12px' }}>
-                          <strong style={{ fontSize: '12px', color: '#007bff', display: 'block', marginBottom: '8px' }}>मशीन टेक्निकल रीडिंग (वैकल्पिक):</strong>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                            <input type="text" placeholder="Indoor Model" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
-                            <input type="text" placeholder="Outdoor Model" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
-                            <input type="text" placeholder="Gas Pressure (PSI)" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
-                            <input type="text" placeholder="Ampere (A)" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
+                        <>
+                          <label>इंडोर मॉडल / सीरियल:</label>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <input type="text" placeholder="Indoor Model" value={indoorModel} onChange={(e) => setIndoorModel(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                            <input type="text" placeholder="Indoor Serial" value={indoorSerial} onChange={(e) => setIndoorSerial(e.target.value)} style={{ flex: 1, padding: '8px' }} />
                           </div>
-                        </div>
+
+                          <label>आउटडोर मॉडल / सीरियल:</label>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <input type="text" placeholder="Outdoor Model" value={outdoorModel} onChange={(e) => setOutdoorModel(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                            <input type="text" placeholder="Outdoor Serial" value={outdoorSerial} onChange={(e) => setOutdoorSerial(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                          </div>
+
+                          <label>सेक्शन प्रेशर (PSI):</label>
+                          <input type="text" placeholder="e.g. 120 PSI" value={sectionPressure} onChange={(e) => setSectionPressure(e.target.value)} style={{ padding: '8px' }} />
+
+                          <label>रूम टेम्परेचर (°C):</label>
+                          <input type="text" placeholder="e.g. 24°C" value={roomTemp} onChange={(e) => setRoomTemp(e.target.value)} style={{ padding: '8px' }} />
+                        </>
                       )}
 
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button type="button" onClick={() => setWizardStep(2)} style={{ width: '50%', padding: '12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>⬅️ पिछला स्लाइड</button>
-                        <button type="button" onClick={() => setWizardStep(4)} style={{ width: '50%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>अगला स्लाइड ➡️</button>
+                      {categoryType !== 'Civil Work' && (
+                        <>
+                          <label>वोल्टेज और एम्पीयर:</label>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <input type="text" placeholder="Voltage" value={voltage} onChange={(e) => setVoltage(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                            <input type="text" placeholder="Ampere" value={ampere} onChange={(e) => setAmpere(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                          </div>
+                        </>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button onClick={() => setWizardStep(1)} style={{ flex: 1, padding: '10px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
+                        <button onClick={() => setWizardStep(3)} style={{ flex: 1, padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>अगला →</button>
                       </div>
                     </div>
                   )}
 
-                  {/* SLIDE 4: क्या सामान लगा / स्पेयर पार्ट ऑप्शन (Used Part या Pending Part) */}
-                  {wizardStep === 4 && (
-                    <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#1a365d' }}>स्पेयर पार्ट्स विवरण (Spare Parts):</label>
-                      
-                      <select 
-                        value={sparePartOption} 
-                        onChange={(e) => setSparePartOption(e.target.value)} 
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc', fontWeight: 'bold' }}
-                      >
-                        <option value="Used Part">✅ Used Part (जो सामान / पार्ट लगा है)</option>
-                        <option value="Pending Part">⏳ Pending Part (जो पार्ट पेंडिंग है)</option>
+                  {wizardStep === 3 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <h4>स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स</h4>
+                      <label>किया गया कार्य (Work Done):</label>
+                      <textarea rows="3" value={workDone} onChange={(e) => setWorkDone(e.target.value)} style={{ padding: '8px' }} />
+
+                      <label>स्पेयर पार्ट विकल्प:</label>
+                      <select value={sparePartOption} onChange={(e) => setSparePartOption(e.target.value)} style={{ padding: '8px' }}>
+                        <option value="Used Part">Used Part (इस्तेमाल किया गया)</option>
+                        <option value="Pending Part">Pending Part (पार्ट मंगवाना है)</option>
                       </select>
 
-                      <input 
-                        type="text" 
-                        placeholder={sparePartOption === 'Used Part' ? "इस्तेमाल किए गए पार्ट का नाम लिखें" : "पेंडिंग पार्ट का नाम लिखें"} 
-                        value={sparePartName} 
-                        onChange={(e) => setSparePartName(e.target.value)} 
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
-                      />
+                      <label>स्पेयर पार्ट का नाम और मॉडल:</label>
+                      <div style={{ display: 'flex', gap: '5px' }}>
+                        <input type="text" placeholder="Part Name" value={sparePartName} onChange={(e) => setSparePartName(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                        <input type="text" placeholder="Model / No." value={sparePartModel} onChange={(e) => setSparePartModel(e.target.value)} style={{ flex: 1, padding: '8px' }} />
+                      </div>
 
-                      <input 
-                        type="text" 
-                        placeholder="पार्ट का मॉडल नंबर / साइज (Model Number)" 
-                        value={sparePartModel} 
-                        onChange={(e) => setSparePartModel(e.target.value)} 
-                        style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
-                      />
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button onClick={() => setWizardStep(2)} style={{ flex: 1, padding: '10px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
+                        <button onClick={() => setWizardStep(4)} style={{ flex: 1, padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>अगला →</button>
+                      </div>
+                    </div>
+                  )}
 
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px', color: '#555' }}>अतिरिक्त मटेरियल लिस्ट (मात्रा व दाम सहित - वैकल्पिक):</label>
+                  {wizardStep === 4 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <h4>स्टेप 4: मैटेरियल्स / पार्ट्स लिस्ट</h4>
                       {materials.map((mat, idx) => (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
-                          <input type="text" placeholder="सामान का नाम" value={mat.name} onChange={(e) => handleMaterialFieldChange(idx, 'name', e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
-                          <input type="text" placeholder="मात्रा" value={mat.qty} onChange={(e) => handleMaterialFieldChange(idx, 'qty', e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
-                          <input type="text" placeholder="दाम (₹)" value={mat.price} onChange={(e) => handleMaterialFieldChange(idx, 'price', e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
+                        <div key={idx} style={{ display: 'flex', gap: '5px', marginBottom: '5px' }}>
+                          <input 
+                            type="text" 
+                            placeholder="Item Name" 
+                            value={mat.name} 
+                            onChange={(e) => handleMaterialFieldChange(idx, 'name', e.target.value)}
+                            style={{ flex: 2, padding: '6px' }} 
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="Qty" 
+                            value={mat.qty} 
+                            onChange={(e) => handleMaterialFieldChange(idx, 'qty', e.target.value)}
+                            style={{ flex: 1, padding: '6px' }} 
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="Price" 
+                            value={mat.price} 
+                            onChange={(e) => handleMaterialFieldChange(idx, 'price', e.target.value)}
+                            style={{ flex: 1, padding: '6px' }} 
+                          />
                         </div>
                       ))}
 
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                        <button type="button" onClick={() => setWizardStep(3)} style={{ width: '50%', padding: '12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>⬅️ पिछला स्लाइड</button>
-                        <button type="button" onClick={() => setWizardStep(5)} style={{ width: '50%', padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>अगला स्लाइड ➡️</button>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button onClick={() => setWizardStep(3)} style={{ flex: 1, padding: '10px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
+                        <button onClick={() => setWizardStep(5)} style={{ flex: 1, padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>अगला →</button>
                       </div>
                     </div>
                   )}
 
-                  {/* SLIDE 5: जॉब स्टेटस (Completed / Pending -> 3 Sub-Options) + Signature + Submit */}
                   {wizardStep === 5 && (
-                    <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#1a365d' }}>जॉब स्टेटस चुनें (Job Status):</label>
-                      
-                      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                        <button 
-                          type="button" 
-                          onClick={() => setJobStatusType('Completed')} 
-                          style={{ 
-                            flex: 1, 
-                            padding: '12px', 
-                            borderRadius: '6px', 
-                            border: '2px solid #28a745', 
-                            background: jobStatusType === 'Completed' ? '#28a745' : '#fff', 
-                            color: jobStatusType === 'Completed' ? '#fff' : '#28a745', 
-                            fontWeight: 'bold', 
-                            cursor: 'pointer' 
-                          }}
-                        >
-                          ✅ Complete (पूरा हुआ)
-                        </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <h4>स्टेप 5: स्टेटस, फोटो और डिजिटल हस्ताक्षर</h4>
+                      <label>जॉब स्टेटस:</label>
+                      <select value={jobStatusType} onChange={(e) => setJobStatusType(e.target.value)} style={{ padding: '8px' }}>
+                        <option value="Completed">Completed (पूर्ण)</option>
+                        <option value="Pending">Pending (लंबित)</option>
+                      </select>
 
-                        <button 
-                          type="button" 
-                          onClick={() => setJobStatusType('Pending')} 
-                          style={{ 
-                            flex: 1, 
-                            padding: '12px', 
-                            borderRadius: '6px', 
-                            border: '2px solid #ffc107', 
-                            background: jobStatusType === 'Pending' ? '#ffc107' : '#fff', 
-                            color: jobStatusType === 'Pending' ? '#212529' : '#b78103', 
-                            fontWeight: 'bold', 
-                            cursor: 'pointer' 
-                          }}
-                        >
-                          ⏳ Pending (पेंडिंग)
-                        </button>
-                      </div>
-
-                      {/* यदि Pending चुना गया है तो 3 सब-ऑप्शन */}
                       {jobStatusType === 'Pending' && (
-                        <div style={{ background: '#fff3cd', padding: '12px', borderRadius: '6px', border: '1px solid #ffeeba', marginBottom: '15px' }}>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#856404' }}>पेंडिंग का कारण / विकल्प चुनें:</label>
-                          
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
-                              <input type="radio" name="pendingOpt" checked={pendingSubOption === 'Part Pending'} onChange={() => setPendingSubOption('Part Pending')} />
-                              1. पार्ट पेंडिंग (Part Pending)
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
-                              <input type="radio" name="pendingOpt" checked={pendingSubOption === 'Repeat Complaint'} onChange={() => setPendingSubOption('Repeat Complaint')} />
-                              2. रिपीट कंप्लेंट (Repeat Complaint)
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
-                              <input type="radio" name="pendingOpt" checked={pendingSubOption === 'OK'} onChange={() => setPendingSubOption('OK')} />
-                              3. ओके (OK)
-                            </label>
-                          </div>
-
-                          {/* Option 1: Part Pending -> पार्ट का नाम और मॉडल नंबर लिखने के लिए */}
-                          {pendingSubOption === 'Part Pending' && (
-                            <div style={{ spaceY: '8px' }}>
-                              <input 
-                                type="text" 
-                                placeholder="पेंडिंग पार्ट का नाम लिखें (Part Name)" 
-                                value={sparePartName} 
-                                onChange={(e) => {
-                                  setSparePartName(e.target.value);
-                                  setSparePartOption('Pending Part');
-                                }} 
-                                style={{ width: '100%', padding: '10px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
-                              />
-                              <input 
-                                type="text" 
-                                placeholder="मॉडल नंबर लिखें (Model Number)" 
-                                value={sparePartModel} 
-                                onChange={(e) => setSparePartModel(e.target.value)} 
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
-                              />
-                            </div>
-                          )}
-
-                          {/* Option 3: OK -> विशेष नोट */}
-                          {pendingSubOption === 'OK' && (
-                            <input 
-                              type="text" 
-                              placeholder="अन्य कोई नोट या रीजन (वैकल्पिक)" 
-                              value={otherReason} 
-                              onChange={(e) => setOtherReason(e.target.value)} 
-                              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
-                            />
-                          )}
-                        </div>
+                        <>
+                          <label>पेंडिंग का कारण:</label>
+                          <select value={pendingSubOption} onChange={(e) => setPendingSubOption(e.target.value)} style={{ padding: '8px' }}>
+                            <option value="Part Pending">Part Pending (पार्ट प्रतीक्षित)</option>
+                            <option value="Repeat Complaint">Repeat Complaint</option>
+                            <option value="Customer Busy">Customer Busy</option>
+                          </select>
+                        </>
                       )}
 
-                      {/* कस्टमर सिग्नेचर पैड: केवल 'Completed' या 'Repeat Complaint' चुनने पर दिखेगा */}
-                      {(jobStatusType === 'Completed' || (jobStatusType === 'Pending' && pendingSubOption === 'Repeat Complaint')) && (
-                        <div style={{ marginBottom: '15px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 'bold' }}>✍️ कस्टमर सिग्नेचर (Customer Signature):</label>
-                            <button type="button" onClick={clearSignature} style={{ padding: '4px 10px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>रीसेट</button>
-                          </div>
-                          <canvas
-                            ref={canvasRef}
-                            width={320}
-                            height={110}
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                            onTouchStart={startDrawing}
-                            onTouchMove={draw}
-                            onTouchEnd={stopDrawing}
-                            style={{ border: '2px dashed #007bff', borderRadius: '6px', background: '#fff', width: '100%', touchAction: 'none' }}
-                          />
-                        </div>
-                      )}
+                      <label>फोटो अपलोड करें:</label>
+                      <input type="file" accept="image/*" onChange={handleFileChange} style={{ padding: '6px' }} />
 
-                      {/* साइट फोटो अपलोड (वैकल्पिक) */}
-                      <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>📷 साइट / मशीन की फोटो (वैकल्पिक):</label>
-                        <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: '12px' }} />
+                      <label>कस्टमर हस्ताक्षर (Sign Below):</label>
+                      <div style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '4px', touchAction: 'none' }}>
+                        <canvas 
+                          ref={canvasRef} 
+                          width={320} 
+                          height={120} 
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                          style={{ display: 'block', margin: '0 auto', cursor: 'crosshair' }}
+                        />
                       </div>
+                      <button type="button" onClick={clearSignature} style={{ padding: '4px 8px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', alignSelf: 'flex-start' }}>हस्ताक्षर साफ करें</button>
 
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button type="button" onClick={() => setWizardStep(4)} style={{ width: '40%', padding: '12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>⬅️ पीछे</button>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button onClick={() => setWizardStep(4)} style={{ flex: 1, padding: '10px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
                         <button 
-                          type="button" 
-                          disabled={uploading}
                           onClick={handleJobSubmit} 
-                          style={{ width: '60%', padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}
-                        >
-                          {uploading ? 'सबमिट हो रहा है...' : '✔️ जॉब शीट सबमिट करें'}
+                          disabled={uploading}
+                          style={{ flex: 2, padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                          {uploading ? 'सेव हो रहा है...' : 'जॉब शीट फाइनल सेव करें (Submit)'}
                         </button>
                       </div>
                     </div>
@@ -1131,153 +1121,118 @@ export default function App() {
         </div>
       )}
 
-      {/* ==================== 3. एडमिन & ऑफिस पैनल ==================== */}
+      {/* 3. ऑफिस एडमिन टैब */}
       {activeTab === 'admin' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+          <h3>ऑफिस एडमिन पोर्टल</h3>
           {!adminLoggedIn ? (
-            <form onSubmit={handleAdminLogin}>
-              <h3 style={{ marginTop: 0, color: '#d39e00' }}>📊 एडमिन & ऑफिस स्टाफ लॉगिन</h3>
-              <input type="text" placeholder="यूजरनेम (ADMIN)" value={adminUser} onChange={(e) => setAdminUser(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} required />
-              <input type="password" placeholder="पासवर्ड" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }} required />
-              <button type="submit" style={{ width: '100%', padding: '12px', background: '#ffc107', color: '#212529', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>लॉगिन करें</button>
+            <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label style={{ fontWeight: 'bold' }}>यूजरनेम (Username):</label>
+              <input 
+                type="text" 
+                placeholder="Admin" 
+                value={adminUser} 
+                onChange={(e) => setAdminUser(e.target.value)}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                required 
+              />
+              <label style={{ fontWeight: 'bold' }}>पासवर्ड (Password):</label>
+              <input 
+                type="password" 
+                placeholder="Password" 
+                value={adminPass} 
+                onChange={(e) => setAdminPass(e.target.value)}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                required 
+              />
+              <button type="submit" style={{ padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                लॉगिन करें
+              </button>
             </form>
           ) : (
             <div>
-              {/* Admin Top Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                <h3 style={{ margin: 0, color: '#1a365d', fontSize: '16px' }}>📊 एडमिन कंट्रोल पैनल</h3>
-                <button onClick={() => setAdminLoggedIn(false)} style={{ padding: '6px 12px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>लॉगआउट</button>
-              </div>
-
-              {/* Admin Main Section Switcher: जॉब्स और स्पेयर पार्ट्स vs लॉगिन रिकॉर्ड */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
                 <button 
-                  onClick={() => setAdminSection('jobs')} 
-                  style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', background: adminSection === 'jobs' ? '#1a365d' : '#e2e8f0', color: adminSection === 'jobs' ? '#fff' : '#333' }}
-                >
-                  📋 जॉब्स & स्पेयर पार्ट्स ({jobSheets.length})
+                  onClick={() => setAdminSection('jobs')}
+                  style={{ flex: 1, padding: '8px', backgroundColor: adminSection === 'jobs' ? '#166534' : '#e2e8f0', color: adminSection === 'jobs' ? '#fff' : '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+                  जॉब शीट्स ({jobSheets.length})
                 </button>
                 <button 
-                  onClick={() => setAdminSection('logins')} 
-                  style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', background: adminSection === 'logins' ? '#1a365d' : '#e2e8f0', color: adminSection === 'logins' ? '#fff' : '#333' }}
-                >
-                  🔐 लॉगिन (Login History)
+                  onClick={() => setAdminSection('logins')}
+                  style={{ flex: 1, padding: '8px', backgroundColor: adminSection === 'logins' ? '#166534' : '#e2e8f0', color: adminSection === 'logins' ? '#fff' : '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+                  लॉगिन लॉग्स ({loginLogs.length})
                 </button>
               </div>
 
-              {/* SECTION A: जॉब्स और स्पेयर पार्ट्स (Pending Part & Used Part) */}
               {adminSection === 'jobs' && (
                 <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '15px', textAlign: 'center' }}>
-                    <div style={{ background: '#fff3cd', padding: '10px', borderRadius: '6px', border: '1px solid #ffeeba' }}>
-                      <div style={{ fontSize: '11px', color: '#856404' }}>Pending Jobs</div>
-                      <strong style={{ fontSize: '18px', color: '#856404' }}>{pendingJobsList.length}</strong>
-                    </div>
-                    <div style={{ background: '#f8d7da', padding: '10px', borderRadius: '6px', border: '1px solid #f5c6cb' }}>
-                      <div style={{ fontSize: '11px', color: '#721c24' }}>Part Pending</div>
-                      <strong style={{ fontSize: '18px', color: '#721c24' }}>{partPendingJobsList.length}</strong>
-                    </div>
-                    <div style={{ background: '#d4edda', padding: '10px', borderRadius: '6px', border: '1px solid #c3e6cb' }}>
-                      <div style={{ fontSize: '11px', color: '#155724' }}>Used Parts</div>
-                      <strong style={{ fontSize: '18px', color: '#155724' }}>{usedPartsJobsList.length}</strong>
-                    </div>
-                  </div>
-
-                  <h4 style={{ margin: '10px 0', fontSize: '14px', color: '#333' }}>सभी जॉब शीट्स एवं स्पेयर पार्ट्स विवरण:</h4>
+                  <h4>सभी जॉब शीट्स</h4>
                   {jobSheets.length === 0 ? (
-                    <p style={{ color: '#777', fontSize: '13px', textAlign: 'center', padding: '20px' }}>वर्तमान में कोई रिकॉर्ड नहीं है।</p>
+                    <p style={{ color: '#64748b' }}>कोई जॉब शीट उपलब्ध नहीं है।</p>
                   ) : (
-                    jobSheets.map((job, idx) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => setAdminExpandedJobId(adminExpandedJobId === idx ? null : idx)}
-                        style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '6px', marginBottom: '10px', background: '#fafafa', cursor: 'pointer' }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong style={{ fontSize: '13px', color: '#1a365d' }}>{job.jobSheetNo} - {job.customerName}</strong>
-                          <span style={{ 
-                            fontSize: '11px', 
-                            fontWeight: 'bold', 
-                            padding: '3px 8px', 
-                            borderRadius: '4px', 
-                            background: job.status === 'Completed' ? '#d4edda' : '#fff3cd', 
-                            color: job.status === 'Completed' ? '#155724' : '#856404' 
-                          }}>
-                            {job.status} {job.pendingSubOption && job.pendingSubOption !== '-' ? `(${job.pendingSubOption})` : ''}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>
-                          📞 {job.customerPhone} | {job.product}
-                        </div>
+                    jobSheets.map((job) => (
+                      <div key={job.jobSheetNo} style={{ border: '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: '#f8fafc' }}>
+                        <div><strong>जॉब नंबर:</strong> {job.jobSheetNo}</div>
+                        <div><strong>कस्टमर:</strong> {job.customerName} ({job.customerPhone})</div>
+                        <div><strong>पता:</strong> {job.customerAddress}</div>
+                        <div><strong>उत्पाद:</strong> {job.product}</div>
+                        <div><strong>स्टाफ:</strong> {job.staffName}</div>
+                        <div><strong>स्थिति:</strong> <span style={{ color: job.status === 'Completed' ? 'green' : 'orange' }}>{job.status}</span></div>
 
-                        {job.sparePartName && job.sparePartName !== '-' && (
-                          <div style={{ marginTop: '6px', fontSize: '12px', padding: '5px 8px', borderRadius: '4px', background: job.sparePartOption === 'Pending Part' ? '#f8d7da' : '#e2e8f0', color: job.sparePartOption === 'Pending Part' ? '#721c24' : '#1a365d', fontWeight: 'bold' }}>
-                            ⚙️ {job.sparePartOption}: {job.sparePartName} {job.sparePartModel && job.sparePartModel !== '-' ? `(Model: ${job.sparePartModel})` : ''}
-                          </div>
-                        )}
-
-                        {adminExpandedJobId === idx && (
-                          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #ccc', fontSize: '12px', color: '#333' }}>
-                            <p style={{ margin: '3px 0' }}><strong>पता:</strong> {job.customerAddress}</p>
-                            <p style={{ margin: '3px 0' }}><strong>समस्या / कार्य:</strong> {job.desc}</p>
-                            <p style={{ margin: '3px 0' }}><strong>स्टाफ:</strong> {job.staffName} ({job.location})</p>
-                            <p style={{ margin: '3px 0' }}><strong>तारीख:</strong> {job.date}</p>
-                            {job.signatureURL && (
-                              <div style={{ marginTop: '8px' }}>
-                                <strong>कस्टमर सिग्नेचर:</strong><br />
-                                <img src={job.signatureURL} alt="Signature" style={{ height: '60px', border: '1px solid #ccc', borderRadius: '4px', marginTop: '4px', background: '#fff' }} />
+                        {adminExpandedJobId === job.jobSheetNo && (
+                          <div style={{ marginTop: '10px', borderTop: '1px dashed #cbd5e1', paddingTop: '8px', fontSize: '13px' }}>
+                            <div><strong>विवरण:</strong> {job.desc}</div>
+                            <div><strong>GPS:</strong> {job.location}</div>
+                            <div><strong>पार्ट:</strong> {job.sparePartName} ({job.sparePartOption})</div>
+                            {job.photoURL && (
+                              <div style={{ marginTop: '5px' }}>
+                                <a href={job.photoURL} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>📸 अपलोड की गई फोटो देखें</a>
                               </div>
                             )}
                           </div>
                         )}
+
+                        <button 
+                          onClick={() => setAdminExpandedJobId(adminExpandedJobId === job.jobSheetNo ? null : job.jobSheetNo)}
+                          style={{ marginTop: '8px', padding: '5px 10px', background: '#475569', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' }}>
+                          {adminExpandedJobId === job.jobSheetNo ? 'कम दिखाएं' : 'विस्तार से देखें'}
+                        </button>
                       </div>
                     ))
                   )}
                 </div>
               )}
 
-              {/* SECTION B: लॉगिन एनालिटिक्स (Customer, Office, Staff) */}
               {adminSection === 'logins' && (
                 <div>
-                  <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <button onClick={() => setLoginFilterTab('all')} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: loginFilterTab === 'all' ? '#007bff' : '#e9ecef', color: loginFilterTab === 'all' ? '#fff' : '#333' }}>सभी ({loginLogs.length})</button>
-                    <button onClick={() => setLoginFilterTab('customer')} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: loginFilterTab === 'customer' ? '#007bff' : '#e9ecef', color: loginFilterTab === 'customer' ? '#fff' : '#333' }}>कस्टमर (Customer)</button>
-                    <button onClick={() => setLoginFilterTab('office')} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: loginFilterTab === 'office' ? '#007bff' : '#e9ecef', color: loginFilterTab === 'office' ? '#fff' : '#333' }}>ऑफिस (Office)</button>
-                    <button onClick={() => setLoginFilterTab('staff')} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', background: loginFilterTab === 'staff' ? '#007bff' : '#e9ecef', color: loginFilterTab === 'staff' ? '#fff' : '#333' }}>स्टाफ (Staff)</button>
+                  <h4>यूजर लॉगिन हिस्ट्री (Login Logs)</h4>
+                  <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
+                    <button onClick={() => setLoginFilterTab('all')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'all' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'all' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>सभी</button>
+                    <button onClick={() => setLoginFilterTab('customer')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'customer' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'customer' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>कस्टमर</button>
+                    <button onClick={() => setLoginFilterTab('staff')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'staff' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'staff' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>स्टाफ</button>
+                    <button onClick={() => setLoginFilterTab('office')} style={{ padding: '4px 8px', fontSize: '12px', background: loginFilterTab === 'office' ? '#166534' : '#e2e8f0', color: loginFilterTab === 'office' ? '#fff' : '#000', border: 'none', borderRadius: '4px' }}>ऑफिस</button>
                   </div>
 
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
-                      <thead>
-                        <tr style={{ background: '#f1f5f9' }}>
-                          <th style={{ border: '1px solid #cbd5e1', padding: '8px' }}>श्रेणी (Role)</th>
-                          <th style={{ border: '1px solid #cbd5e1', padding: '8px' }}>मोबाइल नंबर / ID</th>
-                          <th style={{ border: '1px solid #cbd5e1', padding: '8px', textAlign: 'center' }}>कितनी बार लॉगिन</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredLoginLogs.length === 0 ? (
-                          <tr>
-                            <td colSpan="3" style={{ border: '1px solid #cbd5e1', padding: '15px', textAlign: 'center', color: '#777' }}>कोई लॉगिन रिकॉर्ड उपलब्ध नहीं है।</td>
-                          </tr>
-                        ) : (
-                          filteredLoginLogs.map((log, idx) => (
-                            <tr key={idx}>
-                              <td style={{ border: '1px solid #cbd5e1', padding: '8px', fontWeight: 'bold', textTransform: 'capitalize', color: '#1a365d' }}>{log.role}</td>
-                              <td style={{ border: '1px solid #cbd5e1', padding: '8px', fontFamily: 'monospace' }}>{log.phone}</td>
-                              <td style={{ border: '1px solid #cbd5e1', padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#28a745' }}>{log.loginCount} बार</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                  {filteredLoginLogs.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>कोई लॉगिन रिकॉर्ड नहीं मिला।</p>
+                  ) : (
+                    filteredLoginLogs.map((log, idx) => (
+                      <div key={idx} style={{ border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', marginBottom: '8px', background: '#fff', fontSize: '13px' }}>
+                        <div><strong>नाम/आईडी:</strong> {log.name || log.phone}</div>
+                        <div><strong>मोबाइल/आईडी:</strong> {log.phone}</div>
+                        <div><strong>रोल:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{log.role}</span></div>
+                        <div><strong>कुल लॉगिन:</strong> {log.loginCount || 1} बार</div>
+                        <div><strong>अंतिम लॉगिन:</strong> {log.lastLabel || log.lastLoginText || 'Just now'}</div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
       )}
+
     </div>
   );
 }
