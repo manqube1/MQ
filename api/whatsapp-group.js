@@ -1,4 +1,4 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).send("Webhook Ready for Manqube Groups");
   }
@@ -46,7 +46,6 @@ module.exports = async function handler(req, res) {
     const jobSheetNo = 'WA' + day + month + hours + minutes + seconds;
     const formattedDate = `${day}/${month}/${now.getFullYear()} ${hours}:${minutes}`;
 
-    // सीधे Firestore REST API के ज़रिए डेटा सेव करना (बिना किसी मॉड्यूल एरर के)
     const firestoreUrl = `https://firestore.googleapis.com/v1/projects/mq-fsm-45ee9/databases/(default)/documents/jobs?documentId=${jobSheetNo}`;
 
     const firestorePayload = {
@@ -91,4 +90,4 @@ module.exports = async function handler(req, res) {
     console.error("Webhook Error:", error);
     return res.status(500).json({ error: error.message });
   }
-};
+}
