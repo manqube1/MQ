@@ -1,3 +1,22 @@
+const TELEGRAM_BOT_TOKEN = "8692296744:AAEsSO0K5x0yv_gnjljcAYvNCaIauNvCSac";
+const TELEGRAM_CHAT_ID = "5603316430";
+
+async function sendTelegramAlert(messageText) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: messageText,
+        parse_mode: 'HTML'
+      })
+    });
+  } catch (err) {
+    console.error("Telegram Alert Failed:", err);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).send("Webhook Ready for Manqube Groups");
@@ -84,6 +103,16 @@ export default async function handler(req, res) {
       const errText = await fbRes.text();
       throw new Error("Firestore API Error: " + errText);
     }
+
+    const alertMsg = `🔔 <b>नई कंप्लेंट दर्ज हुई!</b>\n\n` +
+      `🆔 <b>Job ID:</b> ${jobSheetNo}\n` +
+      `🏢 <b>साइट/ग्रुप:</b> ${customerName}\n` +
+      `❄️ <b>श्रेणी:</b> ${productType}\n` +
+      `📝 <b>समस्या:</b> ${messageText}\n` +
+      `📞 <b>फ़ोन:</b> ${extractedPhone}\n` +
+      `⏰ <b>समय:</b> ${formattedDate}`;
+
+    await sendTelegramAlert(alertMsg);
 
     return res.status(200).json({ replies: [] });
   } catch (error) {
