@@ -101,6 +101,8 @@ const initialJobForm = {
   signDate: "",
 };
 
+const createEmptyPart = () => ({ partName: "", qty: 1, amount: "" });
+
 export default function App() {
   const [viewMode, setViewMode] = useState("wizard"); // "wizard" | "printSheet"
   const [wizardStep, setWizardStep] = useState(1); // 1 to 5
@@ -111,6 +113,7 @@ export default function App() {
   });
   const [gpsStatus, setGpsStatus] = useState("GPS: Locating...");
   const [jobForm, setJobForm] = useState(initialJobForm);
+  const [usedParts, setUsedParts] = useState([createEmptyPart()]);
   const [sitePhotos, setSitePhotos] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [savingJob, setSavingJob] = useState(false);
@@ -150,6 +153,36 @@ export default function App() {
     const { name, value } = e.target;
     setJobForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Used Part rows helpers
+  const addPartRow = () => {
+    setUsedParts((prev) => [...prev, createEmptyPart()]);
+  };
+
+  const updatePartRow = (index, field, value) => {
+    setUsedParts((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const removePartRow = (index) => {
+    setUsedParts((prev) =>
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : [createEmptyPart()]
+    );
+  };
+
+  const isUsedPartSelected = String(jobForm.partOption || "").includes("Used Part");
+
+  const partsTotal = isUsedPartSelected
+    ? usedParts.reduce((sum, item) => {
+        const q = parseFloat(item.qty) || 0;
+        const amt = parseFloat(item.amount) || 0;
+        return sum + q * amt;
+      }, 0)
+    : 0;
+
+  const serviceCharge = parseFloat(jobForm.rate) || 0;
+  const grandTotalBill = partsTotal + serviceCharge;
 
   // स्टेप 5: कैमरा से साइट और सामान की फोटो खींचकर अपलोड करना
   const handleSitePhotosChange = async (e) => {
@@ -255,17 +288,37 @@ export default function App() {
       .map((p) => p.uploadedUrl)
       .filter(Boolean);
 
+    const activeParts = isUsedPartSelected
+      ? usedParts.filter(
+          (p) => p.partName.trim() || (parseFloat(p.amount) || 0) > 0
+        )
+      : [];
+
     const payload = {
       ...jobForm,
       staffName: staffInfo.name,
       staffPhone: staffInfo.phone,
       gpsStatus,
+      usedParts: activeParts,
+      partsTotal,
+      serviceCharge,
+      totalAmount: grandTotalBill,
       sitePhotoUrls: photoUrls,
       createdAt: serverTimestamp(),
     };
 
     try {
       await addDoc(collection(db, "jobSheets"), payload);
+
+      const partsSummary = activeParts.length
+        ? activeParts
+            .map((p) => {
+              const q = parseFloat(p.qty) || 0;
+              const a = parseFloat(p.amount) || 0;
+              return `${p.partName || "Part"} (${q} x ₹${a} = ₹${(q * a).toFixed(2)})`;
+            })
+            .join(", ")
+        : null;
 
       const alertText = [
         "MANQUBE JOB SHEET SAVED",
@@ -277,6 +330,8 @@ export default function App() {
         `AMC: ${jobForm.amc} | Servicing: ${jobForm.servicing}`,
         jobForm.workDone ? `Work Done: ${jobForm.workDone}` : null,
         jobForm.partOption ? `Part Option: ${jobForm.partOption}` : null,
+        partsSummary ? `Parts: ${partsSummary}` : null,
+        `Total Bill: ₹${grandTotalBill.toFixed(2)}`,
         `Status: ${jobForm.jobStatus}`,
         photoUrls.length ? `Photos: ${photoUrls.length} uploaded` : null,
       ]
@@ -295,6 +350,7 @@ export default function App() {
 
   const resetForm = () => {
     setJobForm(initialJobForm);
+    setUsedParts([createEmptyPart()]);
     setSitePhotos([]);
     setWizardStep(1);
     setTechSlide(1);
@@ -471,7 +527,9 @@ export default function App() {
           {/* STEP 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट (Slide by Slide 1 -> 2 -> 3 -> 4) */}
           {wizardStep === 2 && (
             <div>
-              <h3 style={styles.stepTitle}>स्टेप 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट</h3>
+              <h3 style={styles.stepTitle}>
+                स्टेप 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट
+              </h3>
 
               <div style={styles.slideTopBar}>
                 <strong>भाग {techSlide} / 4</strong>
@@ -872,10 +930,12 @@ export default function App() {
             </div>
           )}
 
-          {/* STEP 3: किया गया कार्य और स्पेयर पार्ट्स (बिना Part Name / Model बॉक्स के) */}
+          {/* STEP 3: किया गया कार्य और स्पेयर पार्ट्स (Used Part होने पर नाम, क्वांटिटी और अमाउंट) */}
           {wizardStep === 3 && (
             <div>
-              <h3 style={styles.stepTitle}>स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स</h3>
+              <h3 style={styles.stepTitle}>
+                स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स
+              </h3>
 
               <label style={styles.label}>किया गया कार्य (Work Done):</label>
               <textarea
@@ -900,14 +960,84 @@ export default function App() {
                   No Part Used (कोई पार्ट नहीं लगा)
                 </option>
               </select>
+
+              {isUsedPartSelected && (
+                <div style={styles.partsBox}>
+                  <div style={styles.partsBoxTitle}>
+                    स्पेयर पार्ट का नाम, क्वांटिटी और अमाउंट
+                  </div>
+
+                  {usedParts.map((item, idx) => {
+                    const rowTotal =
+                      (parseFloat(item.qty) || 0) * (parseFloat(item.amount) || 0);
+                    return (
+                      <div key={idx} style={styles.partRowWrapper}>
+                        <div style={styles.partGrid}>
+                          <input
+                            type="text"
+                            placeholder="स्पेयर पार्ट का नाम"
+                            value={item.partName}
+                            onChange={(e) =>
+                              updatePartRow(idx, "partName", e.target.value)
+                            }
+                            style={styles.partInput}
+                          />
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Qty"
+                            value={item.qty}
+                            onChange={(e) =>
+                              updatePartRow(idx, "qty", e.target.value)
+                            }
+                            style={styles.partInput}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Amount (₹)"
+                            value={item.amount}
+                            onChange={(e) =>
+                              updatePartRow(idx, "amount", e.target.value)
+                            }
+                            style={styles.partInput}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePartRow(idx)}
+                            style={styles.removePartBtn}
+                            title="हटाएं"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div style={styles.partRowTotal}>
+                          योग: ₹{rowTotal.toFixed(2)}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <div style={styles.partsFooter}>
+                    <button
+                      type="button"
+                      onClick={addPartRow}
+                      style={styles.addPartBtn}
+                    >
+                      + पार्ट जोड़ें
+                    </button>
+                    <strong>पार्ट्स कुल: ₹{partsTotal.toFixed(2)}</strong>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* STEP 4: बिल / रेट विवरण */}
+          {/* STEP 4: बिल / चार्ज व टोटल बिल */}
           {wizardStep === 4 && (
             <div>
-              <h3 style={styles.stepTitle}>स्टेप 4: बिल एवं चार्ज विवरण</h3>
-              <label style={styles.label}>चार्ज / रेट (₹):</label>
+              <h3 style={styles.stepTitle}>स्टेप 4: बिल एवं टोटल अमाउंट</h3>
+              <label style={styles.label}>सर्विस / अन्य चार्ज (₹):</label>
               <input
                 type="number"
                 name="rate"
@@ -916,6 +1046,22 @@ export default function App() {
                 style={styles.input}
                 placeholder="0.00"
               />
+
+              <div style={styles.billSummaryBox}>
+                <div style={styles.billRow}>
+                  <span>स्पेयर पार्ट्स कुल:</span>
+                  <strong>₹{partsTotal.toFixed(2)}</strong>
+                </div>
+                <div style={styles.billRow}>
+                  <span>सर्विस / अन्य चार्ज:</span>
+                  <strong>₹{serviceCharge.toFixed(2)}</strong>
+                </div>
+                <hr style={styles.billDivider} />
+                <div style={styles.billTotalRow}>
+                  <strong>टोटल बिल (Total Amount):</strong>
+                  <strong>₹{grandTotalBill.toFixed(2)}</strong>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1363,6 +1509,95 @@ const styles = {
     color: "#ffffff",
     fontWeight: 600,
     cursor: "pointer",
+  },
+  partsBox: {
+    marginTop: "10px",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #cbd5e1",
+    background: "#f8fafc",
+  },
+  partsBoxTitle: {
+    fontWeight: 700,
+    fontSize: "13px",
+    textAlign: "center",
+    marginBottom: "8px",
+    color: "#0f172a",
+  },
+  partRowWrapper: {
+    marginBottom: "8px",
+    paddingBottom: "6px",
+    borderBottom: "1px dashed #cbd5e1",
+  },
+  partGrid: {
+    display: "grid",
+    gridTemplateColumns: "2fr 0.8fr 1fr auto",
+    gap: "6px",
+    alignItems: "center",
+  },
+  partInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "8px",
+    borderRadius: "6px",
+    border: "1px solid #cbd5e1",
+    fontSize: "12px",
+    background: "#ffffff",
+  },
+  removePartBtn: {
+    padding: "8px 10px",
+    borderRadius: "6px",
+    border: "none",
+    background: "#dc2626",
+    color: "#ffffff",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  partRowTotal: {
+    fontSize: "12px",
+    color: "#475569",
+    textAlign: "right",
+    marginTop: "4px",
+  },
+  partsFooter: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "6px",
+  },
+  addPartBtn: {
+    padding: "7px 12px",
+    borderRadius: "6px",
+    border: "none",
+    background: "#1e3a8a",
+    color: "#ffffff",
+    fontWeight: 600,
+    fontSize: "12px",
+    cursor: "pointer",
+  },
+  billSummaryBox: {
+    marginTop: "12px",
+    padding: "12px",
+    borderRadius: "8px",
+    background: "#f1f5f9",
+    border: "1px solid #cbd5e1",
+    fontSize: "13px",
+  },
+  billRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "6px",
+  },
+  billDivider: {
+    border: "none",
+    borderTop: "1px solid #cbd5e1",
+    margin: "8px 0",
+  },
+  billTotalRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "15px",
+    color: "#0f172a",
   },
   fileInput: {
     width: "100%",
