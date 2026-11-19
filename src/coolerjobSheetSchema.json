@@ -1,0 +1,65 @@
+{
+  "jobSheetType": "ELECTRICAL_COOLER",
+  "header": {
+    "title": "एयर कूलर सर्विस एवं रिपेयर जॉब शीट (AIR COOLER JOB SHEET)",
+    "jobSheetNo": "",
+    "date": "2026-11-19"
+  },
+  "customerDetails": {
+    "customerName": "",
+    "siteAddress": "",
+    "contactPersonMobile": "",
+    "workTypes": [
+      "AMC (वार्षिक रखरखाव)",
+      "ब्रेकडाउन / रिपेयर",
+      "Installation (इंस्टॉलेशन)",
+      "Un-installation (अन-इंस्टॉलेशन)",
+      "बॉडी रिपेयर एवं पेंटिंग"
+    ]
+  },
+  "coolerSpecifications": [
+    {
+      "srNo": 1,
+      "bodyTypeOptions": ["फाइबर / प्लास्टिक", "जी.आई. / लोहा (Metal)"],
+      "selectedBodyType": [],
+      "capacitySize": "",
+      "brandModel": "",
+      "serialTagNo": "",
+      "totalQty": ""
+    },
+    {
+      "srNo": 2,
+      "bodyTypeOptions": ["डक्ट कूलर", "डेजर्ट कूलर", "टावर कूलर"],
+      "selectedBodyType": [],
+      "capacitySize": "",
+      "brandModel": "",
+      "serialTagNo": "",
+      "totalQty": ""
+    }
+  ],
+  "inspectionChecklist": {
+    "fanMotor": ["सही", "जाम / बेयरिंग खराब", "वाइंडिंग जली हुई", "कैपेसिटर खराब"],
+    "waterPump": ["सही", "पानी नहीं उठा रहा", "बदलना आवश्यक"],
+    "swingMotorBlade": ["सही", "स्विंग खराब", "फैन ब्लेड टूटा / असंतुलित"],
+    "coolingPads": {
+      "type": ["हनीकॉम्ब", "वुड वूल (घास)"],
+      "condition": ["साफ", "बदलने योग्य"]
+    },
+    "waterTankPlumbing": ["लीकेज है", "फ्लोट वाल्व खराब", "ड्रेन प्लग जाम", "वाटर डिस्ट्रीब्यूशन पाइप जाम"],
+    "electricalWiring": ["रोटरी स्विच खराब", "वायरिंग कटी / जली", "प्लग टॉप खराब", "अर्थिंग चेक की गई"],
+    "bodyPaint": ["जंग (Rusting) लगी है", "टैंक में छेद / वेल्डिंग की जरूरत", "प्राइमर एवं पेंटिंग आवश्यक"]
+  },
+  "workDoneParts": [
+    { "srNo": 1, "description": "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई", "qty": "", "rate": "", "amount": 0 },
+    { "srNo": 2, "description": "", "qty": "", "rate": "", "amount": 0 },
+    { "srNo": 3, "description": "", "qty": "", "rate": "", "amount": 0 },
+    { "srNo": 4, "description": "", "qty": "", "rate": "", "amount": 0 },
+    { "srNo": 5, "description": "", "qty": "", "rate": "", "amount": 0 }
+  ],
+  "signOff": {
+    "remarks": "",
+    "technicianNameSign": "",
+    "customerSignStamp": "",
+    "footer": "Manqube Private Limited"
+  }
+}
