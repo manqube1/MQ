@@ -84,9 +84,12 @@ export const compressImage = (file) => {
 
 const createEmptyPart = () => ({ partName: "", qty: 1, amount: "" });
 
-// प्रिंटेड रसीद जैसा जॉब शीट टेम्पलेट कंपोनेंट
 const PrintableJobSheet = ({ job, onClose }) => {
   if (!job) return null;
+
+  const isElectricalJob =
+    job.categoryType === "Electrical Work" ||
+    String(job.product || job.productType || "").includes("Electrical Work");
 
   const calculatedPartsTotal = Array.isArray(job.usedParts)
     ? job.usedParts.reduce(
@@ -232,6 +235,11 @@ const PrintableJobSheet = ({ job, onClose }) => {
           <div style={{ fontSize: "12px", fontWeight: "bold", marginTop: "3px" }}>
             Mobile No: 9415522032, 9335172129
           </div>
+          <div style={{ fontSize: "10px", fontWeight: "bold", marginTop: "2px" }}>
+            {isElectricalJob
+              ? "ELECTRICAL SERVICE & INSPECTION JOB SHEET"
+              : "SERVICE & MAINTENANCE JOB SHEET"}
+          </div>
         </div>
 
         <table className="js-table" style={{ borderTop: "none" }}>
@@ -275,483 +283,718 @@ const PrintableJobSheet = ({ job, onClose }) => {
               <td>{job.status === "Completed" ? job.date : ""}</td>
             </tr>
             <tr>
-              <td className="js-bold">PRODUCT</td>
+              <td className="js-bold">WORK / ITEM</td>
               <td>{job.productType || job.product}</td>
             </tr>
           </tbody>
         </table>
 
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr>
-              <td style={{ width: "45%", borderTop: "none", borderBottom: "none" }}></td>
-              <td
-                style={{
-                  width: "18%",
-                  verticalAlign: "middle",
-                  textAlign: "center",
-                  borderTop: "none",
-                }}
-                className="js-bold"
-              >
-                INDOOR
-              </td>
-              <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.indoorModel && job.indoorModel !== "-"
-                      ? job.indoorModel
+        {isElectricalJob ? (
+          /* ELECTRICAL WORK DEDICATED FORMAT */
+          <>
+            <table className="js-table" style={{ borderTop: "none" }}>
+              <tbody>
+                <tr className="js-sec-hdr">
+                  <td colSpan="4" style={{ borderTop: "none" }}>
+                    ELECTRICAL SUPPLY, EARTHING &amp; LOAD TEST
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ width: "25%" }} className="js-bold">
+                    SUPPLY TYPE / PHASE
+                  </td>
+                  <td style={{ width: "25%" }}>
+                    {job.phaseR || job.phaseY || job.phaseB
+                      ? `R:${job.phaseR || "-"} Y:${job.phaseY || "-"} B:${job.phaseB || "-"}`
+                      : job.voltage && job.voltage !== "-"
+                      ? job.voltage
+                      : "Single / 3-Phase"}
+                  </td>
+                  <td style={{ width: "25%" }} className="js-bold">
+                    EARTHING / INSULATION
+                  </td>
+                  <td style={{ width: "25%" }}>
+                    {job.insulation && job.insulation !== "-"
+                      ? job.insulation
                       : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.indoorSerial && job.indoorSerial !== "-"
-                      ? job.indoorSerial
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">VOLTAGE (V)</td>
+                  <td>{job.voltage && job.voltage !== "-" ? job.voltage : ""}</td>
+                  <td className="js-bold">TOTAL LOAD (AMP)</td>
+                  <td>{job.ampere && job.ampere !== "-" ? job.ampere : ""}</td>
+                </tr>
+                <tr>
+                  <td className="js-bold">CABLE / WIRE SIZE</td>
+                  <td>
+                    {job.wireSizeCore && job.wireSizeCore !== "-"
+                      ? job.wireSizeCore
                       : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ borderTop: "none", borderBottom: "none" }}></td>
-              <td
-                style={{ verticalAlign: "middle", textAlign: "center" }}
-                className="js-bold"
-              >
-                OUT DOOR
-              </td>
-              <td style={{ padding: 0 }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.outdoorModel && job.outdoorModel !== "-"
-                      ? job.outdoorModel
+                  </td>
+                  <td className="js-bold">PHASE AMP (R / Y / B)</td>
+                  <td>
+                    {job.ampR || job.ampY || job.ampB
+                      ? `R:${job.ampR || "-"} Y:${job.ampY || "-"} B:${job.ampB || "-"}`
                       : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.outdoorSerial && job.outdoorSerial !== "-"
-                      ? job.outdoorSerial
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">MCB / DB / PANEL</td>
+                  <td>
+                    {job.stabilizer && job.stabilizer !== "-"
+                      ? job.stabilizer
                       : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ borderTop: "none" }}></td>
-              <td
-                style={{ verticalAlign: "middle", textAlign: "center" }}
-                className="js-bold"
-              >
-                COMPRESSOR
-              </td>
-              <td style={{ padding: 0 }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.compressorModel && job.compressorModel !== "-"
-                      ? job.compressorModel
+                  </td>
+                  <td className="js-bold">COOLER / LIGHT / SWITCH</td>
+                  <td>
+                    {job.swingFlapper && job.swingFlapper !== "-"
+                      ? job.swingFlapper
                       : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.compressorSerial && job.compressorSerial !== "-"
-                      ? job.compressorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr className="js-sec-hdr">
-              <td style={{ width: "45%", borderTop: "none" }}>
-                FAULT / PROBLEM DETAILS
-              </td>
-              <td style={{ width: "42%", borderTop: "none" }}>
-                WORK / ACTION TAKEN AND USE PART
-              </td>
-              <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
-            </tr>
-            <tr>
-              <td style={{ minHeight: "45px" }}>
-                1. {job.faultDetails || job.desc || ""}
-              </td>
-              <td>
-                <div>1. {job.desc || ""}</div>
-                {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                  job.usedParts.map((p, i) => {
-                    const q = parseFloat(p.qty) || 0;
-                    const a = parseFloat(p.amount) || 0;
-                    return (
-                      <div key={i} style={{ marginTop: "3px" }}>
-                        {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
-                      </div>
-                    );
-                  })
-                ) : (
-                  <>
-                    {job.sparePartName && job.sparePartName !== "-" && (
-                      <div style={{ marginTop: "4px" }}>
-                        2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
-                        {job.sparePartModel && job.sparePartModel !== "-"
-                          ? `(${job.sparePartModel})`
-                          : ""}
+            <table className="js-table" style={{ borderTop: "none" }}>
+              <tbody>
+                <tr className="js-sec-hdr">
+                  <td style={{ width: "42%", borderTop: "none" }}>
+                    FAULT / ELECTRICAL ISSUE
+                  </td>
+                  <td style={{ width: "45%", borderTop: "none" }}>
+                    ACTION TAKEN &amp; USED ELECTRICAL ITEMS
+                  </td>
+                  <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+                </tr>
+                <tr>
+                  <td>1. {job.faultDetails || job.desc || ""}</td>
+                  <td>
+                    <div>1. {job.desc || ""}</div>
+                    {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                      job.usedParts.map((p, i) => {
+                        const q = parseFloat(p.qty) || 0;
+                        const a = parseFloat(p.amount) || 0;
+                        return (
+                          <div key={i} style={{ marginTop: "3px" }}>
+                            {i + 2}. {p.partName || "Item"} (Qty: {q} × ₹{a})
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <>
+                        {job.sparePartName && job.sparePartName !== "-" && (
+                          <div style={{ marginTop: "4px" }}>
+                            2. Item ({job.sparePartOption}): {job.sparePartName}{" "}
+                            {job.sparePartModel && job.sparePartModel !== "-"
+                              ? `(${job.sparePartModel})`
+                              : ""}
+                          </div>
+                        )}
+                        {Array.isArray(job.materials) &&
+                          job.materials.length > 0 &&
+                          job.materials.map((m, i) => (
+                            <div key={i}>
+                              {i + 3}. {m.name} (Qty: {m.qty})
+                            </div>
+                          ))}
+                      </>
+                    )}
+                    {serviceChargeVal > 0 && (
+                      <div style={{ marginTop: "3px" }}>
+                        <strong>Labour / Service Charge:</strong> ₹
+                        {serviceChargeVal.toFixed(2)}
                       </div>
                     )}
-                    {Array.isArray(job.materials) &&
-                      job.materials.length > 0 &&
+                  </td>
+                  <td>
+                    {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                      job.usedParts.map((p, i) => {
+                        const rowAmt =
+                          (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0);
+                        return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
+                      })
+                    ) : Array.isArray(job.materials) &&
+                      job.materials.length > 0 ? (
                       job.materials.map((m, i) => (
-                        <div key={i}>
-                          {i + 3}. {m.name} (Qty: {m.qty})
-                        </div>
-                      ))}
-                  </>
-                )}
-                {serviceChargeVal > 0 && (
-                  <div style={{ marginTop: "3px" }}>
-                    <strong>Service Charge:</strong> ₹{serviceChargeVal.toFixed(2)}
-                  </div>
-                )}
-              </td>
-              <td>
-                {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                  job.usedParts.map((p, i) => {
-                    const rowAmt =
-                      (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0);
-                    return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                  })
-                ) : Array.isArray(job.materials) && job.materials.length > 0 ? (
-                  job.materials.map((m, i) => (
-                    <div key={i}>₹{m.price || "0"}</div>
-                  ))
-                ) : null}
-                {totalBillVal > 0 && (
-                  <div
-                    style={{
-                      marginTop: "6px",
-                      borderTop: "1px solid #000",
-                      paddingTop: "2px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Total: ₹{totalBillVal.toFixed(2)}
-                  </div>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                        <div key={i}>₹{m.price || "0"}</div>
+                      ))
+                    ) : null}
+                    {totalBillVal > 0 && (
+                      <div
+                        style={{
+                          marginTop: "6px",
+                          borderTop: "1px solid #000",
+                          paddingTop: "2px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Total: ₹{totalBillVal.toFixed(2)}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr>
-              <td style={{ width: "30%", borderTop: "none" }} className="js-bold">
-                FILTER CLEAN
-              </td>
-              <td style={{ width: "15%", borderTop: "none" }}>
-                {job.filterClean && job.filterClean !== "-" ? job.filterClean : ""}
-              </td>
-              <td
-                rowSpan="2"
-                style={{
-                  width: "18%",
-                  verticalAlign: "middle",
-                  textAlign: "center",
-                  borderTop: "none",
-                }}
-                className="js-bold"
-              >
-                IN-DOOR
-                <br />
-                MOTOR
-              </td>
-              <td style={{ width: "37%", padding: 0, borderTop: "none" }} rowSpan="2">
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.indoorMotorModel && job.indoorMotorModel !== "-"
-                      ? job.indoorMotorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.indoorMotorSerial && job.indoorMotorSerial !== "-"
-                      ? job.indoorMotorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">STAND TYPE</td>
-              <td>
-                {job.standType && job.standType !== "-" ? job.standType : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">SWING / FLAPPER</td>
-              <td>
-                {job.swingFlapper && job.swingFlapper !== "-"
-                  ? job.swingFlapper
-                  : ""}
-              </td>
-              <td
-                rowSpan="2"
-                style={{ verticalAlign: "middle", textAlign: "center" }}
-                className="js-bold"
-              >
-                OUT-DOOR
-                <br />
-                MOTOR
-              </td>
-              <td rowSpan="2" style={{ padding: 0 }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.outdoorMotorModel && job.outdoorMotorModel !== "-"
-                      ? job.outdoorMotorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.outdoorMotorSerial && job.outdoorMotorSerial !== "-"
-                      ? job.outdoorMotorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">STABILIZER</td>
-              <td>
-                {job.stabilizer && job.stabilizer !== "-" ? job.stabilizer : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">REMOTE</td>
-              <td>
-                {job.remoteStatus && job.remoteStatus !== "-"
-                  ? job.remoteStatus
-                  : ""}
-              </td>
-              <td colSpan="2" style={{ padding: 0 }}>
-                <div style={{ display: "flex" }}>
-                  <div
+            <table className="js-table" style={{ borderTop: "none" }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: "50%" }}>
+                    <div className="js-bold">TECHNICIAN &amp; STATUS</div>
+                    <div style={{ marginTop: "4px" }}>
+                      <strong>Tech:</strong> {job.staffName || ""}
+                    </div>
+                    <div style={{ marginTop: "3px" }}>
+                      <strong>Status:</strong> {job.status}
+                    </div>
+                    <div style={{ marginTop: "3px" }}>
+                      <strong>Date:</strong> {job.date}
+                    </div>
+                  </td>
+                  <td style={{ width: "50%" }}>
+                    <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
+                    {job.signatureURL ? (
+                      <div
+                        style={{
+                          margin: "4px 0",
+                          borderBottom: "1px dashed #94a3b8",
+                          paddingBottom: "4px",
+                        }}
+                      >
+                        <img
+                          src={job.signatureURL}
+                          alt="Customer Signature"
+                          style={{
+                            maxHeight: "60px",
+                            maxWidth: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          height: "36px",
+                          borderBottom: "1px dashed #cbd5e1",
+                          margin: "4px 0",
+                        }}
+                      ></div>
+                    )}
+                    <div style={{ fontSize: "11px" }}>
+                      <strong>REMARK:</strong>{" "}
+                      {job.feedback && job.feedback !== "-" ? job.feedback : ""}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </>
+        ) : (
+          /* HVAC / GENERAL FORMAT */
+          <>
+            <table className="js-table" style={{ borderTop: "none" }}>
+              <tbody>
+                <tr>
+                  <td
+                    style={{ width: "45%", borderTop: "none", borderBottom: "none" }}
+                  ></td>
+                  <td
                     style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
+                      width: "18%",
+                      verticalAlign: "middle",
+                      textAlign: "center",
+                      borderTop: "none",
                     }}
+                    className="js-bold"
                   >
-                    <strong>R:</strong>{" "}
-                    {job.phaseR && job.phaseR !== "-" ? job.phaseR : ""}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>Y:</strong>{" "}
-                    {job.phaseY && job.phaseY !== "-" ? job.phaseY : ""}
-                  </div>
-                  <div style={{ flex: 1, padding: "3px 5px" }}>
-                    <strong>B:</strong>{" "}
-                    {job.phaseB && job.phaseB !== "-" ? job.phaseB : ""}
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">ROOM TEMP.</td>
-              <td>
-                {job.roomTemp && job.roomTemp !== "-" ? job.roomTemp : ""}
-              </td>
-              <td colSpan="2" style={{ padding: 0 }}>
-                <div style={{ display: "flex" }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>R:</strong>{" "}
-                    {job.ampR && job.ampR !== "-" ? job.ampR : ""}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>Y:</strong>{" "}
-                    {job.ampY && job.ampY !== "-" ? job.ampY : ""}
-                  </div>
-                  <div style={{ flex: 1, padding: "3px 5px" }}>
-                    <strong>B:</strong>{" "}
-                    {job.ampB && job.ampB !== "-" ? job.ampB : ""}
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">VOLTAGE</td>
-              <td>{job.voltage && job.voltage !== "-" ? job.voltage : ""}</td>
-              <td colSpan="2" style={{ padding: "3px 5px" }}>
-                <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
-                <strong>STATUS:</strong> {job.status}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">AMPERE</td>
-              <td>{job.ampere && job.ampere !== "-" ? job.ampere : ""}</td>
-              <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
-                <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
-                {job.signatureURL ? (
-                  <div
-                    style={{
-                      margin: "6px 0",
-                      borderBottom: "1px dashed #94a3b8",
-                      paddingBottom: "4px",
-                    }}
-                  >
-                    <img
-                      src={job.signatureURL}
-                      alt="Customer Signature"
+                    INDOOR
+                  </td>
+                  <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
+                    <div
                       style={{
-                        maxHeight: "70px",
-                        maxWidth: "100%",
-                        objectFit: "contain",
+                        borderBottom: "1px solid #000",
+                        padding: "3px 5px",
+                        textAlign: "left",
                       }}
-                    />
-                  </div>
-                ) : (
-                  <div
+                    >
+                      <span className="faint-label">Model:</span>
+                      <span>
+                        {job.indoorModel && job.indoorModel !== "-"
+                          ? job.indoorModel
+                          : ""}
+                      </span>
+                    </div>
+                    <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <span className="faint-label">Serial:</span>
+                      <span>
+                        {job.indoorSerial && job.indoorSerial !== "-"
+                          ? job.indoorSerial
+                          : ""}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ borderTop: "none", borderBottom: "none" }}></td>
+                  <td
+                    style={{ verticalAlign: "middle", textAlign: "center" }}
+                    className="js-bold"
+                  >
+                    OUT DOOR
+                  </td>
+                  <td style={{ padding: 0 }}>
+                    <div
+                      style={{
+                        borderBottom: "1px solid #000",
+                        padding: "3px 5px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span className="faint-label">Model:</span>
+                      <span>
+                        {job.outdoorModel && job.outdoorModel !== "-"
+                          ? job.outdoorModel
+                          : ""}
+                      </span>
+                    </div>
+                    <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <span className="faint-label">Serial:</span>
+                      <span>
+                        {job.outdoorSerial && job.outdoorSerial !== "-"
+                          ? job.outdoorSerial
+                          : ""}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ borderTop: "none" }}></td>
+                  <td
+                    style={{ verticalAlign: "middle", textAlign: "center" }}
+                    className="js-bold"
+                  >
+                    COMPRESSOR
+                  </td>
+                  <td style={{ padding: 0 }}>
+                    <div
+                      style={{
+                        borderBottom: "1px solid #000",
+                        padding: "3px 5px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span className="faint-label">Model:</span>
+                      <span>
+                        {job.compressorModel && job.compressorModel !== "-"
+                          ? job.compressorModel
+                          : ""}
+                      </span>
+                    </div>
+                    <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <span className="faint-label">Serial:</span>
+                      <span>
+                        {job.compressorSerial && job.compressorSerial !== "-"
+                          ? job.compressorSerial
+                          : ""}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table className="js-table" style={{ borderTop: "none" }}>
+              <tbody>
+                <tr className="js-sec-hdr">
+                  <td style={{ width: "45%", borderTop: "none" }}>
+                    FAULT / PROBLEM DETAILS
+                  </td>
+                  <td style={{ width: "42%", borderTop: "none" }}>
+                    WORK / ACTION TAKEN AND USE PART
+                  </td>
+                  <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+                </tr>
+                <tr>
+                  <td style={{ minHeight: "45px" }}>
+                    1. {job.faultDetails || job.desc || ""}
+                  </td>
+                  <td>
+                    <div>1. {job.desc || ""}</div>
+                    {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                      job.usedParts.map((p, i) => {
+                        const q = parseFloat(p.qty) || 0;
+                        const a = parseFloat(p.amount) || 0;
+                        return (
+                          <div key={i} style={{ marginTop: "3px" }}>
+                            {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <>
+                        {job.sparePartName && job.sparePartName !== "-" && (
+                          <div style={{ marginTop: "4px" }}>
+                            2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
+                            {job.sparePartModel && job.sparePartModel !== "-"
+                              ? `(${job.sparePartModel})`
+                              : ""}
+                          </div>
+                        )}
+                        {Array.isArray(job.materials) &&
+                          job.materials.length > 0 &&
+                          job.materials.map((m, i) => (
+                            <div key={i}>
+                              {i + 3}. {m.name} (Qty: {m.qty})
+                            </div>
+                          ))}
+                      </>
+                    )}
+                    {serviceChargeVal > 0 && (
+                      <div style={{ marginTop: "3px" }}>
+                        <strong>Service Charge:</strong> ₹
+                        {serviceChargeVal.toFixed(2)}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                      job.usedParts.map((p, i) => {
+                        const rowAmt =
+                          (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0);
+                        return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
+                      })
+                    ) : Array.isArray(job.materials) &&
+                      job.materials.length > 0 ? (
+                      job.materials.map((m, i) => (
+                        <div key={i}>₹{m.price || "0"}</div>
+                      ))
+                    ) : null}
+                    {totalBillVal > 0 && (
+                      <div
+                        style={{
+                          marginTop: "6px",
+                          borderTop: "1px solid #000",
+                          paddingTop: "2px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Total: ₹{totalBillVal.toFixed(2)}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table className="js-table" style={{ borderTop: "none" }}>
+              <tbody>
+                <tr>
+                  <td
+                    style={{ width: "30%", borderTop: "none" }}
+                    className="js-bold"
+                  >
+                    FILTER CLEAN
+                  </td>
+                  <td style={{ width: "15%", borderTop: "none" }}>
+                    {job.filterClean && job.filterClean !== "-"
+                      ? job.filterClean
+                      : ""}
+                  </td>
+                  <td
+                    rowSpan="2"
                     style={{
-                      height: "45px",
-                      borderBottom: "1px dashed #cbd5e1",
-                      margin: "6px 0",
+                      width: "18%",
+                      verticalAlign: "middle",
+                      textAlign: "center",
+                      borderTop: "none",
                     }}
-                  ></div>
-                )}
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                  <strong>REMARK:</strong>{" "}
-                  {job.feedback && job.feedback !== "-" ? job.feedback : ""}
-                </div>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                  <strong>MOBILE:</strong> {job.customerPhone}
-                </div>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                  <strong>DATE:</strong> {job.date}
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">COMPRESSOR AMPERE</td>
-              <td>
-                {job.compressorAmpere && job.compressorAmpere !== "-"
-                  ? job.compressorAmpere
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">DRAIN WITH SIZE</td>
-              <td>
-                {job.drainSize && job.drainSize !== "-" ? job.drainSize : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">COPPER PIPE SIZE</td>
-              <td>
-                {job.copperPipeSize && job.copperPipeSize !== "-"
-                  ? job.copperPipeSize
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">OUTDOOR CLEAN</td>
-              <td>
-                {job.outdoorClean && job.outdoorClean !== "-"
-                  ? job.outdoorClean
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">SUCTION PRESSURE</td>
-              <td>
-                {job.sectionPressure && job.sectionPressure !== "-"
-                  ? job.sectionPressure
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">WIRE SIZE &amp; CORE</td>
-              <td>
-                {job.wireSizeCore && job.wireSizeCore !== "-"
-                  ? job.wireSizeCore
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">INSULATION</td>
-              <td>
-                {job.insulation && job.insulation !== "-" ? job.insulation : ""}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    className="js-bold"
+                  >
+                    IN-DOOR
+                    <br />
+                    MOTOR
+                  </td>
+                  <td
+                    style={{ width: "37%", padding: 0, borderTop: "none" }}
+                    rowSpan="2"
+                  >
+                    <div
+                      style={{
+                        borderBottom: "1px solid #000",
+                        padding: "3px 5px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span className="faint-label">Model:</span>
+                      <span>
+                        {job.indoorMotorModel && job.indoorMotorModel !== "-"
+                          ? job.indoorMotorModel
+                          : ""}
+                      </span>
+                    </div>
+                    <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <span className="faint-label">Serial:</span>
+                      <span>
+                        {job.indoorMotorSerial &&
+                        job.indoorMotorSerial !== "-"
+                          ? job.indoorMotorSerial
+                          : ""}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">STAND TYPE</td>
+                  <td>
+                    {job.standType && job.standType !== "-"
+                      ? job.standType
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">SWING / FLAPPER</td>
+                  <td>
+                    {job.swingFlapper && job.swingFlapper !== "-"
+                      ? job.swingFlapper
+                      : ""}
+                  </td>
+                  <td
+                    rowSpan="2"
+                    style={{ verticalAlign: "middle", textAlign: "center" }}
+                    className="js-bold"
+                  >
+                    OUT-DOOR
+                    <br />
+                    MOTOR
+                  </td>
+                  <td rowSpan="2" style={{ padding: 0 }}>
+                    <div
+                      style={{
+                        borderBottom: "1px solid #000",
+                        padding: "3px 5px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span className="faint-label">Model:</span>
+                      <span>
+                        {job.outdoorMotorModel &&
+                        job.outdoorMotorModel !== "-"
+                          ? job.outdoorMotorModel
+                          : ""}
+                      </span>
+                    </div>
+                    <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <span className="faint-label">Serial:</span>
+                      <span>
+                        {job.outdoorMotorSerial &&
+                        job.outdoorMotorSerial !== "-"
+                          ? job.outdoorMotorSerial
+                          : ""}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">STABILIZER</td>
+                  <td>
+                    {job.stabilizer && job.stabilizer !== "-"
+                      ? job.stabilizer
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">REMOTE</td>
+                  <td>
+                    {job.remoteStatus && job.remoteStatus !== "-"
+                      ? job.remoteStatus
+                      : ""}
+                  </td>
+                  <td colSpan="2" style={{ padding: 0 }}>
+                    <div style={{ display: "flex" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          borderRight: "1px solid #000",
+                          padding: "3px 5px",
+                        }}
+                      >
+                        <strong>R:</strong>{" "}
+                        {job.phaseR && job.phaseR !== "-" ? job.phaseR : ""}
+                      </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          borderRight: "1px solid #000",
+                          padding: "3px 5px",
+                        }}
+                      >
+                        <strong>Y:</strong>{" "}
+                        {job.phaseY && job.phaseY !== "-" ? job.phaseY : ""}
+                      </div>
+                      <div style={{ flex: 1, padding: "3px 5px" }}>
+                        <strong>B:</strong>{" "}
+                        {job.phaseB && job.phaseB !== "-" ? job.phaseB : ""}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">ROOM TEMP.</td>
+                  <td>
+                    {job.roomTemp && job.roomTemp !== "-" ? job.roomTemp : ""}
+                  </td>
+                  <td colSpan="2" style={{ padding: 0 }}>
+                    <div style={{ display: "flex" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          borderRight: "1px solid #000",
+                          padding: "3px 5px",
+                        }}
+                      >
+                        <strong>R:</strong>{" "}
+                        {job.ampR && job.ampR !== "-" ? job.ampR : ""}
+                      </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          borderRight: "1px solid #000",
+                          padding: "3px 5px",
+                        }}
+                      >
+                        <strong>Y:</strong>{" "}
+                        {job.ampY && job.ampY !== "-" ? job.ampY : ""}
+                      </div>
+                      <div style={{ flex: 1, padding: "3px 5px" }}>
+                        <strong>B:</strong>{" "}
+                        {job.ampB && job.ampB !== "-" ? job.ampB : ""}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">VOLTAGE</td>
+                  <td>
+                    {job.voltage && job.voltage !== "-" ? job.voltage : ""}
+                  </td>
+                  <td colSpan="2" style={{ padding: "3px 5px" }}>
+                    <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
+                    <strong>STATUS:</strong> {job.status}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">AMPERE</td>
+                  <td>
+                    {job.ampere && job.ampere !== "-" ? job.ampere : ""}
+                  </td>
+                  <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
+                    <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
+                    {job.signatureURL ? (
+                      <div
+                        style={{
+                          margin: "6px 0",
+                          borderBottom: "1px dashed #94a3b8",
+                          paddingBottom: "4px",
+                        }}
+                      >
+                        <img
+                          src={job.signatureURL}
+                          alt="Customer Signature"
+                          style={{
+                            maxHeight: "70px",
+                            maxWidth: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          height: "45px",
+                          borderBottom: "1px dashed #cbd5e1",
+                          margin: "6px 0",
+                        }}
+                      ></div>
+                    )}
+                    <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                      <strong>REMARK:</strong>{" "}
+                      {job.feedback && job.feedback !== "-" ? job.feedback : ""}
+                    </div>
+                    <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                      <strong>MOBILE:</strong> {job.customerPhone}
+                    </div>
+                    <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                      <strong>DATE:</strong> {job.date}
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">COMPRESSOR AMPERE</td>
+                  <td>
+                    {job.compressorAmpere && job.compressorAmpere !== "-"
+                      ? job.compressorAmpere
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">DRAIN WITH SIZE</td>
+                  <td>
+                    {job.drainSize && job.drainSize !== "-"
+                      ? job.drainSize
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">COPPER PIPE SIZE</td>
+                  <td>
+                    {job.copperPipeSize && job.copperPipeSize !== "-"
+                      ? job.copperPipeSize
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">OUTDOOR CLEAN</td>
+                  <td>
+                    {job.outdoorClean && job.outdoorClean !== "-"
+                      ? job.outdoorClean
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">SUCTION PRESSURE</td>
+                  <td>
+                    {job.sectionPressure && job.sectionPressure !== "-"
+                      ? job.sectionPressure
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">WIRE SIZE &amp; CORE</td>
+                  <td>
+                    {job.wireSizeCore && job.wireSizeCore !== "-"
+                      ? job.wireSizeCore
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="js-bold">INSULATION</td>
+                  <td>
+                    {job.insulation && job.insulation !== "-"
+                      ? job.insulation
+                      : ""}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </>
+        )}
 
         {Array.isArray(job.sitePhotoUrls) && job.sitePhotoUrls.length > 0 && (
           <div style={{ padding: "8px", borderTop: "1px solid #000" }}>
-            <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px" }}>
+            <div
+              style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px" }}
+            >
               SITE &amp; PART PHOTOS:
             </div>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -816,7 +1059,7 @@ export default function App() {
   const [staffSubTab, setStaffSubTab] = useState("menu");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
-  const [techSlide, setTechSlide] = useState(1); // स्टेप 2 के 1 से 4 भाग
+  const [techSlide, setTechSlide] = useState(1);
 
   // Admin Login State
   const [adminUser, setAdminUser] = useState("");
@@ -845,7 +1088,7 @@ export default function App() {
   const [amcDate, setAmcDate] = useState("");
   const [faultDetails, setFaultDetails] = useState("");
 
-  // Job Form State (Step 2 - Complete HVAC Technical Checklist)
+  // Job Form State (Step 2)
   const [indoorModel, setIndoorModel] = useState("");
   const [indoorSerial, setIndoorSerial] = useState("");
   const [outdoorModel, setOutdoorModel] = useState("");
@@ -880,7 +1123,7 @@ export default function App() {
   const [ampY, setAmpY] = useState("");
   const [ampB, setAmpB] = useState("");
 
-  // Step 3 & Step 4 (Used Parts + Service Charge + Auto Total)
+  // Step 3 & Step 4
   const [workDone, setWorkDone] = useState("");
   const [sparePartOption, setSparePartOption] = useState("Used Part");
   const [sparePartName, setSparePartName] = useState("");
@@ -906,7 +1149,6 @@ export default function App() {
   const fullCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // GPS Location on Mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -924,7 +1166,6 @@ export default function App() {
     }
   }, []);
 
-  // Firestore Real-time Sync
   useEffect(() => {
     const unsubJobs = onSnapshot(
       collection(db, "jobs"),
@@ -968,7 +1209,6 @@ export default function App() {
     }
   }, [isSignatureModalOpen]);
 
-  // Used Parts helpers
   const addPartRow = () => {
     setUsedParts((prev) => [...prev, createEmptyPart()]);
   };
@@ -1004,7 +1244,6 @@ export default function App() {
   const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
   const grandTotalBill = usedPartsTotal + materialsTotal + serviceChargeVal;
 
-  // Multiple Site Photos upload
   const handleSitePhotosChange = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -1169,7 +1408,7 @@ export default function App() {
     const cat = e.target.value;
     setCategoryType(cat);
     if (cat === "HVAC & Refrigeration") setProductType("Split / Window AC");
-    else if (cat === "Electrical Work") setProductType("House Wiring & Panel");
+    else if (cat === "Electrical Work") setProductType("Room Cooler");
     else if (cat === "Plumbing Work")
       setProductType("Pipe Fitting & Leakage Repair");
     else if (cat === "Civil Work") setProductType("Flooring & Tiling");
@@ -1484,8 +1723,16 @@ export default function App() {
       outdoorMotorSerial: outdoorMotorSerial || "-",
       filterClean: categoryType === "HVAC & Refrigeration" ? filterClean : "-",
       standType: categoryType === "HVAC & Refrigeration" ? standType : "-",
-      swingFlapper: categoryType === "HVAC & Refrigeration" ? swingFlapper : "-",
-      stabilizer: categoryType === "HVAC & Refrigeration" ? stabilizer : "-",
+      swingFlapper:
+        categoryType === "HVAC & Refrigeration" ||
+        categoryType === "Electrical Work"
+          ? swingFlapper
+          : "-",
+      stabilizer:
+        categoryType === "HVAC & Refrigeration" ||
+        categoryType === "Electrical Work"
+          ? stabilizer
+          : "-",
       remoteStatus: categoryType === "HVAC & Refrigeration" ? remoteStatus : "-",
       outdoorClean: categoryType === "HVAC & Refrigeration" ? outdoorClean : "-",
       sectionPressure:
@@ -1522,14 +1769,12 @@ export default function App() {
 
     const fileToUpload = imageFile;
 
-    // 1. स्क्रीन पर तुरंत अपडेट दिखाएं
     const filteredList = jobSheets.filter((j) => j.jobSheetNo !== jobSheetNo);
     setJobSheets([updatedRecord, ...filteredList]);
     setLastSubmittedJob(updatedRecord);
     resetJobForm();
     setStaffSubTab("menu");
 
-    // 2. Telegram पर स्टाफ़ अपडेट का नोटिस भेजें
     const statusBadge =
       finalStatus === "Completed"
         ? "✅ COMPLETED"
@@ -1564,7 +1809,6 @@ export default function App() {
 
     sendStaffTelegramAlert(telegramMsg);
 
-    // 3. बैकग्राउंड में Firestore में सेव करें
     setDoc(doc(db, "jobs", jobSheetNo), updatedRecord)
       .then(() => {
         addDoc(collection(db, "jobSheets"), {
@@ -1690,7 +1934,6 @@ export default function App() {
         minHeight: "100vh",
       }}
     >
-      {/* फुल-स्क्रीन मोबाइल/लैपटॉप सिग्नेचर मॉडल */}
       {isSignatureModalOpen && (
         <div
           style={{
@@ -1838,7 +2081,7 @@ export default function App() {
           MANQUBE PRIVATE LIMITED
         </h2>
         <p style={{ margin: "5px 0 0", fontSize: "13px", color: "#64748b" }}>
-          We Build. Your Trust. | 212 Naini, Prayagraj
+          We Build. Your Trust.
         </p>
       </div>
 
@@ -2120,7 +2363,7 @@ export default function App() {
                     HVAC &amp; Refrigeration (एसी, कूलर, फ्रिज, चिलर, VRV)
                   </option>
                   <option value="Electrical Work">
-                    Electrical Work (इलेक्ट्रिकल कार्य)
+                    Electrical Work (इलेक्ट्रिकल, रूम कूलर, लाइट)
                   </option>
                   <option value="Plumbing Work">Plumbing Work (प्लंबिंग)</option>
                   <option value="Civil Work">Civil Work (सिविल कार्य)</option>
@@ -2160,6 +2403,8 @@ export default function App() {
                   )}
                   {categoryType === "Electrical Work" && (
                     <>
+                      <option value="Room Cooler">Room Cooler (रूम कूलर)</option>
+                      <option value="Light">Light / Lighting (लाइट)</option>
                       <option value="House Wiring & Panel">
                         House Wiring &amp; Panel
                       </option>
@@ -2993,6 +3238,8 @@ export default function App() {
                         )}
                         {categoryType === "Electrical Work" && (
                           <>
+                            <option value="Room Cooler">Room Cooler</option>
+                            <option value="Light">Light</option>
                             <option value="House Wiring & Panel">
                               House Wiring &amp; Panel
                             </option>
@@ -3299,7 +3546,7 @@ export default function App() {
                           </div>
                           <div>
                             <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              SWING / FLAPPER:
+                              SWING / FLAPPER / UNIT:
                             </label>
                             <select
                               value={swingFlapper}
@@ -3313,7 +3560,7 @@ export default function App() {
                           </div>
                           <div>
                             <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              STABILIZER:
+                              STABILIZER / MCB / DB:
                             </label>
                             <select
                               value={stabilizer}
@@ -3327,7 +3574,7 @@ export default function App() {
                           </div>
                           <div>
                             <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              REMOTE:
+                              REMOTE / SWITCH:
                             </label>
                             <select
                               value={remoteStatus}
@@ -3466,7 +3713,7 @@ export default function App() {
                           </div>
                           <div>
                             <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              INSULATION:
+                              EARTHING / INSULATION:
                             </label>
                             <select
                               value={insulation}
