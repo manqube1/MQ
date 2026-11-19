@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  increment, 
-  serverTimestamp, 
-  onSnapshot 
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  increment,
+  serverTimestamp,
+  onSnapshot
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
@@ -26,6 +26,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+const TELEGRAM_BOT_TOKEN = "8692296744:AAEsSO0K5x0yv_gnjljcAYvNCaIauNvCSac";
+const TELEGRAM_CHAT_ID = "5603316430";
+
+const sendStaffTelegramAlert = async (messageText) => {
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: messageText,
+        parse_mode: "HTML"
+      })
+    });
+  } catch (err) {
+    console.error("Telegram alert error:", err);
+  }
+};
 
 export const compressImage = (file) => {
   return new Promise((resolve) => {
@@ -799,7 +818,7 @@ export default function App() {
     }
   };
 
-  // बिना रुके 0.1 सेकंड में तुरंत सेव होने वाला फ़ंक्शन (Instant Non-Blocking Save)
+  // बिना रुके 0.1 सेकंड में तुरंत सेव होने वाला फ़ंक्शन (Instant Non-Blocking Save + Telegram Alert)
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert('कृपया कस्टमर का नाम और मोबाइल नंबर भरें!');
@@ -889,7 +908,26 @@ export default function App() {
     resetJobForm();
     setStaffSubTab('menu');
 
-    // 2. बैकग्राउंड में डेटाबेस (Firestore) में सेव करें
+    // 2. Telegram पर स्टाफ़ अपडेट का नोटिस भेजें
+    const statusBadge = finalStatus === 'Completed' ? '✅ COMPLETED' : `⏳ ${finalStatus.toUpperCase()}`;
+    const spareInfo = (sparePartName && sparePartName !== '-')
+      ? `\n<b>पार्ट (${sparePartOption}):</b> ${sparePartName} (${sparePartModel || '-'})`
+      : '';
+    const telegramMsg =
+      `🛠️ <b>MANQUBE STAFF JOB UPDATE</b>\n` +
+      `<b>स्टेटस:</b> ${statusBadge}\n` +
+      `<b>जॉब / कंप्लेंट नं.:</b> <code>${updatedRecord.jobSheetNo}</code>\n` +
+      `<b>कस्टमर:</b> ${updatedRecord.customerName} (${updatedRecord.customerPhone})\n` +
+      `<b>पता:</b> ${updatedRecord.customerAddress || '-'}\n` +
+      `<b>उत्पाद:</b> ${updatedRecord.product}\n` +
+      `<b>किया गया कार्य:</b> ${updatedRecord.desc}${spareInfo}\n` +
+      `<b>रिमार्क:</b> ${updatedRecord.feedback}\n` +
+      `<b>स्टाफ:</b> ${updatedRecord.staffName}\n` +
+      `<b>लोकेशन:</b> ${updatedRecord.location}\n` +
+      `<b>समय:</b> ${updatedRecord.date}`;
+    sendStaffTelegramAlert(telegramMsg);
+
+    // 3. बैकग्राउंड में डेटाबेस (Firestore) में सेव करें
     setDoc(doc(db, "jobs", jobSheetNo), updatedRecord)
       .then(() => {
         if (fileToUpload) {
@@ -1032,9 +1070,9 @@ export default function App() {
 
       {/* हेडर */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', background: '#fff', borderRadius: '8px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-        <img 
-          src="/1000384854.jpg" 
-          alt="Manqube Logo" 
+        <img
+          src="/1000384854.jpg"
+          alt="Manqube Logo"
           style={{ width: '70px', height: '70px', objectFit: 'contain', borderRadius: '50%', marginBottom: '8px' }}
         />
         <h2 style={{ margin: '0', color: '#1e293b', fontSize: '20px' }}>MANQUBE PRIVATE LIMITED</h2>
@@ -1043,7 +1081,7 @@ export default function App() {
 
       {activeTab !== 'home' && (
         <div style={{ marginBottom: '15px' }}>
-          <button 
+          <button
             onClick={() => { setActiveTab('home'); setInspectedJob(null); setLastSubmittedJob(null); setSelectedStaffFolder(null); }}
             style={{ padding: '8px 14px', backgroundColor: '#475569', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
             ⬅ मुख्य मेनू (Home) पर वापस जाएं
@@ -1062,21 +1100,21 @@ export default function App() {
             <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:</p>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('complaint')}
             style={{ background: '#fff', borderLeft: '5px solid #2563eb', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
             <h3 style={{ margin: '0 0 5px 0', color: '#2563eb', fontSize: '18px' }}>👤 कस्टमर पोर्टल (Customer Portal)</h3>
             <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>अपनी शिकायत दर्ज करें और पुरानी जॉब-शीट्स देखें</p>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('staff')}
             style={{ background: '#fff', borderLeft: '5px solid #166534', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
             <h3 style={{ margin: '0 0 5px 0', color: '#166534', fontSize: '18px' }}>🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile & GPS Login)</h3>
             <p style={{ margin: '0', fontSize: '13px', color: '#475569' }}>मोबाइल नंबर, OTP और GPS लोकेशन के साथ लॉगिन करें</p>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('admin')}
             style={{ background: '#fff', borderLeft: '5px solid #d97706', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
             <h3 style={{ margin: '0 0 5px 0', color: '#d97706', fontSize: '18px' }}>📊 एडमिन & ऑफिस स्टाफ पैनल (Office Login)</h3>
@@ -1092,14 +1130,14 @@ export default function App() {
           {!custLoggedIn ? (
             <form onSubmit={handleCustomerLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>अपनी शिकायतें और पूरी हुई जॉब-शीट देखने के लिए अपना मोबाइल नंबर दर्ज करें:</p>
-              <input 
-                type="tel" 
-                maxLength="10" 
-                placeholder="मोबाइल नंबर दर्ज करें" 
-                value={custPhone} 
+              <input
+                type="tel"
+                maxLength="10"
+                placeholder="मोबाइल नंबर दर्ज करें"
+                value={custPhone}
                 onChange={(e) => setCustPhone(e.target.value)}
                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                required 
+                required
               />
               <button type="submit" style={{ padding: '12px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
                 आगे बढ़ें
@@ -1116,23 +1154,23 @@ export default function App() {
                 <h4 style={{ margin: '0', color: '#007bff' }}>नई शिकायत दर्ज करें (New Complaint)</h4>
                 
                 <label style={{ fontWeight: 'bold', fontSize: '13px' }}>कस्टमर का पूरा नाम (Customer Name):</label>
-                <input 
-                  type="text" 
-                  placeholder="अपना पूरा नाम दर्ज करें" 
-                  value={custNameInput} 
+                <input
+                  type="text"
+                  placeholder="अपना पूरा नाम दर्ज करें"
+                  value={custNameInput}
                   onChange={(e) => setCustNameInput(e.target.value)}
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  required 
+                  required
                 />
 
                 <label style={{ fontWeight: 'bold', fontSize: '13px' }}>कस्टमर का पूरा पता (Full Address):</label>
-                <textarea 
-                  rows="2" 
-                  placeholder="लोकेशन/पता विस्तार से लिखें..." 
-                  value={custAddressInput} 
+                <textarea
+                  rows="2"
+                  placeholder="लोकेशन/पता विस्तार से लिखें..."
+                  value={custAddressInput}
                   onChange={(e) => setCustAddressInput(e.target.value)}
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  required 
+                  required
                 />
 
                 <label style={{ fontWeight: 'bold', fontSize: '13px' }}>मुख्य श्रेणी (Main Category):</label>
@@ -1191,13 +1229,13 @@ export default function App() {
                 </select>
 
                 <label style={{ fontWeight: 'bold', fontSize: '13px' }}>समस्या का विवरण:</label>
-                <textarea 
-                  rows="3" 
-                  placeholder="क्या समस्या आ रही है विस्तार से लिखें..." 
-                  value={problemDesc} 
+                <textarea
+                  rows="3"
+                  placeholder="क्या समस्या आ रही है विस्तार से लिखें..."
+                  value={problemDesc}
                   onChange={(e) => setProblemDesc(e.target.value)}
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  required 
+                  required
                 />
 
                 <button type="submit" style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
@@ -1236,14 +1274,14 @@ export default function App() {
               {otpStep === 1 ? (
                 <form onSubmit={handleSendOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>अपना रजिस्टर्ड मोबाइल नंबर दर्ज करें:</p>
-                  <input 
-                    type="tel" 
-                    maxLength="10" 
-                    placeholder="10 अंकों का मोबाइल नंबर" 
-                    value={staffPhoneInput} 
+                  <input
+                    type="tel"
+                    maxLength="10"
+                    placeholder="10 अंकों का मोबाइल नंबर"
+                    value={staffPhoneInput}
                     onChange={(e) => setStaffPhoneInput(e.target.value)}
                     style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                    required 
+                    required
                   />
                   <button type="submit" style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
                     OTP भेजें
@@ -1255,14 +1293,14 @@ export default function App() {
                     नंबर <strong>{staffPhoneInput}</strong> पर OTP भेजा गया है।
                   </div>
                   <label style={{ fontWeight: 'bold' }}>OTP दर्ज करें:</label>
-                  <input 
-                    type="text" 
-                    maxLength="4" 
-                    placeholder="4 अंकों का OTP" 
-                    value={enteredOtp} 
+                  <input
+                    type="text"
+                    maxLength="4"
+                    placeholder="4 अंकों का OTP"
+                    value={enteredOtp}
                     onChange={(e) => setEnteredOtp(e.target.value)}
                     style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                    required 
+                    required
                   />
                   <button type="submit" style={{ padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
                     OTP सत्यापित करें और लॉगिन करें
@@ -1668,26 +1706,26 @@ export default function App() {
                       <h4>स्टेप 4: मैटेरियल्स / पार्ट्स एवं रेट लिस्ट</h4>
                       {materials.map((mat, idx) => (
                         <div key={idx} style={{ display: 'flex', gap: '5px', marginBottom: '5px' }}>
-                          <input 
-                            type="text" 
-                            placeholder="Item Name" 
-                            value={mat.name} 
+                          <input
+                            type="text"
+                            placeholder="Item Name"
+                            value={mat.name}
                             onChange={(e) => handleMaterialFieldChange(idx, 'name', e.target.value)}
-                            style={{ flex: 2, padding: '6px' }} 
+                            style={{ flex: 2, padding: '6px' }}
                           />
-                          <input 
-                            type="text" 
-                            placeholder="Qty" 
-                            value={mat.qty} 
+                          <input
+                            type="text"
+                            placeholder="Qty"
+                            value={mat.qty}
                             onChange={(e) => handleMaterialFieldChange(idx, 'qty', e.target.value)}
-                            style={{ flex: 1, padding: '6px' }} 
+                            style={{ flex: 1, padding: '6px' }}
                           />
-                          <input 
-                            type="text" 
-                            placeholder="Rate ₹" 
-                            value={mat.price} 
+                          <input
+                            type="text"
+                            placeholder="Rate ₹"
+                            value={mat.price}
                             onChange={(e) => handleMaterialFieldChange(idx, 'price', e.target.value)}
-                            style={{ flex: 1, padding: '6px' }} 
+                            style={{ flex: 1, padding: '6px' }}
                           />
                         </div>
                       ))}
@@ -1753,9 +1791,9 @@ export default function App() {
 
                       <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                         <button onClick={() => setWizardStep(4)} style={{ flex: 1, padding: '12px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px' }}>← पीछे</button>
-                        <button 
+                        <button
                           type="button"
-                          onClick={handleJobSubmit} 
+                          onClick={handleJobSubmit}
                           style={{ flex: 2, padding: '12px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>
                           ✅ जॉब शीट फाइनल सेव करें
                         </button>
@@ -1776,22 +1814,22 @@ export default function App() {
           {!adminLoggedIn ? (
             <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <label style={{ fontWeight: 'bold' }}>यूजरनेम (Username):</label>
-              <input 
-                type="text" 
-                placeholder="Admin" 
-                value={adminUser} 
+              <input
+                type="text"
+                placeholder="Admin"
+                value={adminUser}
                 onChange={(e) => setAdminUser(e.target.value)}
                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                required 
+                required
               />
               <label style={{ fontWeight: 'bold' }}>पासवर्ड (Password):</label>
-              <input 
-                type="password" 
-                placeholder="Password" 
-                value={adminPass} 
+              <input
+                type="password"
+                placeholder="Password"
+                value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}
                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                required 
+                required
               />
               <button type="submit" style={{ padding: '10px', backgroundColor: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
                 लॉगिन करें
@@ -1807,22 +1845,22 @@ export default function App() {
               ) : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '15px' }}>
-                    <button 
+                    <button
                       onClick={() => { setAdminMainTab('jobs'); setSelectedStaffFolder(null); }}
                       style={{ padding: '10px', backgroundColor: adminMainTab === 'jobs' ? '#166534' : '#e2e8f0', color: adminMainTab === 'jobs' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
                       📋 जॉब शीट ({jobSheets.length})
                     </button>
-                    <button 
+                    <button
                       onClick={() => setAdminMainTab('spares')}
                       style={{ padding: '10px', backgroundColor: adminMainTab === 'spares' ? '#166534' : '#e2e8f0', color: adminMainTab === 'spares' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
                       ⚙️ स्पेयर पार्ट
                     </button>
-                    <button 
+                    <button
                       onClick={() => setAdminMainTab('attendance')}
                       style={{ padding: '10px', backgroundColor: adminMainTab === 'attendance' ? '#166534' : '#e2e8f0', color: adminMainTab === 'attendance' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
                       📅 अटेंडेंस ({loginLogs.filter(l => l.role === 'staff').length})
                     </button>
-                    <button 
+                    <button
                       onClick={() => setAdminMainTab('logins')}
                       style={{ padding: '10px', backgroundColor: adminMainTab === 'logins' ? '#166534' : '#e2e8f0', color: adminMainTab === 'logins' ? '#fff' : '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
                       🔐 लॉगिन हिस्ट्री ({loginLogs.length})
@@ -1832,12 +1870,12 @@ export default function App() {
                   {adminMainTab === 'jobs' && (
                     <div>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        <button 
+                        <button
                           onClick={() => { setAdminJobSubTab('completed'); setSelectedStaffFolder(null); }}
                           style={{ flex: 1, padding: '6px', backgroundColor: adminJobSubTab === 'completed' ? '#0284c7' : '#f1f5f9', color: adminJobSubTab === 'completed' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
                           कम्पलीट जॉब्स ({completedJobsList.length})
                         </button>
-                        <button 
+                        <button
                           onClick={() => { setAdminJobSubTab('pending'); setSelectedStaffFolder(null); }}
                           style={{ flex: 1, padding: '6px', backgroundColor: adminJobSubTab === 'pending' ? '#d97706' : '#f1f5f9', color: adminJobSubTab === 'pending' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
                           पेंडिंग जॉब्स ({pendingJobsList.length})
@@ -1915,12 +1953,12 @@ export default function App() {
                   {adminMainTab === 'spares' && (
                     <div>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        <button 
+                        <button
                           onClick={() => setAdminSpareSubTab('stock')}
                           style={{ flex: 1, padding: '6px', backgroundColor: adminSpareSubTab === 'stock' ? '#166534' : '#f1f5f9', color: adminSpareSubTab === 'stock' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
                           📦 स्पेयर पार्ट स्टॉक
                         </button>
-                        <button 
+                        <button
                           onClick={() => setAdminSpareSubTab('pending')}
                           style={{ flex: 1, padding: '6px', backgroundColor: adminSpareSubTab === 'pending' ? '#8b5cf6' : '#f1f5f9', color: adminSpareSubTab === 'pending' ? '#fff' : '#334155', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
                           ⚙️ पेंडिंग पार्ट्स ({partPendingJobsList.length})
