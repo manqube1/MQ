@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const messageText = (body.query?.message || body.message || "").trim();
 
     if (!messageText || messageText.length < 6) {
-      return res.status(200).json({ status: "ignored" });
+      return res.status(200).json({ replies: [] });
     }
 
     let productType = "Split / Window AC";
