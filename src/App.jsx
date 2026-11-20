@@ -148,15 +148,6 @@ const CoolerPrintableJobSheet = ({ job }) => {
       });
     });
   }
-  if (Array.isArray(job.materials)) {
-    job.materials.forEach((m) => {
-      rows.push({
-        desc: m.name,
-        qty: parseFloat(m.qty) || 1,
-        rate: parseFloat(m.price) || 0,
-      });
-    });
-  }
   while (rows.length < 5) {
     rows.push({ desc: "", qty: "", rate: "" });
   }
@@ -509,18 +500,11 @@ const PrintableJobSheet = ({ job, onClose }) => {
       )
     : 0;
 
-  const calculatedMaterialsTotal = Array.isArray(job.materials)
-    ? job.materials.reduce(
-        (sum, m) => sum + (parseFloat(m.qty) || 1) * (parseFloat(m.price) || 0),
-        0
-      )
-    : 0;
-
   const serviceChargeVal = parseFloat(job.serviceCharge || job.rate) || 0;
   const totalBillVal =
     typeof job.totalAmount === "number"
       ? job.totalAmount
-      : calculatedPartsTotal + calculatedMaterialsTotal + serviceChargeVal;
+      : calculatedPartsTotal + serviceChargeVal;
 
   return (
     <div
@@ -848,13 +832,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                           </div>
                         )
                       )}
-                      {Array.isArray(job.materials) &&
-                        job.materials.length > 0 &&
-                        job.materials.map((m, i) => (
-                          <div key={`mat-${i}`} style={{ marginTop: "3px" }}>
-                            • {m.name} (Qty: {m.qty || 1} × ₹{m.price || 0})
-                          </div>
-                        ))}
                       {serviceChargeVal > 0 && (
                         <div style={{ marginTop: "3px" }}>
                           <strong>Service Charge:</strong> ₹
@@ -870,16 +847,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             (parseFloat(p.qty) || 0) *
                             (parseFloat(p.amount) || 0);
                           return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                        })}
-                      {Array.isArray(job.materials) &&
-                        job.materials.length > 0 &&
-                        job.materials.map((m, i) => {
-                          const matAmt =
-                            (parseFloat(m.qty) || 1) *
-                            (parseFloat(m.price) || 0);
-                          return (
-                            <div key={`mat-amt-${i}`}>₹{matAmt.toFixed(2)}</div>
-                          );
                         })}
                       {totalBillVal > 0 && (
                         <div
@@ -1100,13 +1067,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                           </div>
                         )
                       )}
-                      {Array.isArray(job.materials) &&
-                        job.materials.length > 0 &&
-                        job.materials.map((m, i) => (
-                          <div key={`mat-${i}`} style={{ marginTop: "3px" }}>
-                            • {m.name} (Qty: {m.qty || 1} × ₹{m.price || 0})
-                          </div>
-                        ))}
                       {serviceChargeVal > 0 && (
                         <div style={{ marginTop: "3px" }}>
                           <strong>Service Charge:</strong> ₹
@@ -1122,16 +1082,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             (parseFloat(p.qty) || 0) *
                             (parseFloat(p.amount) || 0);
                           return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                        })}
-                      {Array.isArray(job.materials) &&
-                        job.materials.length > 0 &&
-                        job.materials.map((m, i) => {
-                          const matAmt =
-                            (parseFloat(m.qty) || 1) *
-                            (parseFloat(m.price) || 0);
-                          return (
-                            <div key={`mat-amt-${i}`}>₹{matAmt.toFixed(2)}</div>
-                          );
                         })}
                       {totalBillVal > 0 && (
                         <div
@@ -1729,10 +1679,6 @@ export default function App() {
   const [sparePartName, setSparePartName] = useState("");
   const [sparePartModel, setSparePartModel] = useState("");
   const [usedParts, setUsedParts] = useState([createEmptyPart()]);
-  const [materials, setMaterials] = useState([
-    { name: "", qty: "", price: "" },
-    { name: "", qty: "", price: "" },
-  ]);
   const [serviceChargeInput, setServiceChargeInput] = useState("");
 
   const [jobStatusType, setJobStatusType] = useState("Completed");
@@ -1845,14 +1791,8 @@ export default function App() {
       }, 0)
     : 0;
 
-  const materialsTotal = materials.reduce((sum, item) => {
-    const q = parseFloat(item.qty) || 1;
-    const pr = parseFloat(item.price) || 0;
-    return item.name.trim() ? sum + q * pr : sum;
-  }, 0);
-
   const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
-  const grandTotalBill = usedPartsTotal + materialsTotal + serviceChargeVal;
+  const grandTotalBill = usedPartsTotal + serviceChargeVal;
 
   const handleSitePhotosChange = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -2069,7 +2009,6 @@ export default function App() {
       signatureURL: "",
       categoryType,
       productType,
-      materials: [],
       usedParts: [],
       sparePartOption: "-",
       sparePartName: "-",
@@ -2233,10 +2172,6 @@ export default function App() {
     setSavedSignatureURL("");
     setImageFile(null);
     setSitePhotos([]);
-    setMaterials([
-      { name: "", qty: "", price: "" },
-      { name: "", qty: "", price: "" },
-    ]);
     setCategoryType("HVAC & Refrigeration");
     setProductType("Split / Window AC");
     setJobStatusType("Completed");
@@ -2294,16 +2229,6 @@ export default function App() {
     setImageFile(compressedFile);
   };
 
-  const handleMaterialFieldChange = (index, field, value) => {
-    const newMaterials = [...materials];
-    newMaterials[index][field] = value;
-    setMaterials(newMaterials);
-
-    if (index === newMaterials.length - 1 && value.trim() !== "") {
-      setMaterials([...newMaterials, { name: "", qty: "", price: "" }]);
-    }
-  };
-
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert("कृपया कस्टमर का नाम और मोबाइल नंबर भरें!");
@@ -2320,7 +2245,6 @@ export default function App() {
       ? selectedComplaint.jobSheetNo
       : "JS" + jobCustPhone.slice(-4) + day + month + hours + minutes;
 
-    const filteredMaterials = materials.filter((m) => m.name.trim() !== "");
     const activeUsedParts = isUsedPartSelected
       ? usedParts.filter(
           (p) => p.partName.trim() || (parseFloat(p.amount) || 0) > 0
@@ -2483,9 +2407,8 @@ export default function App() {
             bodyPaint: coolerBodyPaint,
           }
         : null,
-      materials: filteredMaterials,
       usedParts: activeUsedParts,
-      partsTotal: usedPartsTotal + materialsTotal,
+      partsTotal: usedPartsTotal,
       serviceCharge: serviceChargeVal,
       totalAmount: grandTotalBill,
       sparePartOption: sparePartOption,
@@ -2521,13 +2444,6 @@ export default function App() {
         ? `\n<b>पार्ट (${sparePartOption}):</b> ${sparePartName} (${sparePartModel || "-"})`
         : "";
 
-    const materialsText =
-      filteredMaterials.length > 0
-        ? `\n<b>मैटेरियल्स:</b> ${filteredMaterials
-            .map((m) => `${m.name} (${m.qty || 1} × ₹${m.price || 0})`)
-            .join(", ")}`
-        : "";
-
     const telegramMsg =
       `🛠️ <b>MANQUBE STAFF JOB UPDATE</b>\n` +
       `<b>स्टेटस:</b> ${statusBadge}\n` +
@@ -2535,7 +2451,7 @@ export default function App() {
       `<b>कस्टमर:</b> ${updatedRecord.customerName} (${updatedRecord.customerPhone})\n` +
       `<b>पता:</b> ${updatedRecord.customerAddress || "-"}\n` +
       `<b>उत्पाद:</b> ${updatedRecord.product}\n` +
-      `<b>किया गया कार्य:</b> ${updatedRecord.desc}${partsText}${materialsText}\n` +
+      `<b>किया गया कार्य:</b> ${updatedRecord.desc}${partsText}\n` +
       `<b>सर्विस चार्ज:</b> ₹${serviceChargeVal.toFixed(2)}\n` +
       `<b>कुल बिल:</b> ₹${grandTotalBill.toFixed(2)}\n` +
       `<b>रिमार्क:</b> ${updatedRecord.feedback}\n` +
@@ -5541,7 +5457,7 @@ export default function App() {
                       </div>
                     )}
 
-                  {/* स्टेप 3: किया गया कार्य + स्पेयर पार्ट्स + मैटेरियल्स + सर्विस चार्ज एवं टोटल बिल */}
+                  {/* स्टेप 3: किया गया कार्य + स्पेयर पार्ट्स + सर्विस चार्ज एवं टोटल बिल */}
                   {wizardStep === 3 && (
                     <div
                       style={{
@@ -5551,7 +5467,7 @@ export default function App() {
                       }}
                     >
                       <h4 style={{ margin: "4px 0", color: "#0f172a" }}>
-                        स्टेप 3: किया गया कार्य, स्पेयर पार्ट्स, मैटेरियल्स एवं टोटल बिल
+                        स्टेप 3: किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल
                       </h4>
 
                       <div
@@ -5761,80 +5677,6 @@ export default function App() {
 
                       <div
                         style={{
-                          background: "#f8fafc",
-                          padding: "10px",
-                          borderRadius: "8px",
-                          border: "1px solid #cbd5e1",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                            3. मैटेरियल्स (Materials - पाइप, वायर, टेप आदि):
-                          </label>
-                          <span style={{ fontSize: "12px", fontWeight: "bold" }}>
-                            ₹{materialsTotal.toFixed(2)}
-                          </span>
-                        </div>
-
-                        {materials.map((mat, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              display: "flex",
-                              gap: "5px",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            <input
-                              type="text"
-                              placeholder="Item Name"
-                              value={mat.name}
-                              onChange={(e) =>
-                                handleMaterialFieldChange(
-                                  idx,
-                                  "name",
-                                  e.target.value
-                                )
-                              }
-                              style={{ ...inputStyle, flex: 2, minWidth: 0 }}
-                            />
-                            <input
-                              type="number"
-                              placeholder="Qty"
-                              value={mat.qty}
-                              onChange={(e) =>
-                                handleMaterialFieldChange(idx, "qty", e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 0.8, minWidth: 0 }}
-                            />
-                            <input
-                              type="number"
-                              placeholder="Rate ₹"
-                              value={mat.price}
-                              onChange={(e) =>
-                                handleMaterialFieldChange(
-                                  idx,
-                                  "price",
-                                  e.target.value
-                                )
-                              }
-                              style={{ ...inputStyle, flex: 1, minWidth: 0 }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      <div
-                        style={{
                           background: "#f0fdf4",
                           padding: "12px",
                           borderRadius: "8px",
@@ -5851,7 +5693,7 @@ export default function App() {
                             color: "#166534",
                           }}
                         >
-                          4. सर्विस / अन्य चार्ज (₹):
+                          3. सर्विस / अन्य चार्ज (₹):
                         </label>
                         <input
                           type="number"
@@ -5878,10 +5720,8 @@ export default function App() {
                               marginBottom: "4px",
                             }}
                           >
-                            <span>स्पेयर पार्ट्स / मैटेरियल्स कुल:</span>
-                            <strong>
-                              ₹{(usedPartsTotal + materialsTotal).toFixed(2)}
-                            </strong>
+                            <span>स्पेयर पार्ट्स कुल:</span>
+                            <strong>₹{usedPartsTotal.toFixed(2)}</strong>
                           </div>
                           <div
                             style={{
