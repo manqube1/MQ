@@ -1807,6 +1807,10 @@ export default function App() {
   const fullCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
+  // क्या इस समय जॉब शीट भरी जा रही है? (यदि हाँ, तो ऊपर का सब कुछ छिप जाएगा)
+  const isFillingJobSheet =
+    activeTab === "staff" && staffLoggedIn && staffSubTab === "newJobForm";
+
   const isWaterCoolerSelected = checkIsWaterCooler(productType);
   const isAirCoolerSelected = productType === "Cooler";
   const isFridgeOrWCSelected = checkIsFridgeOrWaterCooler(productType);
@@ -3891,114 +3895,124 @@ export default function App() {
         </div>
       )}
 
-      {/* हेडर */}
-      <div
-        className="no-print"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 16px",
-          background: "#fff",
-          borderRadius: "8px",
-          marginBottom: "15px",
-          boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
-        }}
-      >
-        <img
-          src="/1000384854.jpg"
-          alt="Logo"
-          style={{
-            width: "60px",
-            height: "60px",
-            objectFit: "contain",
-          }}
-        />
-        <div style={{ textAlign: "right", fontSize: "11px" }}>
-          <span
+      {/* जॉब शीट भरते समय ऊपर का हेडर, नेविगेशन और GPS पट्टी पूरी तरह छिपी रहेगी */}
+      {!isFillingJobSheet && (
+        <>
+          <div
+            className="no-print"
             style={{
-              padding: "4px 8px",
-              borderRadius: "12px",
-              background: isOnline ? "#dcfce7" : "#fef3c7",
-              color: isOnline ? "#166534" : "#92400e",
-              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              background: "#fff",
+              borderRadius: "8px",
+              marginBottom: "15px",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
             }}
           >
-            {isOnline ? "🟢 Online (Synced)" : "🟠 Offline (Local Saving)"}
-          </span>
-          {pendingSyncCount > 0 && (
-            <div style={{ marginTop: "4px", color: "#b45309", fontWeight: "bold" }}>
-              Pending Sync: {pendingSyncCount} items
+            <img
+              src="/1000384854.jpg"
+              alt="Logo"
+              style={{
+                width: "60px",
+                height: "60px",
+                objectFit: "contain",
+              }}
+            />
+            <div style={{ textAlign: "right", fontSize: "11px" }}>
+              <span
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "12px",
+                  background: isOnline ? "#dcfce7" : "#fef3c7",
+                  color: isOnline ? "#166534" : "#92400e",
+                  fontWeight: "bold",
+                }}
+              >
+                {isOnline ? "🟢 Online (Synced)" : "🟠 Offline (Local Saving)"}
+              </span>
+              {pendingSyncCount > 0 && (
+                <div
+                  style={{
+                    marginTop: "4px",
+                    color: "#b45309",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Pending Sync: {pendingSyncCount} items
+                </div>
+              )}
+            </div>
+          </div>
+
+          {activeTab !== "home" && (
+            <div
+              className="no-print"
+              style={{
+                marginBottom: "15px",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("home");
+                  setInspectedJob(null);
+                  setLastSubmittedJob(null);
+                  setSelectedStaffFolder(null);
+                }}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: "#475569",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+              >
+                ⬅ मुख्य मेनू (Home) पर वापस जाएं
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("printSheet")}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: "#1e3a8a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+              >
+                🖨️ Print Job Sheet
+              </button>
             </div>
           )}
-        </div>
-      </div>
 
-      {activeTab !== "home" && (
-        <div
-          className="no-print"
-          style={{
-            marginBottom: "15px",
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("home");
-              setInspectedJob(null);
-              setLastSubmittedJob(null);
-              setSelectedStaffFolder(null);
-            }}
+          <div
+            className="no-print"
             style={{
-              padding: "8px 14px",
-              backgroundColor: "#475569",
-              color: "#fff",
-              border: "none",
+              background: "#dcfce7",
+              padding: "10px",
               borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              fontSize: "13px",
+              marginBottom: "15px",
+              fontSize: "12px",
+              color: "#166534",
             }}
           >
-            ⬅ मुख्य मेनू (Home) पर वापस जाएं
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("printSheet")}
-            style={{
-              padding: "8px 14px",
-              backgroundColor: "#1e3a8a",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              fontSize: "13px",
-            }}
-          >
-            🖨️ Print Job Sheet
-          </button>
-        </div>
+            <strong>GPS:</strong> {staffGpsLocation}
+          </div>
+        </>
       )}
-
-      <div
-        className="no-print"
-        style={{
-          background: "#dcfce7",
-          padding: "10px",
-          borderRadius: "6px",
-          marginBottom: "15px",
-          fontSize: "12px",
-          color: "#166534",
-        }}
-      >
-        <strong>GPS:</strong> {staffGpsLocation}
-      </div>
 
       {activeTab === "home" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
@@ -4315,13 +4329,17 @@ export default function App() {
       {activeTab === "staff" && (
         <div
           style={{
-            background: "#fff",
-            padding: "15px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+            background: isFillingJobSheet ? "transparent" : "#fff",
+            padding: isFillingJobSheet ? "0" : "15px",
+            borderRadius: isFillingJobSheet ? "0" : "8px",
+            boxShadow: isFillingJobSheet
+              ? "none"
+              : "0 2px 5px rgba(0,0,0,0.05)",
           }}
         >
-          <h3 className="no-print">फ़ील्ड स्टाफ लॉगिन</h3>
+          {!isFillingJobSheet && (
+            <h3 className="no-print">फ़ील्ड स्टाफ लॉगिन</h3>
+          )}
           {!staffLoggedIn ? (
             <div>
               {otpStep === 1 ? (
@@ -4393,52 +4411,54 @@ export default function App() {
             </div>
           ) : (
             <div>
-              <div
-                className="no-print"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "15px",
-                  background: "#f8fafc",
-                  padding: "10px",
-                  borderRadius: "6px",
-                  border: "1px solid #cbd5e1",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: "13px" }}>
-                    स्टाफ: <strong>{currentStaffName}</strong>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#166534",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    ● Duty IN Active (GPS रूट रिकॉर्ड हो रहा है)
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleStaffLogout}
+              {!isFillingJobSheet && (
+                <div
+                  className="no-print"
                   style={{
-                    padding: "6px 12px",
-                    background: "#ef4444",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "15px",
+                    background: "#f8fafc",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
                   }}
                 >
-                  लॉग आउट (Duty OUT)
-                </button>
-              </div>
+                  <div>
+                    <div style={{ fontSize: "13px" }}>
+                      स्टाफ: <strong>{currentStaffName}</strong>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#166534",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      ● Duty IN Active (GPS रूट रिकॉर्ड हो रहा है)
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleStaffLogout}
+                    style={{
+                      padding: "6px 12px",
+                      background: "#ef4444",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    लॉग आउट (Duty OUT)
+                  </button>
+                </div>
+              )}
 
-              {lastSubmittedJob && (
+              {!isFillingJobSheet && lastSubmittedJob && (
                 <PrintableJobSheet
                   job={lastSubmittedJob}
                   onClose={() => setLastSubmittedJob(null)}
@@ -4823,18 +4843,19 @@ export default function App() {
               )}
 
               {/* ================================================================
-                  CLEAN SLIDE-BY-SLIDE WIZARD (ऊपर केवल ← और → तीर के बटन)
+                  FOCUS MODE SLIDE-BY-SLIDE WIZARD
+                  (जब तक जॉब शीट सेव न हो, ऊपर कुछ भी नहीं दिखेगा—सिर्फ़ ← और →)
                   ================================================================ */}
               {staffSubTab === "newJobForm" && currentSlide && (
                 <div>
-                  {/* ऊपर सिर्फ़ ← (Back) और → (Forward) तीर का नेविगेशन बार */}
+                  {/* सबसे ऊपर केवल ← (Back) और → (Forward) तीर का नेविगेशन बार */}
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      background: "#f1f5f9",
-                      border: "1px solid #cbd5e1",
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
                       borderRadius: "8px",
                       padding: "8px 10px",
                       marginBottom: "12px",
@@ -4851,8 +4872,8 @@ export default function App() {
                       }}
                       title={safeSlideIndex === 0 ? "मेनू पर जाएं" : "पिछली स्लाइड"}
                       style={{
-                        width: "44px",
-                        height: "38px",
+                        width: "46px",
+                        height: "40px",
                         background: "#475569",
                         color: "#fff",
                         border: "none",
@@ -4870,7 +4891,7 @@ export default function App() {
 
                     <span
                       style={{
-                        fontSize: "13px",
+                        fontSize: "14px",
                         fontWeight: "bold",
                         color: "#1e3a8a",
                       }}
@@ -4884,8 +4905,8 @@ export default function App() {
                       disabled={safeSlideIndex === allJobSlides.length - 1}
                       title="अगली स्लाइड"
                       style={{
-                        width: "44px",
-                        height: "38px",
+                        width: "46px",
+                        height: "40px",
                         background:
                           safeSlideIndex === allJobSlides.length - 1
                             ? "#cbd5e1"
