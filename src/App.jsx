@@ -124,7 +124,7 @@ const checkIsSinglePhase = (prodType = "", prodFull = "") => {
 };
 
 // ==========================================
-// 1. AIR COOLER PRINTABLE JOB SHEET (PDF FORMAT)
+// 1. AIR COOLER PRINTABLE JOB SHEET (1-PAGE A4)
 // ==========================================
 const CoolerPrintableJobSheet = ({ job }) => {
   const cSpec = job.coolerSpec || {};
@@ -161,57 +161,45 @@ const CoolerPrintableJobSheet = ({ job }) => {
         );
 
   return (
-    <div
-      id="printable-job-card"
-      style={{
-        border: "2px solid #000",
-        background: "#fff",
-        padding: "10px",
-        color: "#000",
-        overflowX: "auto",
-      }}
-    >
+    <div id="printable-job-card" className="print-sheet-wrapper">
+      {/* केवल लोगो ऊपर लेफ्ट साइड में (बिना कंपनी नाम व एड्रेस के) */}
       <div
         style={{
-          textAlign: "center",
-          borderBottom: "2px solid #000",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1.5px solid #000",
           paddingBottom: "6px",
           marginBottom: "6px",
         }}
       >
-        <div style={{ fontSize: "17px", fontWeight: "bold" }}>
-          MANQUBE PRIVATE LIMITED
-        </div>
-        <div style={{ fontSize: "14px", fontWeight: "bold", marginTop: "2px" }}>
-          कूलर सर्विस एवं रिपेयर जॉब शीट (COOLER JOB SHEET)
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: "11px",
-            fontWeight: "bold",
-            marginTop: "6px",
-          }}
-        >
-          <span>जॉब शीट नं.: {job.jobSheetNo}</span>
-          <span>दिनांक: {job.date}</span>
+        <img
+          src="/1000384854.jpg"
+          alt="Logo"
+          style={{ height: "54px", width: "auto", objectFit: "contain" }}
+        />
+        <div style={{ textAlign: "right" }}>
+          <div
+            style={{
+              fontSize: "13px",
+              fontWeight: "bold",
+              letterSpacing: "0.5px",
+            }}
+          >
+            कूलर सर्विस एवं रिपेयर जॉब शीट
+          </div>
+          <div style={{ fontSize: "11px", marginTop: "3px" }}>
+            <strong>जॉब नं.:</strong> {job.jobSheetNo} &nbsp;|&nbsp;{" "}
+            <strong>दिनांक:</strong> {job.date}
+          </div>
         </div>
       </div>
 
       {/* 1. ग्राहक एवं साइट का विवरण */}
-      <div
-        style={{
-          background: "#f1f5f9",
-          border: "1px solid #000",
-          padding: "3px 6px",
-          fontWeight: "bold",
-          fontSize: "11px",
-        }}
-      >
+      <div className="js-sec-hdr-left">
         1. ग्राहक एवं साइट का विवरण (Customer &amp; Site Details)
       </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
         <tbody>
           <tr>
             <td style={{ width: "55%" }}>
@@ -229,9 +217,9 @@ const CoolerPrintableJobSheet = ({ job }) => {
           <tr>
             <td colSpan="2">
               <strong>कार्य का प्रकार:</strong>{" "}
-              {chkBox(workTypes.includes("AMC"))} AMC (वार्षिक रखरखाव) &nbsp;&nbsp;
+              {chkBox(workTypes.includes("AMC"))} AMC &nbsp;&nbsp;
               {chkBox(workTypes.includes("Breakdown / Repair"))} ब्रेकडाउन / रिपेयर &nbsp;&nbsp;
-              {chkBox(workTypes.includes("Installation"))} Installation (इंस्टॉलेशन) &nbsp;&nbsp;
+              {chkBox(workTypes.includes("Installation"))} Installation &nbsp;&nbsp;
               {chkBox(workTypes.includes("Un-installation"))} Un-installation &nbsp;&nbsp;
               {chkBox(workTypes.includes("Body Repair & Painting"))} बॉडी रिपेयर एवं पेंटिंग
             </td>
@@ -240,18 +228,10 @@ const CoolerPrintableJobSheet = ({ job }) => {
       </table>
 
       {/* 2. कूलर का विवरण */}
-      <div
-        style={{
-          background: "#f1f5f9",
-          border: "1px solid #000",
-          padding: "3px 6px",
-          fontWeight: "bold",
-          fontSize: "11px",
-        }}
-      >
+      <div className="js-sec-hdr-left">
         2. कूलर का विवरण (Cooler Specifications)
       </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
         <thead>
           <tr style={{ background: "#f8fafc", textAlign: "center" }}>
             <th style={{ width: "6%" }}>क्र.</th>
@@ -267,7 +247,7 @@ const CoolerPrintableJobSheet = ({ job }) => {
             <td style={{ textAlign: "center" }}>1.</td>
             <td>
               {chkBox(cSpec.bodyMaterial === "Fiber / Plastic")} फाइबर / प्लास्टिक &nbsp;
-              {chkBox(cSpec.bodyMaterial === "GI / Metal")} जी. आई. / लोहा (Metal)
+              {chkBox(cSpec.bodyMaterial === "GI / Metal")} जी. आई. / लोहा
             </td>
             <td>{cSpec.capacity || ""}</td>
             <td>{cSpec.brandModel || ""}</td>
@@ -287,18 +267,10 @@ const CoolerPrintableJobSheet = ({ job }) => {
       </table>
 
       {/* 3. चेकलिस्ट एवं निरीक्षण */}
-      <div
-        style={{
-          background: "#f1f5f9",
-          border: "1px solid #000",
-          padding: "3px 6px",
-          fontWeight: "bold",
-          fontSize: "11px",
-        }}
-      >
+      <div className="js-sec-hdr-left">
         3. चेकलिस्ट एवं निरीक्षण (Inspection &amp; Service Checklist)
       </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
         <tbody>
           <tr>
             <td style={{ width: "26%", fontWeight: "bold" }}>फैन मोटर (Fan Motor):</td>
@@ -365,18 +337,10 @@ const CoolerPrintableJobSheet = ({ job }) => {
       </table>
 
       {/* 4. किए गए कार्य एवं बदले गए पार्ट्स */}
-      <div
-        style={{
-          background: "#f1f5f9",
-          border: "1px solid #000",
-          padding: "3px 6px",
-          fontWeight: "bold",
-          fontSize: "11px",
-        }}
-      >
+      <div className="js-sec-hdr-left">
         4. किए गए कार्य एवं बदले गए पार्ट्स (Work Done &amp; Spare Parts Used)
       </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
         <thead>
           <tr style={{ background: "#f8fafc", textAlign: "center" }}>
             <th style={{ width: "8%" }}>क्र. सं.</th>
@@ -418,15 +382,7 @@ const CoolerPrintableJobSheet = ({ job }) => {
       </table>
 
       {/* 5. टेक्नीशियन एवं ग्राहक हस्ताक्षर */}
-      <div
-        style={{
-          background: "#f1f5f9",
-          border: "1px solid #000",
-          padding: "3px 6px",
-          fontWeight: "bold",
-          fontSize: "11px",
-        }}
-      >
+      <div className="js-sec-hdr-left">
         5. टेक्नीशियन एवं ग्राहक हस्ताक्षर (Sign-Off)
       </div>
       <table className="js-table" style={{ borderTop: "none" }}>
@@ -438,7 +394,7 @@ const CoolerPrintableJobSheet = ({ job }) => {
             </td>
           </tr>
           <tr>
-            <td style={{ width: "50%", height: "65px", verticalAlign: "bottom" }}>
+            <td style={{ width: "50%", height: "62px", verticalAlign: "bottom" }}>
               <div>
                 <strong>टेक्नीशियन:</strong> {job.staffName || ""}
               </div>
@@ -446,7 +402,7 @@ const CoolerPrintableJobSheet = ({ job }) => {
                 टेक्नीशियन का नाम एवं हस्ताक्षर
               </div>
             </td>
-            <td style={{ width: "50%", height: "65px", verticalAlign: "bottom" }}>
+            <td style={{ width: "50%", height: "62px", verticalAlign: "bottom" }}>
               {job.signatureURL && (
                 <img
                   src={job.signatureURL}
@@ -461,22 +417,12 @@ const CoolerPrintableJobSheet = ({ job }) => {
           </tr>
         </tbody>
       </table>
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: "10px",
-          marginTop: "6px",
-          fontWeight: "bold",
-        }}
-      >
-        Manqube Private Limited | We Build. Your Trust.
-      </div>
     </div>
   );
 };
 
 // ==========================================
-// 2. PRINTABLE JOB SHEET WRAPPER (AC / FRIDGE / WATER COOLER / AIR COOLER)
+// 2. PRINTABLE JOB SHEET WRAPPER (1-PAGE A4 FIT)
 // ==========================================
 const PrintableJobSheet = ({ job, onClose }) => {
   if (!job) return null;
@@ -517,24 +463,88 @@ const PrintableJobSheet = ({ job, onClose }) => {
       }}
     >
       <style>{`
+        @page {
+          size: A4 portrait;
+          margin: 6mm;
+        }
         @media print {
-          body * { visibility: hidden; }
-          #printable-job-card, #printable-job-card * { visibility: visible; }
+          html, body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          body * {
+            visibility: hidden;
+          }
+          #printable-job-card, #printable-job-card * {
+            visibility: visible;
+          }
           #printable-job-card {
-            position: absolute;
+            position: fixed;
             left: 0;
             top: 0;
             width: 100%;
-            margin: 0;
-            padding: 6px;
+            height: 100%;
+            box-sizing: border-box;
+            margin: 0 !important;
+            padding: 6mm !important;
+            border: 1.5px solid #000 !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            page-break-after: avoid;
+            page-break-inside: avoid;
           }
-          .no-print { display: none !important; }
+          .no-print {
+            display: none !important;
+          }
         }
-        .js-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #000; }
-        .js-table td, .js-table th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
-        .js-bold { font-weight: bold; }
-        .js-sec-hdr { background: #f1f5f9; font-weight: bold; text-align: center; }
-        .faint-label { font-size: 8.5px; color: #888888; font-weight: normal; margin-right: 4px; }
+        .print-sheet-wrapper {
+          border: 1.5px solid #000;
+          background: #fff;
+          padding: 10px;
+          color: #000;
+          box-sizing: border-box;
+          width: 100%;
+        }
+        .js-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+          line-height: 1.3;
+          color: #000;
+        }
+        .js-table td, .js-table th {
+          border: 1px solid #000;
+          padding: 5px 7px;
+          vertical-align: top;
+        }
+        .js-bold {
+          font-weight: bold;
+        }
+        .js-sec-hdr {
+          background: #f1f5f9;
+          font-weight: bold;
+          text-align: center;
+          letter-spacing: 0.3px;
+        }
+        .js-sec-hdr-left {
+          background: #f1f5f9;
+          border: 1px solid #000;
+          padding: 4px 7px;
+          font-weight: bold;
+          font-size: 11px;
+        }
+        .faint-label {
+          font-size: 9px;
+          color: #64748b;
+          font-weight: normal;
+          margin-right: 4px;
+        }
       `}</style>
 
       <div
@@ -586,7 +596,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
           <button
             type="button"
             onClick={() => {
-              const msg = `नमस्ते ${job.customerName}, MANQUBE PRIVATE LIMITED की आपकी जॉब शीट (${job.jobSheetNo}) तैयार है। उत्पाद: ${job.productType || job.product}, कार्य: ${job.desc}, कुल बिल: ₹${totalBillVal.toFixed(2)}, स्टेटस: ${job.status}, दिनांक: ${job.date}`;
+              const msg = `नमस्ते ${job.customerName}, आपकी जॉब शीट (${job.jobSheetNo}) तैयार है। उत्पाद: ${job.productType || job.product}, कार्य: ${job.desc}, कुल बिल: ₹${totalBillVal.toFixed(2)}, स्टेटस: ${job.status}, दिनांक: ${job.date}`;
               window.open(
                 `https://wa.me/91${job.customerPhone}?text=${encodeURIComponent(msg)}`,
                 "_blank"
@@ -611,29 +621,33 @@ const PrintableJobSheet = ({ job, onClose }) => {
       {isAirCoolerJob ? (
         <CoolerPrintableJobSheet job={job} />
       ) : (
-        <div
-          id="printable-job-card"
-          style={{ border: "2px solid #000", background: "#fff", overflowX: "auto" }}
-        >
+        <div id="printable-job-card" className="print-sheet-wrapper">
+          {/* केवल लोगो ऊपर लेफ्ट साइड में (कंपनी नाम और एड्रेस नहीं दिखेगा) */}
           <div
             style={{
-              textAlign: "center",
-              padding: "10px 8px",
-              borderBottom: "1px solid #000",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingBottom: "8px",
+              borderBottom: "1.5px solid #000",
             }}
           >
+            <img
+              src="/1000384854.jpg"
+              alt="Logo"
+              style={{ height: "58px", width: "auto", objectFit: "contain" }}
+            />
             <div
               style={{
-                fontSize: "19px",
+                fontSize: "13px",
                 fontWeight: "bold",
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
+                letterSpacing: "1px",
+                border: "1px solid #000",
+                padding: "4px 10px",
+                background: "#f8fafc",
               }}
             >
-              MANQUBE PRIVATE LIMITED
-            </div>
-            <div style={{ fontSize: "12px", fontWeight: "bold", marginTop: "3px" }}>
-              Mobile No: 9415522032, 9335172129
+              SERVICE JOB SHEET
             </div>
           </div>
 
@@ -651,7 +665,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                     {job.customerPhone}
                   </div>
                   <div className="js-bold">ADDRESS :-</div>
-                  <div style={{ minHeight: "24px" }}>{job.customerAddress}</div>
+                  <div style={{ minHeight: "26px" }}>{job.customerAddress}</div>
                 </td>
                 <td style={{ width: "18%", borderTop: "none" }} className="js-bold">
                   JOB NO.
@@ -794,7 +808,10 @@ const PrintableJobSheet = ({ job, onClose }) => {
               </table>
 
               {/* Fault & Work Done Table */}
-              <table className="js-table" style={{ borderTop: "none" }}>
+              <table
+                className="js-table"
+                style={{ borderTop: "none", flex: 1 }}
+              >
                 <tbody>
                   <tr className="js-sec-hdr">
                     <td style={{ width: "45%", borderTop: "none" }}>
@@ -806,7 +823,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                     <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
                   </tr>
                   <tr>
-                    <td style={{ minHeight: "45px" }}>
+                    <td style={{ height: "110px" }}>
                       1. {job.faultDetails || job.desc || ""}
                     </td>
                     <td>
@@ -816,7 +833,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                           const q = parseFloat(p.qty) || 0;
                           const a = parseFloat(p.amount) || 0;
                           return (
-                            <div key={i} style={{ marginTop: "3px" }}>
+                            <div key={i} style={{ marginTop: "4px" }}>
                               {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
                             </div>
                           );
@@ -833,7 +850,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                         )
                       )}
                       {serviceChargeVal > 0 && (
-                        <div style={{ marginTop: "3px" }}>
+                        <div style={{ marginTop: "4px" }}>
                           <strong>Service Charge:</strong> ₹
                           {serviceChargeVal.toFixed(2)}
                         </div>
@@ -853,7 +870,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                           style={{
                             marginTop: "6px",
                             borderTop: "1px solid #000",
-                            paddingTop: "2px",
+                            paddingTop: "3px",
                             fontWeight: "bold",
                           }}
                         >
@@ -870,10 +887,10 @@ const PrintableJobSheet = ({ job, onClose }) => {
                 <tbody>
                   <tr>
                     <td style={{ width: "50%", borderTop: "none" }}>
-                      <div style={{ marginBottom: "6px" }}>
+                      <div style={{ marginBottom: "8px" }}>
                         <strong>TECHNICIAN:</strong> {job.staffName || ""}
                       </div>
-                      <div style={{ marginBottom: "6px" }}>
+                      <div style={{ marginBottom: "8px" }}>
                         <strong>STATUS:</strong> {job.status}
                       </div>
                       <div>
@@ -900,7 +917,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                       ) : (
                         <div
                           style={{
-                            height: "45px",
+                            height: "55px",
                             borderBottom: "1px dashed #cbd5e1",
                             margin: "6px 0",
                           }}
@@ -939,7 +956,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                       <div
                         style={{
                           borderBottom: "1px solid #000",
-                          padding: "3px 5px",
+                          padding: "4px 6px",
                           textAlign: "left",
                         }}
                       >
@@ -950,7 +967,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             : ""}
                         </span>
                       </div>
-                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
                         <span className="faint-label">Serial:</span>
                         <span>
                           {job.indoorSerial && job.indoorSerial !== "-"
@@ -972,7 +989,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                       <div
                         style={{
                           borderBottom: "1px solid #000",
-                          padding: "3px 5px",
+                          padding: "4px 6px",
                           textAlign: "left",
                         }}
                       >
@@ -983,7 +1000,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             : ""}
                         </span>
                       </div>
-                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
                         <span className="faint-label">Serial:</span>
                         <span>
                           {job.outdoorSerial && job.outdoorSerial !== "-"
@@ -1005,7 +1022,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                       <div
                         style={{
                           borderBottom: "1px solid #000",
-                          padding: "3px 5px",
+                          padding: "4px 6px",
                           textAlign: "left",
                         }}
                       >
@@ -1016,7 +1033,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             : ""}
                         </span>
                       </div>
-                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
                         <span className="faint-label">Serial:</span>
                         <span>
                           {job.compressorSerial && job.compressorSerial !== "-"
@@ -1029,7 +1046,10 @@ const PrintableJobSheet = ({ job, onClose }) => {
                 </tbody>
               </table>
 
-              <table className="js-table" style={{ borderTop: "none" }}>
+              <table
+                className="js-table"
+                style={{ borderTop: "none", flex: 1 }}
+              >
                 <tbody>
                   <tr className="js-sec-hdr">
                     <td style={{ width: "45%", borderTop: "none" }}>
@@ -1041,7 +1061,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                     <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
                   </tr>
                   <tr>
-                    <td style={{ minHeight: "45px" }}>
+                    <td style={{ height: "75px" }}>
                       1. {job.faultDetails || job.desc || ""}
                     </td>
                     <td>
@@ -1135,7 +1155,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                       <div
                         style={{
                           borderBottom: "1px solid #000",
-                          padding: "3px 5px",
+                          padding: "4px 6px",
                           textAlign: "left",
                         }}
                       >
@@ -1146,7 +1166,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             : ""}
                         </span>
                       </div>
-                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
                         <span className="faint-label">Serial:</span>
                         <span>
                           {job.indoorMotorSerial &&
@@ -1185,7 +1205,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                       <div
                         style={{
                           borderBottom: "1px solid #000",
-                          padding: "3px 5px",
+                          padding: "4px 6px",
                           textAlign: "left",
                         }}
                       >
@@ -1197,7 +1217,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             : ""}
                         </span>
                       </div>
-                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
                         <span className="faint-label">Serial:</span>
                         <span>
                           {job.outdoorMotorSerial &&
@@ -1226,7 +1246,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             ? job.remoteStatus
                             : ""}
                         </td>
-                        <td colSpan="2" style={{ padding: "3px 5px" }}>
+                        <td colSpan="2" style={{ padding: "4px 6px" }}>
                           <strong>POWER SUPPLY:</strong> Single Phase (1-Phase)
                         </td>
                       </tr>
@@ -1237,7 +1257,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                             ? job.roomTemp
                             : ""}
                         </td>
-                        <td colSpan="2" style={{ padding: "3px 5px" }}>
+                        <td colSpan="2" style={{ padding: "4px 6px" }}>
                           <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
                           <strong>STATUS:</strong> {job.status}
                         </td>
@@ -1261,7 +1281,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                                 src={job.signatureURL}
                                 alt="Customer Signature"
                                 style={{
-                                  maxHeight: "70px",
+                                  maxHeight: "65px",
                                   maxWidth: "100%",
                                   objectFit: "contain",
                                 }}
@@ -1320,7 +1340,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                               style={{
                                 flex: 1,
                                 borderRight: "1px solid #000",
-                                padding: "3px 5px",
+                                padding: "4px 6px",
                               }}
                             >
                               <strong>R:</strong>{" "}
@@ -1332,7 +1352,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                               style={{
                                 flex: 1,
                                 borderRight: "1px solid #000",
-                                padding: "3px 5px",
+                                padding: "4px 6px",
                               }}
                             >
                               <strong>Y:</strong>{" "}
@@ -1340,7 +1360,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                                 ? job.phaseY
                                 : ""}
                             </div>
-                            <div style={{ flex: 1, padding: "3px 5px" }}>
+                            <div style={{ flex: 1, padding: "4px 6px" }}>
                               <strong>B:</strong>{" "}
                               {job.phaseB && job.phaseB !== "-"
                                 ? job.phaseB
@@ -1362,7 +1382,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                               style={{
                                 flex: 1,
                                 borderRight: "1px solid #000",
-                                padding: "3px 5px",
+                                padding: "4px 6px",
                               }}
                             >
                               <strong>R:</strong>{" "}
@@ -1372,13 +1392,13 @@ const PrintableJobSheet = ({ job, onClose }) => {
                               style={{
                                 flex: 1,
                                 borderRight: "1px solid #000",
-                                padding: "3px 5px",
+                                padding: "4px 6px",
                               }}
                             >
                               <strong>Y:</strong>{" "}
                               {job.ampY && job.ampY !== "-" ? job.ampY : ""}
                             </div>
-                            <div style={{ flex: 1, padding: "3px 5px" }}>
+                            <div style={{ flex: 1, padding: "4px 6px" }}>
                               <strong>B:</strong>{" "}
                               {job.ampB && job.ampB !== "-" ? job.ampB : ""}
                             </div>
@@ -1390,7 +1410,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                         <td>
                           {job.voltage && job.voltage !== "-" ? job.voltage : ""}
                         </td>
-                        <td colSpan="2" style={{ padding: "3px 5px" }}>
+                        <td colSpan="2" style={{ padding: "4px 6px" }}>
                           <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
                           <strong>STATUS:</strong> {job.status}
                         </td>
@@ -1414,7 +1434,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
                                 src={job.signatureURL}
                                 alt="Customer Signature"
                                 style={{
-                                  maxHeight: "70px",
+                                  maxHeight: "65px",
                                   maxWidth: "100%",
                                   objectFit: "contain",
                                 }}
@@ -1511,6 +1531,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
 
       {Array.isArray(job.sitePhotoUrls) && job.sitePhotoUrls.length > 0 && (
         <div
+          className="no-print"
           style={{
             padding: "8px",
             border: "1px solid #cbd5e1",
@@ -2039,10 +2060,7 @@ export default function App() {
     setGeneratedOtp(otp);
     setOtpStep(2);
     alert(
-      "[Manqube Security] आपके मोबाइल नंबर " +
-        staffPhoneInput +
-        " के लिए OTP है: " +
-        otp
+      "आपके मोबाइल नंबर " + staffPhoneInput + " के लिए OTP है: " + otp
     );
   };
 
@@ -2445,7 +2463,7 @@ export default function App() {
         : "";
 
     const telegramMsg =
-      `🛠️ <b>MANQUBE STAFF JOB UPDATE</b>\n` +
+      `🛠️ <b>STAFF JOB UPDATE</b>\n` +
       `<b>स्टेटस:</b> ${statusBadge}\n` +
       `<b>जॉब / कंप्लेंट नं.:</b> <code>${updatedRecord.jobSheetNo}</code>\n` +
       `<b>कस्टमर:</b> ${updatedRecord.customerName} (${updatedRecord.customerPhone})\n` +
@@ -2705,14 +2723,14 @@ export default function App() {
         </div>
       )}
 
-      {/* हेडर */}
+      {/* हेडर (केवल लोगो लेफ्ट साइड में) */}
       <div
+        className="no-print"
         style={{
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "15px 0",
+          justifyContent: "flex-start",
+          padding: "12px 16px",
           background: "#fff",
           borderRadius: "8px",
           marginBottom: "15px",
@@ -2721,25 +2739,18 @@ export default function App() {
       >
         <img
           src="/1000384854.jpg"
-          alt="Manqube Logo"
+          alt="Logo"
           style={{
-            width: "70px",
-            height: "70px",
+            width: "60px",
+            height: "60px",
             objectFit: "contain",
-            borderRadius: "50%",
-            marginBottom: "8px",
           }}
         />
-        <h2 style={{ margin: "0", color: "#1e293b", fontSize: "20px" }}>
-          MANQUBE PRIVATE LIMITED
-        </h2>
-        <p style={{ margin: "5px 0 0", fontSize: "13px", color: "#64748b" }}>
-          We Build. Your Trust. | 212 Naini, Prayagraj
-        </p>
       </div>
 
       {activeTab !== "home" && (
         <div
+          className="no-print"
           style={{
             marginBottom: "15px",
             display: "flex",
@@ -2790,6 +2801,7 @@ export default function App() {
       )}
 
       <div
+        className="no-print"
         style={{
           background: "#dcfce7",
           padding: "10px",
@@ -3199,7 +3211,7 @@ export default function App() {
             boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
           }}
         >
-          <h3>फ़ील्ड स्टाफ लॉगिन</h3>
+          <h3 className="no-print">फ़ील्ड स्टाफ लॉगिन</h3>
           {!staffLoggedIn ? (
             <div>
               {otpStep === 1 ? (
@@ -3272,6 +3284,7 @@ export default function App() {
           ) : (
             <div>
               <div
+                className="no-print"
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -3311,6 +3324,7 @@ export default function App() {
 
               {staffSubTab === "menu" && (
                 <div
+                  className="no-print"
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -3543,6 +3557,7 @@ export default function App() {
                 <div>
                   <button
                     type="button"
+                    className="no-print"
                     onClick={() => setStaffSubTab("menu")}
                     style={{
                       marginBottom: "10px",
@@ -3556,7 +3571,7 @@ export default function App() {
                   >
                     ← पीछे जाएं
                   </button>
-                  <h4>कम्पलीट जॉब्स (Completed Jobs)</h4>
+                  <h4 className="no-print">कम्पलीट जॉब्स (Completed Jobs)</h4>
                   {completedJobsList.length === 0 ? (
                     <p style={{ color: "#64748b" }}>
                       अभी तक कोई जॉब कम्पलीट नहीं हुई है।
@@ -3565,6 +3580,7 @@ export default function App() {
                     completedJobsList.map((job) => (
                       <div
                         key={job.jobSheetNo}
+                        className="no-print"
                         style={{
                           border: "1px solid #86efac",
                           padding: "10px",
@@ -6037,7 +6053,7 @@ export default function App() {
             boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
           }}
         >
-          <h3>📊 एडमिन कंट्रोल पैनल</h3>
+          <h3 className="no-print">📊 एडमिन कंट्रोल पैनल</h3>
           {!adminLoggedIn ? (
             <form
               onSubmit={handleAdminLogin}
