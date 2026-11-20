@@ -1936,7 +1936,9 @@ export default function App() {
           ...cur,
           inTime: cur.inTime || ts,
           outTime: eventType === "OUT" ? ts : cur.outTime,
-          routePoints: point ? [...(cur.routePoints || []), point] : cur.routePoints || [],
+          routePoints: point
+            ? [...(cur.routePoints || []), point]
+            : cur.routePoints || [],
         };
         return updated;
       } else {
@@ -3040,18 +3042,15 @@ export default function App() {
     const slides = [
       {
         id: "custName",
-        chipLabel: "कस्टमर नाम",
         title: "ग्राहक / संस्था का नाम लिखें (Customer Name)",
         type: "text",
         placeholder: "जैसे: Green Leaf Enterprises / रेलवे ऑफिस / ग्राहक का नाम",
         value: jobCustName,
         setter: setJobCustName,
         required: true,
-        summaryVal: jobCustName,
       },
       {
         id: "custPhone",
-        chipLabel: "मोबाइल नं.",
         title: "संपर्क एवं मोबाइल नंबर दर्ज करें (Mobile No.)",
         type: "tel",
         maxLength: 10,
@@ -3059,109 +3058,100 @@ export default function App() {
         value: jobCustPhone,
         setter: setJobCustPhone,
         required: true,
-        summaryVal: jobCustPhone,
       },
       {
         id: "custAddress",
-        chipLabel: "पता",
         title: "लोकेशन / साइट का पूरा पता लिखें (Address)",
         type: "textarea",
         placeholder: "जैसे: नैनी / झूंसी / प्रयागराज...",
         value: jobCustAddress,
         setter: setJobCustAddress,
         required: true,
-        summaryVal: jobCustAddress,
       },
       {
         id: "billNo",
-        chipLabel: "बिल नं.",
         title: "बिल नंबर दर्ज करें (Bill No. - वैकल्पिक)",
         type: "text",
         placeholder: "यदि बिल बन चुका है तो नंबर लिखें, वरना आगे बढ़ें",
         value: billNo,
         setter: setBillNo,
-        summaryVal: billNo,
       },
       {
         id: "amcDate",
-        chipLabel: "AMC दिनांक",
         title: "AMC दिनांक दर्ज करें (DD/MM/YYYY - वैकल्पिक)",
         type: "text",
         placeholder: "जैसे: 20/11/2026 (वैकल्पिक)",
         value: amcDate,
         setter: setAmcDate,
-        summaryVal: amcDate,
       },
       {
         id: "category",
-        chipLabel: "कैटेगरी",
         title: "काम की मुख्य श्रेणी चुनें (Category)",
         type: "choice",
         options: [
-          { value: "HVAC & Refrigeration", label: "❄️ HVAC & Refrigeration (AC, Fridge, Chiller, Water Cooler)" },
-          { value: "Electrical Work", label: "⚡ Electrical Work (Cooler, Wiring, Panel, Earthing)" },
-          { value: "Plumbing Work", label: "🚰 Plumbing Work (Pipe, Tank, Pump)" },
-          { value: "Civil Work", label: "🏗️ Civil Work (Flooring, Plaster, Waterproofing)" },
+          {
+            value: "HVAC & Refrigeration",
+            label: "❄️ HVAC & Refrigeration (AC, Fridge, Chiller, Water Cooler)",
+          },
+          {
+            value: "Electrical Work",
+            label: "⚡ Electrical Work (Cooler, Wiring, Panel, Earthing)",
+          },
+          {
+            value: "Plumbing Work",
+            label: "🚰 Plumbing Work (Pipe, Tank, Pump)",
+          },
+          {
+            value: "Civil Work",
+            label: "🏗️ Civil Work (Flooring, Plaster, Waterproofing)",
+          },
         ],
         value: categoryType,
         onSelect: (val) => selectCategoryValue(val),
-        summaryVal: categoryType,
       },
       {
         id: "product",
-        chipLabel: "उपकरण",
         title: `${categoryType} का उपकरण चुनें`,
         type: "choice",
         options: subOptionsByCategory[categoryType] || [],
         value: productType,
         onSelect: (val) => selectProductValue(val),
-        summaryVal: productType,
       },
       {
         id: "fault",
-        chipLabel: "समस्या / फॉल्ट",
         title: `${productType} की समस्या / फॉल्ट विवरण लिखें`,
         type: "faultStep",
-        summaryVal: faultDetails,
       },
     ];
 
-    // उपकरण के अनुसार तकनीकी स्लाइड्स जोड़ें (हर एक बॉक्स अलग स्लाइड पर!)
     if (isFridgeOrWCSelected) {
       slides.push(
         {
           id: "unitModel",
-          chipLabel: "यूनिट मॉडल",
           title: "यूनिट मॉडल नंबर दर्ज करें (Unit Model No.)",
           type: "text",
           placeholder: "Unit Model No.",
           value: unitModel,
           setter: setUnitModel,
-          summaryVal: unitModel,
         },
         {
           id: "unitSerial",
-          chipLabel: "यूनिट सीरियल",
           title: "यूनिट सीरियल नंबर दर्ज करें (Unit Serial No.)",
           type: "text",
           placeholder: "Unit Serial No.",
           value: unitSerial,
           setter: setUnitSerial,
-          summaryVal: unitSerial,
         },
         {
           id: "unitCapacity",
-          chipLabel: "कैपेसिटी (Ltr)",
           title: "यूनिट कैपेसिटी (Litres में) लिखें",
           type: "text",
           placeholder: "जैसे: 300 Ltr / 500 Ltr",
           value: unitCapacity,
           setter: setUnitCapacity,
-          summaryVal: unitCapacity,
         },
         {
           id: "condenserInOut",
-          chipLabel: "कंडेंसर In/Out",
           title: "कंडेंसर की स्थिति चुनें (Condenser In / Out)",
           type: "choice",
           options: [
@@ -3173,47 +3163,38 @@ export default function App() {
           ],
           value: condenserInOut,
           onSelect: setCondenserInOut,
-          summaryVal: condenserInOut,
         },
         {
           id: "compModel",
-          chipLabel: "कंप्रेसर मॉडल",
           title: "कंप्रेसर मॉडल नंबर लिखें (Compressor Model No.)",
           type: "text",
           placeholder: "Compressor Model No.",
           value: compressorModel,
           setter: setCompressorModel,
-          summaryVal: compressorModel,
         },
         {
           id: "compSerial",
-          chipLabel: "कंप्रेसर सीरियल",
           title: "कंप्रेसर सीरियल नंबर लिखें (Compressor Serial No.)",
           type: "text",
           placeholder: "Compressor Serial No.",
           value: compressorSerial,
           setter: setCompressorSerial,
-          summaryVal: compressorSerial,
         },
         {
           id: "compAmp",
-          chipLabel: "कंप्रेसर Amp",
           title: "कंप्रेसर एम्पीयर दर्ज करें (Compressor Ampere)",
           type: "text",
           placeholder: "जैसे: 2.4 A",
           value: compressorAmpere,
           setter: setCompressorAmpere,
-          summaryVal: compressorAmpere,
         },
         {
           id: "unitAmp",
-          chipLabel: "यूनिट Amp",
           title: "यूनिट एम्पीयर दर्ज करें (Unit Ampere)",
           type: "text",
           placeholder: "जैसे: 2.8 A",
           value: ampere,
           setter: setAmpere,
-          summaryVal: ampere,
         }
       );
 
@@ -3221,7 +3202,6 @@ export default function App() {
         slides.push(
           {
             id: "wcTankSize",
-            chipLabel: "टंकी साइज",
             title: "Water Cooler टंकी का साइज चुनें (Litres)",
             type: "choice",
             options: [
@@ -3234,11 +3214,9 @@ export default function App() {
             ],
             value: wcTankSize,
             onSelect: setWcTankSize,
-            summaryVal: wcTankSize ? `${wcTankSize} Ltr` : "",
           },
           {
             id: "wcTapCount",
-            chipLabel: "टोटी संख्या",
             title: "Water Cooler में टोटी कितनी है?",
             type: "choice",
             options: [
@@ -3248,11 +3226,9 @@ export default function App() {
             ],
             value: wcTapCount,
             onSelect: setWcTapCount,
-            summaryVal: wcTapCount ? `${wcTapCount} टोटी` : "",
           },
           {
             id: "wcOverflow",
-            chipLabel: "Overflow सिस्टम",
             title: "Water Overflow सिस्टम चुनें",
             type: "choice",
             options: [
@@ -3262,17 +3238,14 @@ export default function App() {
             ],
             value: wcOverflowType,
             onSelect: setWcOverflowType,
-            summaryVal: wcOverflowType,
           },
           {
             id: "wcCoilSize",
-            chipLabel: "कॉइल साइज",
             title: "कंडेंसिंग कॉइल साइज लिखें (Condensing Coil Size)",
             type: "text",
             placeholder: "जैसे: 12×14×2 Row",
             value: wcCondensingCoilSize,
             setter: setWcCondensingCoilSize,
-            summaryVal: wcCondensingCoilSize,
           }
         );
       }
@@ -3280,7 +3253,6 @@ export default function App() {
       slides.push(
         {
           id: "coolerBodyMat",
-          chipLabel: "कूलर बॉडी",
           title: "कूलर की बॉडी किस चीज़ की है? (Body Type)",
           type: "choice",
           options: [
@@ -3289,11 +3261,9 @@ export default function App() {
           ],
           value: coolerBodyMaterial,
           onSelect: setCoolerBodyMaterial,
-          summaryVal: coolerBodyMaterial,
         },
         {
           id: "coolerSubType",
-          chipLabel: "कूलर प्रकार",
           title: "कूलर का प्रकार चुनें (Cooler Sub-Type)",
           type: "choice",
           options: [
@@ -3304,51 +3274,41 @@ export default function App() {
           ],
           value: coolerSubType,
           onSelect: setCoolerSubType,
-          summaryVal: coolerSubType,
         },
         {
           id: "coolerCap",
-          chipLabel: "कूलर क्षमता",
           title: "कूलर की क्षमता / टैंक साइज़ लिखें",
           type: "text",
           placeholder: "जैसे: 70 Ltr / 100 Ltr",
           value: coolerCapacity,
           setter: setCoolerCapacity,
-          summaryVal: coolerCapacity,
         },
         {
           id: "coolerBrand",
-          chipLabel: "ब्रांड / मॉडल",
           title: "कूलर का ब्रांड / मॉडल लिखें",
           type: "text",
           placeholder: "जैसे: Symphony / Kenstar / Local",
           value: coolerBrandModel,
           setter: setCoolerBrandModel,
-          summaryVal: coolerBrandModel,
         },
         {
           id: "coolerSerial",
-          chipLabel: "सीरियल नं.",
           title: "कूलर का सीरियल / टैग नं. लिखें",
           type: "text",
           placeholder: "Serial / Tag No.",
           value: coolerSerialNo,
           setter: setCoolerSerialNo,
-          summaryVal: coolerSerialNo,
         },
         {
           id: "coolerQty",
-          chipLabel: "कुल कूलर",
           title: "कुल कूलर की संख्या दर्ज करें",
           type: "text",
           placeholder: "1",
           value: coolerTotalQty,
           setter: setCoolerTotalQty,
-          summaryVal: coolerTotalQty,
         },
         {
           id: "coolerFan",
-          chipLabel: "फैन मोटर",
           title: "फैन मोटर की स्थिति चुनें (Fan Motor)",
           type: "choice",
           options: [
@@ -3359,11 +3319,9 @@ export default function App() {
           ],
           value: coolerFanMotor,
           onSelect: setCoolerFanMotor,
-          summaryVal: coolerFanMotor,
         },
         {
           id: "coolerPump",
-          chipLabel: "वाटर पंप",
           title: "वाटर पंप की स्थिति चुनें (Submersible Pump)",
           type: "choice",
           options: [
@@ -3373,11 +3331,9 @@ export default function App() {
           ],
           value: coolerWaterPump,
           onSelect: setCoolerWaterPump,
-          summaryVal: coolerWaterPump,
         },
         {
           id: "coolerSwing",
-          chipLabel: "स्विंग / ब्लेड",
           title: "स्विंग मोटर एवं ब्लेड की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3387,11 +3343,9 @@ export default function App() {
           ],
           value: coolerSwingBlade,
           onSelect: setCoolerSwingBlade,
-          summaryVal: coolerSwingBlade,
         },
         {
           id: "coolerPadType",
-          chipLabel: "पैड प्रकार",
           title: "कूलिंग पैड का प्रकार चुनें (Cooling Pad Type)",
           type: "choice",
           options: [
@@ -3400,11 +3354,9 @@ export default function App() {
           ],
           value: coolerPadType,
           onSelect: setCoolerPadType,
-          summaryVal: coolerPadType,
         },
         {
           id: "coolerPadStat",
-          chipLabel: "पैड स्थिति",
           title: "कूलिंग पैड की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3413,11 +3365,9 @@ export default function App() {
           ],
           value: coolerPadStatus,
           onSelect: setCoolerPadStatus,
-          summaryVal: coolerPadStatus,
         },
         {
           id: "coolerTank",
-          chipLabel: "टैंक / प्लंबिंग",
           title: "वाटर टैंक एवं प्लंबिंग की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3428,11 +3378,9 @@ export default function App() {
           ],
           value: coolerTankPlumbing,
           onSelect: setCoolerTankPlumbing,
-          summaryVal: coolerTankPlumbing,
         },
         {
           id: "coolerElec",
-          chipLabel: "वायरिंग / स्विच",
           title: "इलेक्ट्रिकल एवं वायरिंग की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3443,11 +3391,9 @@ export default function App() {
           ],
           value: coolerElectrical,
           onSelect: setCoolerElectrical,
-          summaryVal: coolerElectrical,
         },
         {
           id: "coolerPaint",
-          chipLabel: "बॉडी / पेंट",
           title: "बॉडी एवं पेंट की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3458,115 +3404,92 @@ export default function App() {
           ],
           value: coolerBodyPaint,
           onSelect: setCoolerBodyPaint,
-          summaryVal: coolerBodyPaint,
         }
       );
     } else {
-      // AC / VRV / Chiller / AHU / अन्य यूनिट्स के सारे फील्ड एक-एक स्लाइड में
       slides.push(
         {
           id: "indoorModel",
-          chipLabel: "Indoor Model",
           title: "Indoor Model नंबर दर्ज करें",
           type: "text",
           placeholder: "Indoor Model No.",
           value: indoorModel,
           setter: setIndoorModel,
-          summaryVal: indoorModel,
         },
         {
           id: "indoorSerial",
-          chipLabel: "Indoor Serial",
           title: "Indoor Serial नंबर दर्ज करें",
           type: "text",
           placeholder: "Indoor Serial No.",
           value: indoorSerial,
           setter: setIndoorSerial,
-          summaryVal: indoorSerial,
         },
         {
           id: "outdoorModel",
-          chipLabel: "Outdoor Model",
           title: "Outdoor Model नंबर दर्ज करें",
           type: "text",
           placeholder: "Outdoor Model No.",
           value: outdoorModel,
           setter: setOutdoorModel,
-          summaryVal: outdoorModel,
         },
         {
           id: "outdoorSerial",
-          chipLabel: "Outdoor Serial",
           title: "Outdoor Serial नंबर दर्ज करें",
           type: "text",
           placeholder: "Outdoor Serial No.",
           value: outdoorSerial,
           setter: setOutdoorSerial,
-          summaryVal: outdoorSerial,
         },
         {
           id: "compressorModel",
-          chipLabel: "Comp. Model",
           title: "Compressor Model नंबर दर्ज करें",
           type: "text",
           placeholder: "Compressor Model No.",
           value: compressorModel,
           setter: setCompressorModel,
-          summaryVal: compressorModel,
         },
         {
           id: "compressorSerial",
-          chipLabel: "Comp. Serial",
           title: "Compressor Serial नंबर दर्ज करें",
           type: "text",
           placeholder: "Compressor Serial No.",
           value: compressorSerial,
           setter: setCompressorSerial,
-          summaryVal: compressorSerial,
         },
         {
           id: "indoorMotorModel",
-          chipLabel: "In-Motor Model",
           title: "In-Door Motor Model नंबर दर्ज करें",
           type: "text",
           placeholder: "In-Door Motor Model",
           value: indoorMotorModel,
           setter: setIndoorMotorModel,
-          summaryVal: indoorMotorModel,
         },
         {
           id: "indoorMotorSerial",
-          chipLabel: "In-Motor Serial",
           title: "In-Door Motor Serial नंबर दर्ज करें",
           type: "text",
           placeholder: "In-Door Motor Serial",
           value: indoorMotorSerial,
           setter: setIndoorMotorSerial,
-          summaryVal: indoorMotorSerial,
         },
         {
           id: "outdoorMotorModel",
-          chipLabel: "Out-Motor Model",
           title: "Out-Door Motor Model नंबर दर्ज करें",
           type: "text",
           placeholder: "Out-Door Motor Model",
           value: outdoorMotorModel,
           setter: setOutdoorMotorModel,
-          summaryVal: outdoorMotorModel,
         },
         {
           id: "outdoorMotorSerial",
-          chipLabel: "Out-Motor Serial",
           title: "Out-Door Motor Serial नंबर दर्ज करें",
           type: "text",
           placeholder: "Out-Door Motor Serial",
           value: outdoorMotorSerial,
           setter: setOutdoorMotorSerial,
-          summaryVal: outdoorMotorSerial,
         },
         {
           id: "filterClean",
-          chipLabel: "Filter Clean",
           title: "Filter Clean की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3576,11 +3499,9 @@ export default function App() {
           ],
           value: filterClean,
           onSelect: setFilterClean,
-          summaryVal: filterClean,
         },
         {
           id: "standType",
-          chipLabel: "Stand Type",
           title: "Stand Type चुनें",
           type: "choice",
           options: [
@@ -3591,11 +3512,9 @@ export default function App() {
           ],
           value: standType,
           onSelect: setStandType,
-          summaryVal: standType,
         },
         {
           id: "swingFlapper",
-          chipLabel: "Swing/Flapper",
           title: "Swing / Flapper की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3605,11 +3524,9 @@ export default function App() {
           ],
           value: swingFlapper,
           onSelect: setSwingFlapper,
-          summaryVal: swingFlapper,
         },
         {
           id: "stabilizer",
-          chipLabel: "Stabilizer",
           title: "Stabilizer की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3619,11 +3536,9 @@ export default function App() {
           ],
           value: stabilizer,
           onSelect: setStabilizer,
-          summaryVal: stabilizer,
         },
         {
           id: "remoteStatus",
-          chipLabel: "Remote",
           title: "Remote की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3633,11 +3548,9 @@ export default function App() {
           ],
           value: remoteStatus,
           onSelect: setRemoteStatus,
-          summaryVal: remoteStatus,
         },
         {
           id: "outdoorClean",
-          chipLabel: "Outdoor Clean",
           title: "Outdoor Clean की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3647,61 +3560,49 @@ export default function App() {
           ],
           value: outdoorClean,
           onSelect: setOutdoorClean,
-          summaryVal: outdoorClean,
         },
         {
           id: "roomTemp",
-          chipLabel: "Room Temp",
           title: "Room Temp (°C) दर्ज करें",
           type: "text",
           placeholder: "जैसे: 24°C",
           value: roomTemp,
           setter: setRoomTemp,
-          summaryVal: roomTemp,
         },
         {
           id: "suctionPressure",
-          chipLabel: "Suction Pressure",
           title: "Suction Pressure दर्ज करें",
           type: "text",
           placeholder: "जैसे: 120 PSI",
           value: sectionPressure,
           setter: setSectionPressure,
-          summaryVal: sectionPressure,
         },
         {
           id: "drainSize",
-          chipLabel: "Drain Size",
           title: "Drain With Size दर्ज करें",
           type: "text",
           placeholder: "जैसे: 1 inch PVC",
           value: drainSize,
           setter: setDrainSize,
-          summaryVal: drainSize,
         },
         {
           id: "copperPipeSize",
-          chipLabel: "Copper Pipe",
           title: "Copper Pipe Size दर्ज करें",
           type: "text",
           placeholder: "जैसे: 1/4 & 1/2",
           value: copperPipeSize,
           setter: setCopperPipeSize,
-          summaryVal: copperPipeSize,
         },
         {
           id: "wireSizeCore",
-          chipLabel: "Wire Size",
           title: "Wire Size & Core दर्ज करें",
           type: "text",
           placeholder: "जैसे: 2.5 sqmm 3 Core",
           value: wireSizeCore,
           setter: setWireSizeCore,
-          summaryVal: wireSizeCore,
         },
         {
           id: "insulation",
-          chipLabel: "Insulation",
           title: "Insulation की स्थिति चुनें",
           type: "choice",
           options: [
@@ -3711,125 +3612,97 @@ export default function App() {
           ],
           value: insulation,
           onSelect: setInsulation,
-          summaryVal: insulation,
         },
         {
           id: "voltage",
-          chipLabel: "Voltage",
           title: "Voltage दर्ज करें",
           type: "text",
           placeholder: isSinglePhaseSelected ? "जैसे: 230V" : "जैसे: 415V / 230V",
           value: voltage,
           setter: setVoltage,
-          summaryVal: voltage,
         },
         {
           id: "compressorAmpere",
-          chipLabel: "Comp. Amp",
           title: "Compressor Ampere दर्ज करें",
           type: "text",
           placeholder: "जैसे: 6.5 A",
           value: compressorAmpere,
           setter: setCompressorAmpere,
-          summaryVal: compressorAmpere,
         },
         {
           id: "unitAmpere",
-          chipLabel: "Unit Amp",
           title: "Unit Ampere दर्ज करें",
           type: "text",
           placeholder: "जैसे: 7.2 A",
           value: ampere,
           setter: setAmpere,
-          summaryVal: ampere,
         }
       );
 
-      // यदि 3-फ़ेज़ यूनिट है तो R / Y / B वोल्टेज व एम्पीयर भी एक-एक स्लाइड में आएंगे
       if (!isSinglePhaseSelected) {
         slides.push(
           {
             id: "phaseR",
-            chipLabel: "R Voltage",
             title: "R-Phase Voltage दर्ज करें",
             type: "text",
             placeholder: "R Voltage",
             value: phaseR,
             setter: setPhaseR,
-            summaryVal: phaseR,
           },
           {
             id: "phaseY",
-            chipLabel: "Y Voltage",
             title: "Y-Phase Voltage दर्ज करें",
             type: "text",
             placeholder: "Y Voltage",
             value: phaseY,
             setter: setPhaseY,
-            summaryVal: phaseY,
           },
           {
             id: "phaseB",
-            chipLabel: "B Voltage",
             title: "B-Phase Voltage दर्ज करें",
             type: "text",
             placeholder: "B Voltage",
             value: phaseB,
             setter: setPhaseB,
-            summaryVal: phaseB,
           },
           {
             id: "ampR",
-            chipLabel: "R Ampere",
             title: "R-Phase Ampere दर्ज करें",
             type: "text",
             placeholder: "R Ampere",
             value: ampR,
             setter: setAmpR,
-            summaryVal: ampR,
           },
           {
             id: "ampY",
-            chipLabel: "Y Ampere",
             title: "Y-Phase Ampere दर्ज करें",
             type: "text",
             placeholder: "Y Ampere",
             value: ampY,
             setter: setAmpY,
-            summaryVal: ampY,
           },
           {
             id: "ampB",
-            chipLabel: "B Ampere",
             title: "B-Phase Ampere दर्ज करें",
             type: "text",
             placeholder: "B Ampere",
             value: ampB,
             setter: setAmpB,
-            summaryVal: ampB,
           }
         );
       }
     }
 
-    // अंत में कार्य व बिलिंग तथा स्टेटस, फोटो व सिग्नेचर स्लाइड्स
     slides.push(
       {
         id: "workBilling",
-        chipLabel: "कार्य व बिल",
         title: "किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल",
         type: "workBillingStep",
-        summaryVal:
-          workDone || grandTotalBill > 0
-            ? `${workDone ? workDone.slice(0, 12) + ".." : "कार्य"} (₹${grandTotalBill})`
-            : "",
       },
       {
         id: "statusSign",
-        chipLabel: "स्टेटस व साइन",
         title: "जॉब स्टेटस, फोटो और कस्टमर हस्ताक्षर (Final Step)",
         type: "statusSignStep",
-        summaryVal: `${jobStatusType}${savedSignatureURL ? " + Sign" : ""}`,
       }
     );
 
@@ -4537,7 +4410,13 @@ export default function App() {
                   <div style={{ fontSize: "13px" }}>
                     स्टाफ: <strong>{currentStaffName}</strong>
                   </div>
-                  <div style={{ fontSize: "11px", color: "#166534", fontWeight: "bold" }}>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#166534",
+                      fontWeight: "bold",
+                    }}
+                  >
                     ● Duty IN Active (GPS रूट रिकॉर्ड हो रहा है)
                   </div>
                 </div>
@@ -4944,139 +4823,89 @@ export default function App() {
               )}
 
               {/* ================================================================
-                  100% SLIDE-BY-SLIDE (1 FIELD PER SLIDE FOR ALL UNITS)
+                  CLEAN SLIDE-BY-SLIDE WIZARD (ऊपर केवल ← और → तीर के बटन)
                   ================================================================ */}
               {staffSubTab === "newJobForm" && currentSlide && (
                 <div>
+                  {/* ऊपर सिर्फ़ ← (Back) और → (Forward) तीर का नेविगेशन बार */}
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: "10px",
+                      background: "#f1f5f9",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      padding: "8px 10px",
+                      marginBottom: "12px",
                     }}
                   >
                     <button
                       type="button"
-                      onClick={() => setStaffSubTab("menu")}
+                      onClick={() => {
+                        if (safeSlideIndex === 0) {
+                          setStaffSubTab("menu");
+                        } else {
+                          goPrevSlide();
+                        }
+                      }}
+                      title={safeSlideIndex === 0 ? "मेनू पर जाएं" : "पिछली स्लाइड"}
                       style={{
-                        padding: "6px 12px",
-                        background: "#64748b",
+                        width: "44px",
+                        height: "38px",
+                        background: "#475569",
                         color: "#fff",
                         border: "none",
-                        borderRadius: "4px",
+                        borderRadius: "6px",
+                        fontSize: "20px",
+                        fontWeight: "bold",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      ← मेनू पर वापस जाएं
+                      ←
                     </button>
+
                     <span
                       style={{
-                        fontSize: "12px",
+                        fontSize: "13px",
                         fontWeight: "bold",
                         color: "#1e3a8a",
-                        background: "#dbeafe",
-                        padding: "4px 10px",
-                        borderRadius: "12px",
                       }}
                     >
-                      स्लाइड {safeSlideIndex + 1} / {allJobSlides.length}
+                      {safeSlideIndex + 1} / {allJobSlides.length}
                     </span>
-                  </div>
 
-                  {/* ऊपर अब तक भरा गया सारा डेटा (किसी पर भी क्लिक करके सीधे उस स्लाइड पर जाएं) */}
-                  <div
-                    style={{
-                      background: "#eff6ff",
-                      border: "1.5px solid #93c5fd",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      marginBottom: "12px",
-                      maxHeight: "125px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    <div
+                    <button
+                      type="button"
+                      onClick={goNextSlide}
+                      disabled={safeSlideIndex === allJobSlides.length - 1}
+                      title="अगली स्लाइड"
                       style={{
-                        fontSize: "11px",
+                        width: "44px",
+                        height: "38px",
+                        background:
+                          safeSlideIndex === allJobSlides.length - 1
+                            ? "#cbd5e1"
+                            : "#166534",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "20px",
                         fontWeight: "bold",
-                        color: "#1e40af",
-                        marginBottom: "5px",
-                      }}
-                    >
-                      ✔ भरा गया विवरण (बदलने या छूटने पर किसी भी नाम पर टच करें):
-                    </div>
-                    <div
-                      style={{
+                        cursor:
+                          safeSlideIndex === allJobSlides.length - 1
+                            ? "not-allowed"
+                            : "pointer",
                         display: "flex",
-                        flexWrap: "wrap",
-                        gap: "5px",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      {allJobSlides.map((sl, idx) => {
-                        const isFilled = Boolean(
-                          sl.summaryVal && String(sl.summaryVal).trim()
-                        );
-                        const isCurrent = idx === safeSlideIndex;
-                        return (
-                          <button
-                            key={sl.id}
-                            type="button"
-                            onClick={() => setSlideIndex(idx)}
-                            style={{
-                              padding: "3px 7px",
-                              borderRadius: "5px",
-                              border: isCurrent
-                                ? "2px solid #166534"
-                                : isFilled
-                                ? "1px solid #2563eb"
-                                : "1px dashed #94a3b8",
-                              background: isCurrent
-                                ? "#dcfce7"
-                                : isFilled
-                                ? "#ffffff"
-                                : "#f8fafc",
-                              color: isFilled ? "#0f172a" : "#64748b",
-                              fontSize: "10.5px",
-                              cursor: "pointer",
-                              fontWeight: isCurrent || isFilled ? "bold" : "normal",
-                            }}
-                          >
-                            {isFilled ? "✓ " : "+ "}
-                            {sl.chipLabel}
-                            {isFilled
-                              ? `: ${String(sl.summaryVal).slice(0, 12)}${
-                                  String(sl.summaryVal).length > 12 ? ".." : ""
-                                } ✎`
-                              : ""}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* प्रोग्रेस बार */}
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "6px",
-                      background: "#e2e8f0",
-                      borderRadius: "99px",
-                      marginBottom: "14px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${Math.round(
-                          ((safeSlideIndex + 1) / allJobSlides.length) * 100
-                        )}%`,
-                        height: "100%",
-                        background: "#166534",
-                        transition: "width 0.25s ease",
-                      }}
-                    />
+                      →
+                    </button>
                   </div>
 
                   {/* सक्रिय सिंगल-फील्ड स्लाइड कार्ड */}
@@ -5089,13 +4918,26 @@ export default function App() {
                       boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                     }}
                   >
-                    <h4 style={{ margin: "0 0 12px 0", color: "#0f172a", fontSize: "16px" }}>
+                    <h4
+                      style={{
+                        margin: "0 0 12px 0",
+                        color: "#0f172a",
+                        fontSize: "16px",
+                      }}
+                    >
                       {safeSlideIndex + 1}. {currentSlide.title}:
                     </h4>
 
                     {/* A. SINGLE TEXT / TEL INPUT SLIDE */}
-                    {(currentSlide.type === "text" || currentSlide.type === "tel") && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {(currentSlide.type === "text" ||
+                      currentSlide.type === "tel") && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                        }}
+                      >
                         <input
                           key={currentSlide.id}
                           type={currentSlide.type}
@@ -5112,48 +4954,33 @@ export default function App() {
                           }}
                           style={{ ...inputStyle, width: "100%" }}
                         />
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          {safeSlideIndex > 0 && (
-                            <button
-                              type="button"
-                              onClick={goPrevSlide}
-                              style={{
-                                flex: 1,
-                                padding: "12px",
-                                background: "#64748b",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "6px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                              }}
-                            >
-                              ← पीछे
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={goNextSlide}
-                            style={{
-                              flex: 2,
-                              padding: "12px",
-                              background: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={goNextSlide}
+                          style={{
+                            padding: "12px",
+                            background: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          आगे बढ़ें →
+                        </button>
                       </div>
                     )}
 
                     {/* B. SINGLE TEXTAREA SLIDE */}
                     {currentSlide.type === "textarea" && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                        }}
+                      >
                         <textarea
                           key={currentSlide.id}
                           rows="3"
@@ -5163,96 +4990,63 @@ export default function App() {
                           onChange={(e) => currentSlide.setter(e.target.value)}
                           style={{ ...inputStyle, width: "100%" }}
                         />
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          {safeSlideIndex > 0 && (
-                            <button
-                              type="button"
-                              onClick={goPrevSlide}
-                              style={{
-                                flex: 1,
-                                padding: "12px",
-                                background: "#64748b",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "6px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                              }}
-                            >
-                              ← पीछे
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={goNextSlide}
-                            style={{
-                              flex: 2,
-                              padding: "12px",
-                              background: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={goNextSlide}
+                          style={{
+                            padding: "12px",
+                            background: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          आगे बढ़ें →
+                        </button>
                       </div>
                     )}
 
                     {/* C. SINGLE CHOICE BUTTONS SLIDE (टच करते ही अगली स्लाइड पर जाए) */}
                     {currentSlide.type === "choice" && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              currentSlide.options.length > 4 ? "1fr 1fr" : "1fr",
-                            gap: "8px",
-                          }}
-                        >
-                          {currentSlide.options.map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => {
-                                currentSlide.onSelect(opt.value);
-                                setSlideIndex((prev) =>
-                                  Math.min(allJobSlides.length - 1, prev + 1)
-                                );
-                              }}
-                              style={choiceBtnStyle(currentSlide.value === opt.value)}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                        {safeSlideIndex > 0 && (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            currentSlide.options.length > 4 ? "1fr 1fr" : "1fr",
+                          gap: "8px",
+                        }}
+                      >
+                        {currentSlide.options.map((opt) => (
                           <button
+                            key={opt.value}
                             type="button"
-                            onClick={goPrevSlide}
-                            style={{
-                              marginTop: "6px",
-                              padding: "10px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
+                            onClick={() => {
+                              currentSlide.onSelect(opt.value);
+                              setSlideIndex((prev) =>
+                                Math.min(allJobSlides.length - 1, prev + 1)
+                              );
                             }}
+                            style={choiceBtnStyle(
+                              currentSlide.value === opt.value
+                            )}
                           >
-                            ← पीछे
+                            {opt.label}
                           </button>
-                        )}
+                        ))}
                       </div>
                     )}
 
                     {/* D. FAULT DETAILS SLIDE (+ कूलर कार्य प्रकार) */}
                     {currentSlide.type === "faultStep" && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                        }}
+                      >
                         {isAirCoolerSelected && (
                           <div
                             style={{
@@ -5282,10 +5076,19 @@ export default function App() {
                             >
                               {[
                                 { id: "AMC", label: "AMC (वार्षिक रखरखाव)" },
-                                { id: "Breakdown / Repair", label: "ब्रेकडाउन / रिपेयर" },
+                                {
+                                  id: "Breakdown / Repair",
+                                  label: "ब्रेकडाउन / रिपेयर",
+                                },
                                 { id: "Installation", label: "Installation" },
-                                { id: "Un-installation", label: "Un-installation" },
-                                { id: "Body Repair & Painting", label: "बॉडी रिपेयर एवं पेंटिंग" },
+                                {
+                                  id: "Un-installation",
+                                  label: "Un-installation",
+                                },
+                                {
+                                  id: "Body Repair & Painting",
+                                  label: "बॉडी रिपेयर एवं पेंटिंग",
+                                },
                               ].map((opt) => (
                                 <label
                                   key={opt.id}
@@ -5299,7 +5102,9 @@ export default function App() {
                                   <input
                                     type="checkbox"
                                     checked={coolerWorkTypes.includes(opt.id)}
-                                    onChange={() => toggleCoolerWorkType(opt.id)}
+                                    onChange={() =>
+                                      toggleCoolerWorkType(opt.id)
+                                    }
                                   />
                                   {opt.label}
                                 </label>
@@ -5323,46 +5128,33 @@ export default function App() {
                           style={{ ...inputStyle, width: "100%" }}
                         />
 
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          <button
-                            type="button"
-                            onClick={goPrevSlide}
-                            style={{
-                              flex: 1,
-                              padding: "12px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={goNextSlide}
-                            style={{
-                              flex: 2,
-                              padding: "12px",
-                              background: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={goNextSlide}
+                          style={{
+                            padding: "12px",
+                            background: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          आगे बढ़ें →
+                        </button>
                       </div>
                     )}
 
                     {/* E. WORK DONE, SPARE PARTS & BILLING SLIDE */}
                     {currentSlide.type === "workBillingStep" && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                        }}
+                      >
                         <div
                           style={{
                             background: "#f8fafc",
@@ -5409,9 +5201,15 @@ export default function App() {
                             onChange={(e) => setSparePartOption(e.target.value)}
                             style={{ ...inputStyle, width: "100%" }}
                           >
-                            <option value="Used Part">Used Part (इस्तेमाल किया गया)</option>
-                            <option value="Pending Part">Pending Part (पार्ट मंगवाना है)</option>
-                            <option value="No Part Used">No Part Used (कोई पार्ट नहीं लगा)</option>
+                            <option value="Used Part">
+                              Used Part (इस्तेमाल किया गया)
+                            </option>
+                            <option value="Pending Part">
+                              Pending Part (पार्ट मंगवाना है)
+                            </option>
+                            <option value="No Part Used">
+                              No Part Used (कोई पार्ट नहीं लगा)
+                            </option>
                           </select>
 
                           {isUsedPartSelected ? (
@@ -5451,9 +5249,17 @@ export default function App() {
                                         }
                                         value={item.partName}
                                         onChange={(e) =>
-                                          updatePartRow(idx, "partName", e.target.value)
+                                          updatePartRow(
+                                            idx,
+                                            "partName",
+                                            e.target.value
+                                          )
                                         }
-                                        style={{ ...inputStyle, flex: 2, minWidth: 0 }}
+                                        style={{
+                                          ...inputStyle,
+                                          flex: 2,
+                                          minWidth: 0,
+                                        }}
                                       />
                                       <input
                                         type="number"
@@ -5461,9 +5267,17 @@ export default function App() {
                                         placeholder="Qty"
                                         value={item.qty}
                                         onChange={(e) =>
-                                          updatePartRow(idx, "qty", e.target.value)
+                                          updatePartRow(
+                                            idx,
+                                            "qty",
+                                            e.target.value
+                                          )
                                         }
-                                        style={{ ...inputStyle, flex: 0.7, minWidth: 0 }}
+                                        style={{
+                                          ...inputStyle,
+                                          flex: 0.7,
+                                          minWidth: 0,
+                                        }}
                                       />
                                       <input
                                         type="number"
@@ -5471,9 +5285,17 @@ export default function App() {
                                         placeholder="Rate ₹"
                                         value={item.amount}
                                         onChange={(e) =>
-                                          updatePartRow(idx, "amount", e.target.value)
+                                          updatePartRow(
+                                            idx,
+                                            "amount",
+                                            e.target.value
+                                          )
                                         }
-                                        style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                                        style={{
+                                          ...inputStyle,
+                                          flex: 1,
+                                          minWidth: 0,
+                                        }}
                                       />
                                       <button
                                         type="button"
@@ -5539,14 +5361,18 @@ export default function App() {
                                   type="text"
                                   placeholder="Part Name"
                                   value={sparePartName}
-                                  onChange={(e) => setSparePartName(e.target.value)}
+                                  onChange={(e) =>
+                                    setSparePartName(e.target.value)
+                                  }
                                   style={{ ...inputStyle, flex: 1 }}
                                 />
                                 <input
                                   type="text"
                                   placeholder="Model / No."
                                   value={sparePartModel}
-                                  onChange={(e) => setSparePartModel(e.target.value)}
+                                  onChange={(e) =>
+                                    setSparePartModel(e.target.value)
+                                  }
                                   style={{ ...inputStyle, flex: 1 }}
                                 />
                               </div>
@@ -5579,8 +5405,14 @@ export default function App() {
                             min="0"
                             placeholder="0.00"
                             value={serviceChargeInput}
-                            onChange={(e) => setServiceChargeInput(e.target.value)}
-                            style={{ ...inputStyle, width: "100%", fontWeight: "bold" }}
+                            onChange={(e) =>
+                              setServiceChargeInput(e.target.value)
+                            }
+                            style={{
+                              ...inputStyle,
+                              width: "100%",
+                              fontWeight: "bold",
+                            }}
                           />
 
                           <div
@@ -5627,46 +5459,33 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
-                          <button
-                            type="button"
-                            onClick={goPrevSlide}
-                            style={{
-                              flex: 1,
-                              padding: "12px",
-                              backgroundColor: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={goNextSlide}
-                            style={{
-                              flex: 2,
-                              padding: "12px",
-                              backgroundColor: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={goNextSlide}
+                          style={{
+                            padding: "12px",
+                            backgroundColor: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          आगे बढ़ें →
+                        </button>
                       </div>
                     )}
 
                     {/* F. FINAL STATUS, PHOTOS & SIGNATURE SLIDE */}
                     {currentSlide.type === "statusSignStep" && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                        }}
+                      >
                         <label style={{ fontSize: "12px", fontWeight: "bold" }}>
                           जॉब स्टेटस:
                         </label>
@@ -5681,17 +5500,27 @@ export default function App() {
 
                         {jobStatusType === "Pending" && (
                           <>
-                            <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                            <label
+                              style={{ fontSize: "12px", fontWeight: "bold" }}
+                            >
                               पेंडिंग का कारण:
                             </label>
                             <select
                               value={pendingSubOption}
-                              onChange={(e) => setPendingSubOption(e.target.value)}
+                              onChange={(e) =>
+                                setPendingSubOption(e.target.value)
+                              }
                               style={inputStyle}
                             >
-                              <option value="Part Pending">Part Pending (पार्ट प्रतीक्षित)</option>
-                              <option value="Repeat Complaint">Repeat Complaint</option>
-                              <option value="Customer Busy">Customer Busy</option>
+                              <option value="Part Pending">
+                                Part Pending (पार्ट प्रतीक्षित)
+                              </option>
+                              <option value="Repeat Complaint">
+                                Repeat Complaint
+                              </option>
+                              <option value="Customer Busy">
+                                Customer Busy
+                              </option>
                             </select>
                           </>
                         )}
@@ -5793,7 +5622,9 @@ export default function App() {
                           onClick={() => setIsSignatureModalOpen(true)}
                           style={{
                             padding: "14px",
-                            backgroundColor: savedSignatureURL ? "#0284c7" : "#2563eb",
+                            backgroundColor: savedSignatureURL
+                              ? "#0284c7"
+                              : "#2563eb",
                             color: "#fff",
                             border: "none",
                             borderRadius: "8px",
@@ -5839,41 +5670,23 @@ export default function App() {
                           </div>
                         )}
 
-                        <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                          <button
-                            type="button"
-                            onClick={goPrevSlide}
-                            style={{
-                              flex: 1,
-                              padding: "12px",
-                              backgroundColor: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleJobSubmit}
-                            style={{
-                              flex: 2,
-                              padding: "12px",
-                              backgroundColor: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              fontSize: "14px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ✅ जॉब शीट फाइनल सेव करें
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={handleJobSubmit}
+                          style={{
+                            marginTop: "10px",
+                            padding: "13px",
+                            backgroundColor: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✅ जॉब शीट फाइनल सेव करें
+                        </button>
                       </div>
                     )}
                   </div>
@@ -6498,10 +6311,22 @@ export default function App() {
                     <div>
                       {!attSelectedYear && (
                         <div>
-                          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f172a" }}>
+                          <h4
+                            style={{
+                              margin: "0 0 10px 0",
+                              fontSize: "14px",
+                              color: "#0f172a",
+                            }}
+                          >
                             📅 वर्ष चुनें (Select Year):
                           </h4>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(2, 1fr)",
+                              gap: "10px",
+                            }}
+                          >
                             {availableYears.map((yr) => (
                               <button
                                 key={yr}
@@ -6543,14 +6368,27 @@ export default function App() {
                           >
                             ← वर्ष (Year) पर वापस जाएं
                           </button>
-                          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f172a" }}>
+                          <h4
+                            style={{
+                              margin: "0 0 10px 0",
+                              fontSize: "14px",
+                              color: "#0f172a",
+                            }}
+                          >
                             📆 महीना चुनें (वर्ष {attSelectedYear}):
                           </h4>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(2, 1fr)",
+                              gap: "8px",
+                            }}
+                          >
                             {HINDI_MONTHS.map((mLabel, index) => {
                               const mCode = String(index + 1).padStart(2, "0");
                               const countInMonth = attendanceRecords.filter(
-                                (r) => r.year === attSelectedYear && r.month === mCode
+                                (r) =>
+                                  r.year === attSelectedYear && r.month === mCode
                               ).length;
                               return (
                                 <button
@@ -6559,7 +6397,8 @@ export default function App() {
                                   onClick={() => setAttSelectedMonth(mCode)}
                                   style={{
                                     padding: "10px",
-                                    background: countInMonth > 0 ? "#f0fdf4" : "#f8fafc",
+                                    background:
+                                      countInMonth > 0 ? "#f0fdf4" : "#f8fafc",
                                     border:
                                       countInMonth > 0
                                         ? "1.5px solid #166534"
@@ -6572,7 +6411,13 @@ export default function App() {
                                   }}
                                 >
                                   <div>{mLabel}</div>
-                                  <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                  <div
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "#64748b",
+                                      marginTop: "2px",
+                                    }}
+                                  >
                                     रिकॉर्ड्स: {countInMonth}
                                   </div>
                                 </button>
@@ -6582,282 +6427,337 @@ export default function App() {
                         </div>
                       )}
 
-                      {attSelectedYear && attSelectedMonth && !attSelectedStaffPhone && (
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setAttSelectedMonth(null)}
-                            style={{
-                              marginBottom: "10px",
-                              padding: "6px 12px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← महीनों की सूची पर वापस जाएं
-                          </button>
-                          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f172a" }}>
-                            👷 स्टाफ चुनें ({HINDI_MONTHS[parseInt(attSelectedMonth, 10) - 1]} {attSelectedYear}):
-                          </h4>
-                          {(() => {
-                            const monthRecords = attendanceRecords.filter(
-                              (r) =>
-                                r.year === attSelectedYear &&
-                                r.month === attSelectedMonth
-                            );
-                            const staffMap = {};
-                            monthRecords.forEach((r) => {
-                              if (!staffMap[r.staffPhone]) {
-                                staffMap[r.staffPhone] = {
-                                  phone: r.staffPhone,
-                                  name: r.staffName || `Staff (${r.staffPhone})`,
-                                  days: 0,
-                                };
-                              }
-                              staffMap[r.staffPhone].days += 1;
-                            });
-                            const staffList = Object.values(staffMap);
-
-                            if (staffList.length === 0) {
-                              return (
-                                <p style={{ color: "#64748b", fontSize: "13px" }}>
-                                  इस महीने में किसी स्टाफ की अटेंडेंस दर्ज नहीं है।
-                                </p>
-                              );
-                            }
-
-                            return staffList.map((st) => (
-                              <div
-                                key={st.phone}
-                                onClick={() => setAttSelectedStaffPhone(st.phone)}
-                                style={{
-                                  border: "1px solid #cbd5e1",
-                                  padding: "12px",
-                                  borderRadius: "6px",
-                                  marginBottom: "8px",
-                                  background: "#f8fafc",
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <div>
-                                  👤 <strong>{st.name}</strong>
-                                  <div style={{ fontSize: "11px", color: "#64748b" }}>
-                                    मोबाइल: {st.phone}
-                                  </div>
-                                </div>
-                                <span
-                                  style={{
-                                    background: "#166534",
-                                    color: "#fff",
-                                    padding: "3px 10px",
-                                    borderRadius: "12px",
-                                    fontSize: "11px",
-                                    fontWeight: "bold",
-                                  }}
-                                >
-                                  {st.days} दिन उपस्थित →
-                                </span>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      )}
-
-                      {attSelectedYear && attSelectedMonth && attSelectedStaffPhone && (
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setAttSelectedStaffPhone(null)}
-                            style={{
-                              marginBottom: "10px",
-                              padding: "6px 12px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← स्टाफ सूची पर वापस जाएं
-                          </button>
-                          {(() => {
-                            const dailyLogs = attendanceRecords
-                              .filter(
+                      {attSelectedYear &&
+                        attSelectedMonth &&
+                        !attSelectedStaffPhone && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setAttSelectedMonth(null)}
+                              style={{
+                                marginBottom: "10px",
+                                padding: "6px 12px",
+                                background: "#64748b",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ← महीनों की सूची पर वापस जाएं
+                            </button>
+                            <h4
+                              style={{
+                                margin: "0 0 10px 0",
+                                fontSize: "14px",
+                                color: "#0f172a",
+                              }}
+                            >
+                              👷 स्टाफ चुनें (
+                              {
+                                HINDI_MONTHS[
+                                  parseInt(attSelectedMonth, 10) - 1
+                                ]
+                              }{" "}
+                              {attSelectedYear}):
+                            </h4>
+                            {(() => {
+                              const monthRecords = attendanceRecords.filter(
                                 (r) =>
                                   r.year === attSelectedYear &&
-                                  r.month === attSelectedMonth &&
-                                  r.staffPhone === attSelectedStaffPhone
-                              )
-                              .sort((a, b) =>
-                                String(b.dateKey).localeCompare(String(a.dateKey))
+                                  r.month === attSelectedMonth
                               );
+                              const staffMap = {};
+                              monthRecords.forEach((r) => {
+                                if (!staffMap[r.staffPhone]) {
+                                  staffMap[r.staffPhone] = {
+                                    phone: r.staffPhone,
+                                    name:
+                                      r.staffName || `Staff (${r.staffPhone})`,
+                                    days: 0,
+                                  };
+                                }
+                                staffMap[r.staffPhone].days += 1;
+                              });
+                              const staffList = Object.values(staffMap);
 
-                            const staffTitle =
-                              dailyLogs[0]?.staffName ||
-                              `Staff (${attSelectedStaffPhone})`;
+                              if (staffList.length === 0) {
+                                return (
+                                  <p
+                                    style={{ color: "#64748b", fontSize: "13px" }}
+                                  >
+                                    इस महीने में किसी स्टाफ की अटेंडेंस दर्ज नहीं
+                                    है।
+                                  </p>
+                                );
+                              }
 
-                            return (
-                              <div>
-                                <h4
+                              return staffList.map((st) => (
+                                <div
+                                  key={st.phone}
+                                  onClick={() =>
+                                    setAttSelectedStaffPhone(st.phone)
+                                  }
                                   style={{
-                                    margin: "0 0 10px 0",
-                                    color: "#166534",
-                                    fontSize: "14px",
+                                    border: "1px solid #cbd5e1",
+                                    padding: "12px",
+                                    borderRadius: "6px",
+                                    marginBottom: "8px",
+                                    background: "#f8fafc",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
                                   }}
                                 >
-                                  📋 {staffTitle} — {HINDI_MONTHS[parseInt(attSelectedMonth, 10) - 1]}{" "}
-                                  {attSelectedYear}
-                                </h4>
-
-                                {dailyLogs.map((rec) => {
-                                  const pts = Array.isArray(rec.routePoints)
-                                    ? rec.routePoints
-                                    : [];
-
-                                  const textRoute =
-                                    pts.length > 0
-                                      ? pts
-                                          .map(
-                                            (p) =>
-                                              `${p.timeText} (${p.address})`
-                                          )
-                                          .join(" ➔ ")
-                                      : "लोकेशन डेटा उपलब्ध नहीं";
-
-                                  const validCoords = pts.filter(
-                                    (p) => p.lat && p.lng
-                                  );
-                                  let googleMapUrl = "";
-                                  if (validCoords.length === 1) {
-                                    googleMapUrl = `https://www.google.com/maps/search/?api=1&query=${validCoords[0].lat},${validCoords[0].lng}`;
-                                  } else if (validCoords.length >= 2) {
-                                    const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
-                                    const dest = `${
-                                      validCoords[validCoords.length - 1].lat
-                                    },${validCoords[validCoords.length - 1].lng}`;
-                                    const mid = validCoords
-                                      .slice(1, -1)
-                                      .slice(0, 8)
-                                      .map((c) => `${c.lat},${c.lng}`)
-                                      .join("|");
-                                    googleMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
-                                      mid ? `&waypoints=${encodeURIComponent(mid)}` : ""
-                                    }&travelmode=driving`;
-                                  }
-
-                                  return (
+                                  <div>
+                                    👤 <strong>{st.name}</strong>
                                     <div
-                                      key={rec.docId}
                                       style={{
-                                        border: "1px solid #cbd5e1",
-                                        borderRadius: "8px",
-                                        padding: "10px",
-                                        marginBottom: "10px",
-                                        background: "#f8fafc",
-                                        fontSize: "12px",
+                                        fontSize: "11px",
+                                        color: "#64748b",
                                       }}
                                     >
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          justifyContent: "space-between",
-                                          alignItems: "center",
-                                          borderBottom: "1px solid #e2e8f0",
-                                          paddingBottom: "5px",
-                                          marginBottom: "6px",
-                                        }}
-                                      >
-                                        <strong style={{ fontSize: "13px", color: "#0f172a" }}>
-                                          📅 दिनांक: {rec.dateKey}
-                                        </strong>
-                                        <span
-                                          style={{
-                                            background: rec.outTime
-                                              ? "#dcfce7"
-                                              : "#fef3c7",
-                                            color: rec.outTime
-                                              ? "#166534"
-                                              : "#92400e",
-                                            padding: "2px 8px",
-                                            borderRadius: "10px",
-                                            fontWeight: "bold",
-                                            fontSize: "11px",
-                                          }}
-                                        >
-                                          कुल समय: {calcWorkDuration(rec.inTime, rec.outTime)}
-                                        </span>
-                                      </div>
-
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          gap: "15px",
-                                          marginBottom: "6px",
-                                        }}
-                                      >
-                                        <div>
-                                          <strong>🟢 IN Time:</strong>{" "}
-                                          {formatTime12(rec.inTime)}
-                                        </div>
-                                        <div>
-                                          <strong>🔴 OUT Time:</strong>{" "}
-                                          {rec.outTime
-                                            ? formatTime12(rec.outTime)
-                                            : "अभी ऑन ड्यूटी (Logged In)"}
-                                        </div>
-                                      </div>
-
-                                      <div
-                                        style={{
-                                          background: "#ffffff",
-                                          border: "1px solid #e2e8f0",
-                                          borderRadius: "6px",
-                                          padding: "7px",
-                                          marginBottom: "6px",
-                                          lineHeight: "1.45",
-                                        }}
-                                      >
-                                        <strong>📍 पूरे दिन का रूट (Text Route):</strong>
-                                        <div style={{ color: "#334155", marginTop: "3px" }}>
-                                          {textRoute}
-                                        </div>
-                                      </div>
-
-                                      {googleMapUrl && (
-                                        <a
-                                          href={googleMapUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{
-                                            display: "inline-block",
-                                            padding: "6px 12px",
-                                            background: "#2563eb",
-                                            color: "#fff",
-                                            textDecoration: "none",
-                                            borderRadius: "5px",
-                                            fontWeight: "bold",
-                                            fontSize: "11px",
-                                          }}
-                                        >
-                                          🗺️ Google Map पर पूरा रूट देखें ({validCoords.length} Points)
-                                        </a>
-                                      )}
+                                      मोबाइल: {st.phone}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
+                                  </div>
+                                  <span
+                                    style={{
+                                      background: "#166534",
+                                      color: "#fff",
+                                      padding: "3px 10px",
+                                      borderRadius: "12px",
+                                      fontSize: "11px",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    {st.days} दिन उपस्थित →
+                                  </span>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        )}
+
+                      {attSelectedYear &&
+                        attSelectedMonth &&
+                        attSelectedStaffPhone && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setAttSelectedStaffPhone(null)}
+                              style={{
+                                marginBottom: "10px",
+                                padding: "6px 12px",
+                                background: "#64748b",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ← स्टाफ सूची पर वापस जाएं
+                            </button>
+                            {(() => {
+                              const dailyLogs = attendanceRecords
+                                .filter(
+                                  (r) =>
+                                    r.year === attSelectedYear &&
+                                    r.month === attSelectedMonth &&
+                                    r.staffPhone === attSelectedStaffPhone
+                                )
+                                .sort((a, b) =>
+                                  String(b.dateKey).localeCompare(
+                                    String(a.dateKey)
+                                  )
+                                );
+
+                              const staffTitle =
+                                dailyLogs[0]?.staffName ||
+                                `Staff (${attSelectedStaffPhone})`;
+
+                              return (
+                                <div>
+                                  <h4
+                                    style={{
+                                      margin: "0 0 10px 0",
+                                      color: "#166534",
+                                      fontSize: "14px",
+                                    }}
+                                  >
+                                    📋 {staffTitle} —{" "}
+                                    {
+                                      HINDI_MONTHS[
+                                        parseInt(attSelectedMonth, 10) - 1
+                                      ]
+                                    }{" "}
+                                    {attSelectedYear}
+                                  </h4>
+
+                                  {dailyLogs.map((rec) => {
+                                    const pts = Array.isArray(rec.routePoints)
+                                      ? rec.routePoints
+                                      : [];
+
+                                    const textRoute =
+                                      pts.length > 0
+                                        ? pts
+                                            .map(
+                                              (p) =>
+                                                `${p.timeText} (${p.address})`
+                                            )
+                                            .join(" ➔ ")
+                                        : "लोकेशन डेटा उपलब्ध नहीं";
+
+                                    const validCoords = pts.filter(
+                                      (p) => p.lat && p.lng
+                                    );
+                                    let googleMapUrl = "";
+                                    if (validCoords.length === 1) {
+                                      googleMapUrl = `https://www.google.com/maps/search/?api=1&query=${validCoords[0].lat},${validCoords[0].lng}`;
+                                    } else if (validCoords.length >= 2) {
+                                      const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
+                                      const dest = `${
+                                        validCoords[validCoords.length - 1].lat
+                                      },${
+                                        validCoords[validCoords.length - 1].lng
+                                      }`;
+                                      const mid = validCoords
+                                        .slice(1, -1)
+                                        .slice(0, 8)
+                                        .map((c) => `${c.lat},${c.lng}`)
+                                        .join("|");
+                                      googleMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
+                                        mid
+                                          ? `&waypoints=${encodeURIComponent(mid)}`
+                                          : ""
+                                      }&travelmode=driving`;
+                                    }
+
+                                    return (
+                                      <div
+                                        key={rec.docId}
+                                        style={{
+                                          border: "1px solid #cbd5e1",
+                                          borderRadius: "8px",
+                                          padding: "10px",
+                                          marginBottom: "10px",
+                                          background: "#f8fafc",
+                                          fontSize: "12px",
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            borderBottom: "1px solid #e2e8f0",
+                                            paddingBottom: "5px",
+                                            marginBottom: "6px",
+                                          }}
+                                        >
+                                          <strong
+                                            style={{
+                                              fontSize: "13px",
+                                              color: "#0f172a",
+                                            }}
+                                          >
+                                            📅 दिनांक: {rec.dateKey}
+                                          </strong>
+                                          <span
+                                            style={{
+                                              background: rec.outTime
+                                                ? "#dcfce7"
+                                                : "#fef3c7",
+                                              color: rec.outTime
+                                                ? "#166534"
+                                                : "#92400e",
+                                              padding: "2px 8px",
+                                              borderRadius: "10px",
+                                              fontWeight: "bold",
+                                              fontSize: "11px",
+                                            }}
+                                          >
+                                            कुल समय:{" "}
+                                            {calcWorkDuration(
+                                              rec.inTime,
+                                              rec.outTime
+                                            )}
+                                          </span>
+                                        </div>
+
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            gap: "15px",
+                                            marginBottom: "6px",
+                                          }}
+                                        >
+                                          <div>
+                                            <strong>🟢 IN Time:</strong>{" "}
+                                            {formatTime12(rec.inTime)}
+                                          </div>
+                                          <div>
+                                            <strong>🔴 OUT Time:</strong>{" "}
+                                            {rec.outTime
+                                              ? formatTime12(rec.outTime)
+                                              : "अभी ऑन ड्यूटी (Logged In)"}
+                                          </div>
+                                        </div>
+
+                                        <div
+                                          style={{
+                                            background: "#ffffff",
+                                            border: "1px solid #e2e8f0",
+                                            borderRadius: "6px",
+                                            padding: "7px",
+                                            marginBottom: "6px",
+                                            lineHeight: "1.45",
+                                          }}
+                                        >
+                                          <strong>
+                                            📍 पूरे दिन का रूट (Text Route):
+                                          </strong>
+                                          <div
+                                            style={{
+                                              color: "#334155",
+                                              marginTop: "3px",
+                                            }}
+                                          >
+                                            {textRoute}
+                                          </div>
+                                        </div>
+
+                                        {googleMapUrl && (
+                                          <a
+                                            href={googleMapUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{
+                                              display: "inline-block",
+                                              padding: "6px 12px",
+                                              background: "#2563eb",
+                                              color: "#fff",
+                                              textDecoration: "none",
+                                              borderRadius: "5px",
+                                              fontWeight: "bold",
+                                              fontSize: "11px",
+                                            }}
+                                          >
+                                            🗺️ Google Map पर पूरा रूट देखें (
+                                            {validCoords.length} Points)
+                                          </a>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                     </div>
                   )}
 
