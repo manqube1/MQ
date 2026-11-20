@@ -94,18 +94,389 @@ const inputStyle = {
   boxSizing: "border-box",
 };
 
-// प्रिंटेड रसीद जैसा जॉब शीट टेम्पलेट कंपोनेंट
+const chkBox = (checked) => (checked ? "☑" : "☐");
+
+// ==========================================
+// 1. COOLER PRINTABLE JOB SHEET (PDF FORMAT)
+// ==========================================
+const CoolerPrintableJobSheet = ({ job }) => {
+  const cSpec = job.coolerSpec || {};
+  const cChk = job.coolerChecklist || {};
+  const workTypes = Array.isArray(cSpec.workTypes) ? cSpec.workTypes : [];
+
+  const rows = [];
+  if (job.desc) {
+    rows.push({
+      desc: job.desc,
+      qty: 1,
+      rate: parseFloat(job.serviceCharge || 0),
+    });
+  }
+  if (Array.isArray(job.usedParts)) {
+    job.usedParts.forEach((p) => {
+      rows.push({
+        desc: p.partName || "Spare Part",
+        qty: parseFloat(p.qty) || 1,
+        rate: parseFloat(p.amount) || 0,
+      });
+    });
+  }
+  if (Array.isArray(job.materials)) {
+    job.materials.forEach((m) => {
+      rows.push({
+        desc: m.name,
+        qty: parseFloat(m.qty) || 1,
+        rate: parseFloat(m.price) || 0,
+      });
+    });
+  }
+  while (rows.length < 5) {
+    rows.push({ desc: "", qty: "", rate: "" });
+  }
+
+  const totalBillVal =
+    typeof job.totalAmount === "number"
+      ? job.totalAmount
+      : rows.reduce(
+          (sum, r) => sum + (parseFloat(r.qty) || 0) * (parseFloat(r.rate) || 0),
+          0
+        );
+
+  return (
+    <div
+      id="printable-job-card"
+      style={{
+        border: "2px solid #000",
+        background: "#fff",
+        padding: "10px",
+        color: "#000",
+        overflowX: "auto",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          borderBottom: "2px solid #000",
+          paddingBottom: "6px",
+          marginBottom: "6px",
+        }}
+      >
+        <div style={{ fontSize: "17px", fontWeight: "bold" }}>
+          MANQUBE PRIVATE LIMITED
+        </div>
+        <div style={{ fontSize: "14px", fontWeight: "bold", marginTop: "2px" }}>
+          कूलर सर्विस एवं रिपेयर जॉब शीट (COOLER JOB SHEET)
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "11px",
+            fontWeight: "bold",
+            marginTop: "6px",
+          }}
+        >
+          <span>जॉब शीट नं.: {job.jobSheetNo}</span>
+          <span>दिनांक: {job.date}</span>
+        </div>
+      </div>
+
+      {/* 1. ग्राहक एवं साइट का विवरण */}
+      <div
+        style={{
+          background: "#f1f5f9",
+          border: "1px solid #000",
+          padding: "3px 6px",
+          fontWeight: "bold",
+          fontSize: "11px",
+        }}
+      >
+        1. ग्राहक एवं साइट का विवरण (Customer &amp; Site Details)
+      </div>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+        <tbody>
+          <tr>
+            <td style={{ width: "55%" }}>
+              <strong>ग्राहक / संस्था का नाम:</strong> {job.customerName}
+            </td>
+            <td style={{ width: "45%" }}>
+              <strong>संपर्क एवं मोबाइल नं.:</strong> {job.customerPhone}
+            </td>
+          </tr>
+          <tr>
+            <td colSpan="2">
+              <strong>लोकेशन / साइट का पता:</strong> {job.customerAddress}
+            </td>
+          </tr>
+          <tr>
+            <td colSpan="2">
+              <strong>कार्य का प्रकार:</strong>{" "}
+              {chkBox(workTypes.includes("AMC"))} AMC (वार्षिक रखरखाव) &nbsp;&nbsp;
+              {chkBox(workTypes.includes("Breakdown / Repair"))} ब्रेकडाउन / रिपेयर &nbsp;&nbsp;
+              {chkBox(workTypes.includes("Installation"))} Installation (इंस्टॉलेशन) &nbsp;&nbsp;
+              {chkBox(workTypes.includes("Un-installation"))} Un-installation &nbsp;&nbsp;
+              {chkBox(workTypes.includes("Body Repair & Painting"))} बॉडी रिपेयर एवं पेंटिंग
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 2. कूलर का विवरण */}
+      <div
+        style={{
+          background: "#f1f5f9",
+          border: "1px solid #000",
+          padding: "3px 6px",
+          fontWeight: "bold",
+          fontSize: "11px",
+        }}
+      >
+        2. कूलर का विवरण (Cooler Specifications)
+      </div>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+        <thead>
+          <tr style={{ background: "#f8fafc", textAlign: "center" }}>
+            <th style={{ width: "6%" }}>क्र.</th>
+            <th style={{ width: "36%" }}>कूलर टाइप (Body Type)</th>
+            <th style={{ width: "16%" }}>क्षमता / साइज़</th>
+            <th style={{ width: "18%" }}>ब्रांड / मॉडल</th>
+            <th style={{ width: "16%" }}>सीरियल / टैग नं.</th>
+            <th style={{ width: "8%" }}>संख्या</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ textAlign: "center" }}>1.</td>
+            <td>
+              {chkBox(cSpec.bodyMaterial === "Fiber / Plastic")} फाइबर / प्लास्टिक &nbsp;
+              {chkBox(cSpec.bodyMaterial === "GI / Metal")} जी. आई. / लोहा (Metal)
+            </td>
+            <td>{cSpec.capacity || ""}</td>
+            <td>{cSpec.brandModel || ""}</td>
+            <td>{cSpec.serialNo || ""}</td>
+            <td style={{ textAlign: "center" }}>{cSpec.totalQty || "1"}</td>
+          </tr>
+          <tr>
+            <td style={{ textAlign: "center" }}>2.</td>
+            <td colSpan="5">
+              {chkBox(cSpec.coolerSubType === "Duct Cooler")} डक्ट कूलर &nbsp;&nbsp;&nbsp;
+              {chkBox(cSpec.coolerSubType === "Desert Cooler")} डेजर्ट कूलर &nbsp;&nbsp;&nbsp;
+              {chkBox(cSpec.coolerSubType === "Tower Cooler")} टावर कूलर &nbsp;&nbsp;&nbsp;
+              {chkBox(cSpec.coolerSubType === "Room / Personal Cooler")} रूम कूलर
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 3. चेकलिस्ट एवं निरीक्षण */}
+      <div
+        style={{
+          background: "#f1f5f9",
+          border: "1px solid #000",
+          padding: "3px 6px",
+          fontWeight: "bold",
+          fontSize: "11px",
+        }}
+      >
+        3. चेकलिस्ट एवं निरीक्षण (Inspection &amp; Service Checklist)
+      </div>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+        <tbody>
+          <tr>
+            <td style={{ width: "26%", fontWeight: "bold" }}>फैन मोटर (Fan Motor):</td>
+            <td>
+              {chkBox(cChk.fanMotor === "OK")} सही &nbsp;
+              {chkBox(cChk.fanMotor === "Jam / Bearing Bad")} जाम / बेयरिंग खराब &nbsp;
+              {chkBox(cChk.fanMotor === "Winding Burnt")} वाइंडिंग जली हुई &nbsp;
+              {chkBox(cChk.fanMotor === "Capacitor Bad")} कैपेसिटर खराब
+            </td>
+          </tr>
+          <tr>
+            <td style={{ fontWeight: "bold" }}>वाटर पंप (Submersible Pump):</td>
+            <td>
+              {chkBox(cChk.waterPump === "OK")} सही &nbsp;
+              {chkBox(cChk.waterPump === "Not Pumping")} पानी नहीं उठा रहा &nbsp;
+              {chkBox(cChk.waterPump === "Replace Required")} बदलना आवश्यक
+            </td>
+          </tr>
+          <tr>
+            <td style={{ fontWeight: "bold" }}>स्विंग मोटर एवं ब्लेड:</td>
+            <td>
+              {chkBox(cChk.swingBlade === "OK")} सही &nbsp;
+              {chkBox(cChk.swingBlade === "Swing Bad")} स्विंग खराब &nbsp;
+              {chkBox(cChk.swingBlade === "Blade Broken")} फैन ब्लेड टूटा / असंतुलित
+            </td>
+          </tr>
+          <tr>
+            <td style={{ fontWeight: "bold" }}>कूलिंग पैड (Cooling Pads):</td>
+            <td>
+              {chkBox(cChk.padType === "Honeycomb")} हनीकॉम्ब &nbsp;
+              {chkBox(cChk.padType === "Wood Wool")} वुड वूल (घास) &nbsp;|&nbsp;
+              <strong>स्थिति:</strong> {chkBox(cChk.padStatus === "Clean")} साफ &nbsp;
+              {chkBox(cChk.padStatus === "Replaceable")} बदलने योग्य
+            </td>
+          </tr>
+          <tr>
+            <td style={{ fontWeight: "bold" }}>वाटर टैंक एवं प्लंबिंग:</td>
+            <td>
+              {chkBox(cChk.tankPlumbing === "OK")} सही &nbsp;
+              {chkBox(cChk.tankPlumbing === "Leakage")} लीकेज है &nbsp;
+              {chkBox(cChk.tankPlumbing === "Float Valve Bad")} फ्लोट वाल्व खराब &nbsp;
+              {chkBox(cChk.tankPlumbing === "Drain / Pipe Jam")} ड्रेन / पाइप जाम
+            </td>
+          </tr>
+          <tr>
+            <td style={{ fontWeight: "bold" }}>इलेक्ट्रिकल एवं वायरिंग:</td>
+            <td>
+              {chkBox(cChk.electrical === "OK")} सही &nbsp;
+              {chkBox(cChk.electrical === "Rotary Switch Bad")} रोटरी स्विच खराब &nbsp;
+              {chkBox(cChk.electrical === "Wiring Burnt")} वायरिंग कटी / जली &nbsp;
+              {chkBox(cChk.electrical === "Plug / Earthing Checked")} प्लग / अर्थिंग चेक
+            </td>
+          </tr>
+          <tr>
+            <td style={{ fontWeight: "bold" }}>बॉडी एवं पेंट (Body &amp; Paint):</td>
+            <td>
+              {chkBox(cChk.bodyPaint === "OK")} सही &nbsp;
+              {chkBox(cChk.bodyPaint === "Rusting")} जंग (Rusting) &nbsp;
+              {chkBox(cChk.bodyPaint === "Welding Required")} टैंक में छेद / वेल्डिंग जरूरत &nbsp;
+              {chkBox(cChk.bodyPaint === "Painting Required")} प्राइमर एवं पेंटिंग आवश्यक
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 4. किए गए कार्य एवं बदले गए पार्ट्स */}
+      <div
+        style={{
+          background: "#f1f5f9",
+          border: "1px solid #000",
+          padding: "3px 6px",
+          fontWeight: "bold",
+          fontSize: "11px",
+        }}
+      >
+        4. किए गए कार्य एवं बदले गए पार्ट्स (Work Done &amp; Spare Parts Used)
+      </div>
+      <table className="js-table" style={{ borderTop: "none", marginBottom: "6px" }}>
+        <thead>
+          <tr style={{ background: "#f8fafc", textAlign: "center" }}>
+            <th style={{ width: "8%" }}>क्र. सं.</th>
+            <th style={{ width: "54%" }}>पार्ट / कार्य का विवरण (Description)</th>
+            <th style={{ width: "10%" }}>मात्रा (Qty)</th>
+            <th style={{ width: "14%" }}>दर (Rate ₹)</th>
+            <th style={{ width: "14%" }}>कुल राशि (Amount)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const amt =
+              r.qty !== "" && r.rate !== ""
+                ? (parseFloat(r.qty) || 0) * (parseFloat(r.rate) || 0)
+                : null;
+            return (
+              <tr key={i}>
+                <td style={{ textAlign: "center" }}>{i + 1}.</td>
+                <td>{r.desc}</td>
+                <td style={{ textAlign: "center" }}>{r.qty !== "" ? r.qty : ""}</td>
+                <td style={{ textAlign: "right" }}>
+                  {r.rate !== "" ? `₹${Number(r.rate).toFixed(2)}` : ""}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  {amt !== null ? `₹${amt.toFixed(2)}` : ""}
+                </td>
+              </tr>
+            );
+          })}
+          <tr>
+            <td colSpan="4" style={{ textAlign: "right", fontWeight: "bold" }}>
+              कुल राशि (Total Amount):
+            </td>
+            <td style={{ textAlign: "right", fontWeight: "bold" }}>
+              ₹{totalBillVal.toFixed(2)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 5. टेक्नीशियन एवं ग्राहक हस्ताक्षर */}
+      <div
+        style={{
+          background: "#f1f5f9",
+          border: "1px solid #000",
+          padding: "3px 6px",
+          fontWeight: "bold",
+          fontSize: "11px",
+        }}
+      >
+        5. टेक्नीशियन एवं ग्राहक हस्ताक्षर (Sign-Off)
+      </div>
+      <table className="js-table" style={{ borderTop: "none" }}>
+        <tbody>
+          <tr>
+            <td colSpan="2">
+              <strong>ग्राहक की टिप्पणी (Remarks):</strong> {job.feedback || ""} |{" "}
+              <strong>स्टेटस:</strong> {job.status}
+            </td>
+          </tr>
+          <tr>
+            <td style={{ width: "50%", height: "65px", verticalAlign: "bottom" }}>
+              <div>
+                <strong>टेक्नीशियन:</strong> {job.staffName || ""}
+              </div>
+              <div style={{ marginTop: "18px", fontWeight: "bold" }}>
+                टेक्नीशियन का नाम एवं हस्ताक्षर
+              </div>
+            </td>
+            <td style={{ width: "50%", height: "65px", verticalAlign: "bottom" }}>
+              {job.signatureURL && (
+                <img
+                  src={job.signatureURL}
+                  alt="Sign"
+                  style={{ maxHeight: "42px", display: "block", marginBottom: "4px" }}
+                />
+              )}
+              <div style={{ fontWeight: "bold" }}>
+                ग्राहक / साइट इंचार्ज के हस्ताक्षर एवं मुहर
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: "10px",
+          marginTop: "6px",
+          fontWeight: "bold",
+        }}
+      >
+        Manqube Private Limited | We Build. Your Trust.
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 2. PRINTABLE JOB SHEET WRAPPER (AC / COOLER)
+// ==========================================
 const PrintableJobSheet = ({ job, onClose }) => {
   if (!job) return null;
+
+  const isCoolerJob =
+    job.productType === "Cooler" ||
+    String(job.product || "").toLowerCase().includes("cooler");
 
   const calculatedPartsTotal = Array.isArray(job.usedParts)
     ? job.usedParts.reduce(
         (sum, p) => sum + (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0),
         0
       )
-    : Array.isArray(job.materials)
+    : 0;
+
+  const calculatedMaterialsTotal = Array.isArray(job.materials)
     ? job.materials.reduce(
-        (sum, m) => sum + (parseFloat(m.qty) || 0) * (parseFloat(m.price) || 0),
+        (sum, m) => sum + (parseFloat(m.qty) || 1) * (parseFloat(m.price) || 0),
         0
       )
     : 0;
@@ -114,7 +485,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
   const totalBillVal =
     typeof job.totalAmount === "number"
       ? job.totalAmount
-      : calculatedPartsTotal + serviceChargeVal;
+      : calculatedPartsTotal + calculatedMaterialsTotal + serviceChargeVal;
 
   return (
     <div
@@ -136,7 +507,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
             top: 0;
             width: 100%;
             margin: 0;
-            padding: 0;
+            padding: 6px;
           }
           .no-print { display: none !important; }
         }
@@ -218,575 +589,591 @@ const PrintableJobSheet = ({ job, onClose }) => {
         </div>
       </div>
 
-      <div
-        id="printable-job-card"
-        style={{ border: "2px solid #000", background: "#fff", overflowX: "auto" }}
-      >
+      {isCoolerJob ? (
+        <CoolerPrintableJobSheet job={job} />
+      ) : (
         <div
-          style={{
-            textAlign: "center",
-            padding: "10px 8px",
-            borderBottom: "1px solid #000",
-          }}
+          id="printable-job-card"
+          style={{ border: "2px solid #000", background: "#fff", overflowX: "auto" }}
         >
           <div
             style={{
-              fontSize: "19px",
-              fontWeight: "bold",
-              letterSpacing: "0.8px",
-              textTransform: "uppercase",
+              textAlign: "center",
+              padding: "10px 8px",
+              borderBottom: "1px solid #000",
             }}
           >
-            MANQUBE PRIVATE LIMITED
+            <div
+              style={{
+                fontSize: "19px",
+                fontWeight: "bold",
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+              }}
+            >
+              MANQUBE PRIVATE LIMITED
+            </div>
+            <div style={{ fontSize: "12px", fontWeight: "bold", marginTop: "3px" }}>
+              Mobile No: 9415522032, 9335172129
+            </div>
           </div>
-          <div style={{ fontSize: "12px", fontWeight: "bold", marginTop: "3px" }}>
-            Mobile No: 9415522032, 9335172129
-          </div>
-        </div>
 
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr>
-              <td rowSpan="6" style={{ width: "55%", borderTop: "none" }}>
-                <div className="js-bold">CUSTOMER NAME :-</div>
-                <div style={{ marginBottom: "8px", minHeight: "16px" }}>
-                  {job.customerName}
-                </div>
-                <div className="js-bold">MOBILE :-</div>
-                <div style={{ marginBottom: "8px", minHeight: "16px" }}>
-                  {job.customerPhone}
-                </div>
-                <div className="js-bold">ADDRESS :-</div>
-                <div style={{ minHeight: "24px" }}>{job.customerAddress}</div>
-              </td>
-              <td style={{ width: "18%", borderTop: "none" }} className="js-bold">
-                JOB NO.
-              </td>
-              <td
-                style={{ width: "27%", fontWeight: "bold", borderTop: "none" }}
-              >
-                {job.jobSheetNo}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">BILL NO.</td>
-              <td>{job.billNo && job.billNo !== "-" ? job.billNo : ""}</td>
-            </tr>
-            <tr>
-              <td className="js-bold">AMC DATE</td>
-              <td>{job.amcDate && job.amcDate !== "-" ? job.amcDate : ""}</td>
-            </tr>
-            <tr>
-              <td className="js-bold">DATE IN</td>
-              <td>{job.date || ""}</td>
-            </tr>
-            <tr>
-              <td className="js-bold">DATE OUT</td>
-              <td>{job.status === "Completed" ? job.date : ""}</td>
-            </tr>
-            <tr>
-              <td className="js-bold">PRODUCT</td>
-              <td>{job.productType || job.product}</td>
-            </tr>
-          </tbody>
-        </table>
+          <table className="js-table" style={{ borderTop: "none" }}>
+            <tbody>
+              <tr>
+                <td rowSpan="6" style={{ width: "55%", borderTop: "none" }}>
+                  <div className="js-bold">CUSTOMER NAME :-</div>
+                  <div style={{ marginBottom: "8px", minHeight: "16px" }}>
+                    {job.customerName}
+                  </div>
+                  <div className="js-bold">MOBILE :-</div>
+                  <div style={{ marginBottom: "8px", minHeight: "16px" }}>
+                    {job.customerPhone}
+                  </div>
+                  <div className="js-bold">ADDRESS :-</div>
+                  <div style={{ minHeight: "24px" }}>{job.customerAddress}</div>
+                </td>
+                <td style={{ width: "18%", borderTop: "none" }} className="js-bold">
+                  JOB NO.
+                </td>
+                <td
+                  style={{ width: "27%", fontWeight: "bold", borderTop: "none" }}
+                >
+                  {job.jobSheetNo}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">BILL NO.</td>
+                <td>{job.billNo && job.billNo !== "-" ? job.billNo : ""}</td>
+              </tr>
+              <tr>
+                <td className="js-bold">AMC DATE</td>
+                <td>{job.amcDate && job.amcDate !== "-" ? job.amcDate : ""}</td>
+              </tr>
+              <tr>
+                <td className="js-bold">DATE IN</td>
+                <td>{job.date || ""}</td>
+              </tr>
+              <tr>
+                <td className="js-bold">DATE OUT</td>
+                <td>{job.status === "Completed" ? job.date : ""}</td>
+              </tr>
+              <tr>
+                <td className="js-bold">PRODUCT</td>
+                <td>{job.productType || job.product}</td>
+              </tr>
+            </tbody>
+          </table>
 
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr>
-              <td style={{ width: "45%", borderTop: "none", borderBottom: "none" }}></td>
-              <td
-                style={{
-                  width: "18%",
-                  verticalAlign: "middle",
-                  textAlign: "center",
-                  borderTop: "none",
-                }}
-                className="js-bold"
-              >
-                INDOOR
-              </td>
-              <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
-                <div
+          <table className="js-table" style={{ borderTop: "none" }}>
+            <tbody>
+              <tr>
+                <td style={{ width: "45%", borderTop: "none", borderBottom: "none" }}></td>
+                <td
                   style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
+                    width: "18%",
+                    verticalAlign: "middle",
+                    textAlign: "center",
+                    borderTop: "none",
                   }}
+                  className="js-bold"
                 >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.indoorModel && job.indoorModel !== "-"
-                      ? job.indoorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.indoorSerial && job.indoorSerial !== "-"
-                      ? job.indoorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ borderTop: "none", borderBottom: "none" }}></td>
-              <td
-                style={{ verticalAlign: "middle", textAlign: "center" }}
-                className="js-bold"
-              >
-                OUT DOOR
-              </td>
-              <td style={{ padding: 0 }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
+                  INDOOR
+                </td>
+                <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
+                  <div
+                    style={{
+                      borderBottom: "1px solid #000",
+                      padding: "3px 5px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span className="faint-label">Model:</span>
+                    <span>
+                      {job.indoorModel && job.indoorModel !== "-"
+                        ? job.indoorModel
+                        : ""}
+                    </span>
+                  </div>
+                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                    <span className="faint-label">Serial:</span>
+                    <span>
+                      {job.indoorSerial && job.indoorSerial !== "-"
+                        ? job.indoorSerial
+                        : ""}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ borderTop: "none", borderBottom: "none" }}></td>
+                <td
+                  style={{ verticalAlign: "middle", textAlign: "center" }}
+                  className="js-bold"
                 >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.outdoorModel && job.outdoorModel !== "-"
-                      ? job.outdoorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.outdoorSerial && job.outdoorSerial !== "-"
-                      ? job.outdoorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ borderTop: "none" }}></td>
-              <td
-                style={{ verticalAlign: "middle", textAlign: "center" }}
-                className="js-bold"
-              >
-                COMPRESSOR
-              </td>
-              <td style={{ padding: 0 }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
+                  OUT DOOR
+                </td>
+                <td style={{ padding: 0 }}>
+                  <div
+                    style={{
+                      borderBottom: "1px solid #000",
+                      padding: "3px 5px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span className="faint-label">Model:</span>
+                    <span>
+                      {job.outdoorModel && job.outdoorModel !== "-"
+                        ? job.outdoorModel
+                        : ""}
+                    </span>
+                  </div>
+                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                    <span className="faint-label">Serial:</span>
+                    <span>
+                      {job.outdoorSerial && job.outdoorSerial !== "-"
+                        ? job.outdoorSerial
+                        : ""}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ borderTop: "none" }}></td>
+                <td
+                  style={{ verticalAlign: "middle", textAlign: "center" }}
+                  className="js-bold"
                 >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.compressorModel && job.compressorModel !== "-"
-                      ? job.compressorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.compressorSerial && job.compressorSerial !== "-"
-                      ? job.compressorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  COMPRESSOR
+                </td>
+                <td style={{ padding: 0 }}>
+                  <div
+                    style={{
+                      borderBottom: "1px solid #000",
+                      padding: "3px 5px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span className="faint-label">Model:</span>
+                    <span>
+                      {job.compressorModel && job.compressorModel !== "-"
+                        ? job.compressorModel
+                        : ""}
+                    </span>
+                  </div>
+                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                    <span className="faint-label">Serial:</span>
+                    <span>
+                      {job.compressorSerial && job.compressorSerial !== "-"
+                        ? job.compressorSerial
+                        : ""}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr className="js-sec-hdr">
-              <td style={{ width: "45%", borderTop: "none" }}>
-                FAULT / PROBLEM DETAILS
-              </td>
-              <td style={{ width: "42%", borderTop: "none" }}>
-                WORK / ACTION TAKEN AND USE PART
-              </td>
-              <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
-            </tr>
-            <tr>
-              <td style={{ minHeight: "45px" }}>
-                1. {job.faultDetails || job.desc || ""}
-              </td>
-              <td>
-                <div>1. {job.desc || ""}</div>
-                {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                  job.usedParts.map((p, i) => {
-                    const q = parseFloat(p.qty) || 0;
-                    const a = parseFloat(p.amount) || 0;
-                    return (
-                      <div key={i} style={{ marginTop: "3px" }}>
-                        {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
-                      </div>
-                    );
-                  })
-                ) : (
-                  <>
-                    {job.sparePartName && job.sparePartName !== "-" && (
+          <table className="js-table" style={{ borderTop: "none" }}>
+            <tbody>
+              <tr className="js-sec-hdr">
+                <td style={{ width: "45%", borderTop: "none" }}>
+                  FAULT / PROBLEM DETAILS
+                </td>
+                <td style={{ width: "42%", borderTop: "none" }}>
+                  WORK / ACTION TAKEN AND USE PART
+                </td>
+                <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+              </tr>
+              <tr>
+                <td style={{ minHeight: "45px" }}>
+                  1. {job.faultDetails || job.desc || ""}
+                </td>
+                <td>
+                  <div>1. {job.desc || ""}</div>
+                  {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                    job.usedParts.map((p, i) => {
+                      const q = parseFloat(p.qty) || 0;
+                      const a = parseFloat(p.amount) || 0;
+                      return (
+                        <div key={i} style={{ marginTop: "3px" }}>
+                          {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
+                        </div>
+                      );
+                    })
+                  ) : (
+                    job.sparePartName &&
+                    job.sparePartName !== "-" && (
                       <div style={{ marginTop: "4px" }}>
                         2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
                         {job.sparePartModel && job.sparePartModel !== "-"
                           ? `(${job.sparePartModel})`
                           : ""}
                       </div>
-                    )}
-                    {Array.isArray(job.materials) &&
-                      job.materials.length > 0 &&
-                      job.materials.map((m, i) => (
-                        <div key={i}>
-                          {i + 3}. {m.name} (Qty: {m.qty})
-                        </div>
-                      ))}
-                  </>
-                )}
-                {serviceChargeVal > 0 && (
-                  <div style={{ marginTop: "3px" }}>
-                    <strong>Service Charge:</strong> ₹{serviceChargeVal.toFixed(2)}
-                  </div>
-                )}
-              </td>
-              <td>
-                {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                  job.usedParts.map((p, i) => {
-                    const rowAmt =
-                      (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0);
-                    return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                  })
-                ) : Array.isArray(job.materials) && job.materials.length > 0 ? (
-                  job.materials.map((m, i) => (
-                    <div key={i}>₹{m.price || "0"}</div>
-                  ))
-                ) : null}
-                {totalBillVal > 0 && (
-                  <div
-                    style={{
-                      marginTop: "6px",
-                      borderTop: "1px solid #000",
-                      paddingTop: "2px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Total: ₹{totalBillVal.toFixed(2)}
-                  </div>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table className="js-table" style={{ borderTop: "none" }}>
-          <tbody>
-            <tr>
-              <td style={{ width: "30%", borderTop: "none" }} className="js-bold">
-                FILTER CLEAN
-              </td>
-              <td style={{ width: "15%", borderTop: "none" }}>
-                {job.filterClean && job.filterClean !== "-" ? job.filterClean : ""}
-              </td>
-              <td
-                rowSpan="2"
-                style={{
-                  width: "18%",
-                  verticalAlign: "middle",
-                  textAlign: "center",
-                  borderTop: "none",
-                }}
-                className="js-bold"
-              >
-                IN-DOOR
-                <br />
-                MOTOR
-              </td>
-              <td style={{ width: "37%", padding: 0, borderTop: "none" }} rowSpan="2">
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.indoorMotorModel && job.indoorMotorModel !== "-"
-                      ? job.indoorMotorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.indoorMotorSerial && job.indoorMotorSerial !== "-"
-                      ? job.indoorMotorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">STAND TYPE</td>
-              <td>
-                {job.standType && job.standType !== "-" ? job.standType : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">SWING / FLAPPER</td>
-              <td>
-                {job.swingFlapper && job.swingFlapper !== "-"
-                  ? job.swingFlapper
-                  : ""}
-              </td>
-              <td
-                rowSpan="2"
-                style={{ verticalAlign: "middle", textAlign: "center" }}
-                className="js-bold"
-              >
-                OUT-DOOR
-                <br />
-                MOTOR
-              </td>
-              <td rowSpan="2" style={{ padding: 0 }}>
-                <div
-                  style={{
-                    borderBottom: "1px solid #000",
-                    padding: "3px 5px",
-                    textAlign: "left",
-                  }}
-                >
-                  <span className="faint-label">Model:</span>
-                  <span>
-                    {job.outdoorMotorModel && job.outdoorMotorModel !== "-"
-                      ? job.outdoorMotorModel
-                      : ""}
-                  </span>
-                </div>
-                <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                  <span className="faint-label">Serial:</span>
-                  <span>
-                    {job.outdoorMotorSerial && job.outdoorMotorSerial !== "-"
-                      ? job.outdoorMotorSerial
-                      : ""}
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">STABILIZER</td>
-              <td>
-                {job.stabilizer && job.stabilizer !== "-" ? job.stabilizer : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">REMOTE</td>
-              <td>
-                {job.remoteStatus && job.remoteStatus !== "-"
-                  ? job.remoteStatus
-                  : ""}
-              </td>
-              <td colSpan="2" style={{ padding: 0 }}>
-                <div style={{ display: "flex" }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>R:</strong>{" "}
-                    {job.phaseR && job.phaseR !== "-" ? job.phaseR : ""}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>Y:</strong>{" "}
-                    {job.phaseY && job.phaseY !== "-" ? job.phaseY : ""}
-                  </div>
-                  <div style={{ flex: 1, padding: "3px 5px" }}>
-                    <strong>B:</strong>{" "}
-                    {job.phaseB && job.phaseB !== "-" ? job.phaseB : ""}
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">ROOM TEMP.</td>
-              <td>
-                {job.roomTemp && job.roomTemp !== "-" ? job.roomTemp : ""}
-              </td>
-              <td colSpan="2" style={{ padding: 0 }}>
-                <div style={{ display: "flex" }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>R:</strong>{" "}
-                    {job.ampR && job.ampR !== "-" ? job.ampR : ""}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      borderRight: "1px solid #000",
-                      padding: "3px 5px",
-                    }}
-                  >
-                    <strong>Y:</strong>{" "}
-                    {job.ampY && job.ampY !== "-" ? job.ampY : ""}
-                  </div>
-                  <div style={{ flex: 1, padding: "3px 5px" }}>
-                    <strong>B:</strong>{" "}
-                    {job.ampB && job.ampB !== "-" ? job.ampB : ""}
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">VOLTAGE</td>
-              <td>{job.voltage && job.voltage !== "-" ? job.voltage : ""}</td>
-              <td colSpan="2" style={{ padding: "3px 5px" }}>
-                <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
-                <strong>STATUS:</strong> {job.status}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">AMPERE</td>
-              <td>{job.ampere && job.ampere !== "-" ? job.ampere : ""}</td>
-              <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
-                <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
-                {job.signatureURL ? (
-                  <div
-                    style={{
-                      margin: "6px 0",
-                      borderBottom: "1px dashed #94a3b8",
-                      paddingBottom: "4px",
-                    }}
-                  >
-                    <img
-                      src={job.signatureURL}
-                      alt="Customer Signature"
+                    )
+                  )}
+                  {Array.isArray(job.materials) &&
+                    job.materials.length > 0 &&
+                    job.materials.map((m, i) => (
+                      <div key={`mat-${i}`} style={{ marginTop: "3px" }}>
+                        • {m.name} (Qty: {m.qty || 1} × ₹{m.price || 0})
+                      </div>
+                    ))}
+                  {serviceChargeVal > 0 && (
+                    <div style={{ marginTop: "3px" }}>
+                      <strong>Service Charge:</strong> ₹{serviceChargeVal.toFixed(2)}
+                    </div>
+                  )}
+                </td>
+                <td>
+                  {Array.isArray(job.usedParts) &&
+                    job.usedParts.length > 0 &&
+                    job.usedParts.map((p, i) => {
+                      const rowAmt =
+                        (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0);
+                      return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
+                    })}
+                  {Array.isArray(job.materials) &&
+                    job.materials.length > 0 &&
+                    job.materials.map((m, i) => {
+                      const matAmt =
+                        (parseFloat(m.qty) || 1) * (parseFloat(m.price) || 0);
+                      return <div key={`mat-amt-${i}`}>₹{matAmt.toFixed(2)}</div>;
+                    })}
+                  {totalBillVal > 0 && (
+                    <div
                       style={{
-                        maxHeight: "70px",
-                        maxWidth: "100%",
-                        objectFit: "contain",
+                        marginTop: "6px",
+                        borderTop: "1px solid #000",
+                        paddingTop: "2px",
+                        fontWeight: "bold",
                       }}
-                    />
-                  </div>
-                ) : (
+                    >
+                      Total: ₹{totalBillVal.toFixed(2)}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table className="js-table" style={{ borderTop: "none" }}>
+            <tbody>
+              <tr>
+                <td style={{ width: "30%", borderTop: "none" }} className="js-bold">
+                  FILTER CLEAN
+                </td>
+                <td style={{ width: "15%", borderTop: "none" }}>
+                  {job.filterClean && job.filterClean !== "-" ? job.filterClean : ""}
+                </td>
+                <td
+                  rowSpan="2"
+                  style={{
+                    width: "18%",
+                    verticalAlign: "middle",
+                    textAlign: "center",
+                    borderTop: "none",
+                  }}
+                  className="js-bold"
+                >
+                  IN-DOOR
+                  <br />
+                  MOTOR
+                </td>
+                <td style={{ width: "37%", padding: 0, borderTop: "none" }} rowSpan="2">
                   <div
                     style={{
-                      height: "45px",
-                      borderBottom: "1px dashed #cbd5e1",
-                      margin: "6px 0",
+                      borderBottom: "1px solid #000",
+                      padding: "3px 5px",
+                      textAlign: "left",
                     }}
-                  ></div>
-                )}
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                  <strong>REMARK:</strong>{" "}
-                  {job.feedback && job.feedback !== "-" ? job.feedback : ""}
-                </div>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                  <strong>MOBILE:</strong> {job.customerPhone}
-                </div>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                  <strong>DATE:</strong> {job.date}
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">COMPRESSOR AMPERE</td>
-              <td>
-                {job.compressorAmpere && job.compressorAmpere !== "-"
-                  ? job.compressorAmpere
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">DRAIN WITH SIZE</td>
-              <td>
-                {job.drainSize && job.drainSize !== "-" ? job.drainSize : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">COPPER PIPE SIZE</td>
-              <td>
-                {job.copperPipeSize && job.copperPipeSize !== "-"
-                  ? job.copperPipeSize
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">OUTDOOR CLEAN</td>
-              <td>
-                {job.outdoorClean && job.outdoorClean !== "-"
-                  ? job.outdoorClean
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">SUCTION PRESSURE</td>
-              <td>
-                {job.sectionPressure && job.sectionPressure !== "-"
-                  ? job.sectionPressure
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">WIRE SIZE &amp; CORE</td>
-              <td>
-                {job.wireSizeCore && job.wireSizeCore !== "-"
-                  ? job.wireSizeCore
-                  : ""}
-              </td>
-            </tr>
-            <tr>
-              <td className="js-bold">INSULATION</td>
-              <td>
-                {job.insulation && job.insulation !== "-" ? job.insulation : ""}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  >
+                    <span className="faint-label">Model:</span>
+                    <span>
+                      {job.indoorMotorModel && job.indoorMotorModel !== "-"
+                        ? job.indoorMotorModel
+                        : ""}
+                    </span>
+                  </div>
+                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                    <span className="faint-label">Serial:</span>
+                    <span>
+                      {job.indoorMotorSerial && job.indoorMotorSerial !== "-"
+                        ? job.indoorMotorSerial
+                        : ""}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">STAND TYPE</td>
+                <td>
+                  {job.standType && job.standType !== "-" ? job.standType : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">SWING / FLAPPER</td>
+                <td>
+                  {job.swingFlapper && job.swingFlapper !== "-"
+                    ? job.swingFlapper
+                    : ""}
+                </td>
+                <td
+                  rowSpan="2"
+                  style={{ verticalAlign: "middle", textAlign: "center" }}
+                  className="js-bold"
+                >
+                  OUT-DOOR
+                  <br />
+                  MOTOR
+                </td>
+                <td rowSpan="2" style={{ padding: 0 }}>
+                  <div
+                    style={{
+                      borderBottom: "1px solid #000",
+                      padding: "3px 5px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span className="faint-label">Model:</span>
+                    <span>
+                      {job.outdoorMotorModel && job.outdoorMotorModel !== "-"
+                        ? job.outdoorMotorModel
+                        : ""}
+                    </span>
+                  </div>
+                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                    <span className="faint-label">Serial:</span>
+                    <span>
+                      {job.outdoorMotorSerial && job.outdoorMotorSerial !== "-"
+                        ? job.outdoorMotorSerial
+                        : ""}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">STABILIZER</td>
+                <td>
+                  {job.stabilizer && job.stabilizer !== "-" ? job.stabilizer : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">REMOTE</td>
+                <td>
+                  {job.remoteStatus && job.remoteStatus !== "-"
+                    ? job.remoteStatus
+                    : ""}
+                </td>
+                <td colSpan="2" style={{ padding: 0 }}>
+                  <div style={{ display: "flex" }}>
+                    <div
+                      style={{
+                        flex: 1,
+                        borderRight: "1px solid #000",
+                        padding: "3px 5px",
+                      }}
+                    >
+                      <strong>R:</strong>{" "}
+                      {job.phaseR && job.phaseR !== "-" ? job.phaseR : ""}
+                    </div>
+                    <div
+                      style={{
+                        flex: 1,
+                        borderRight: "1px solid #000",
+                        padding: "3px 5px",
+                      }}
+                    >
+                      <strong>Y:</strong>{" "}
+                      {job.phaseY && job.phaseY !== "-" ? job.phaseY : ""}
+                    </div>
+                    <div style={{ flex: 1, padding: "3px 5px" }}>
+                      <strong>B:</strong>{" "}
+                      {job.phaseB && job.phaseB !== "-" ? job.phaseB : ""}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">ROOM TEMP.</td>
+                <td>
+                  {job.roomTemp && job.roomTemp !== "-" ? job.roomTemp : ""}
+                </td>
+                <td colSpan="2" style={{ padding: 0 }}>
+                  <div style={{ display: "flex" }}>
+                    <div
+                      style={{
+                        flex: 1,
+                        borderRight: "1px solid #000",
+                        padding: "3px 5px",
+                      }}
+                    >
+                      <strong>R:</strong>{" "}
+                      {job.ampR && job.ampR !== "-" ? job.ampR : ""}
+                    </div>
+                    <div
+                      style={{
+                        flex: 1,
+                        borderRight: "1px solid #000",
+                        padding: "3px 5px",
+                      }}
+                    >
+                      <strong>Y:</strong>{" "}
+                      {job.ampY && job.ampY !== "-" ? job.ampY : ""}
+                    </div>
+                    <div style={{ flex: 1, padding: "3px 5px" }}>
+                      <strong>B:</strong>{" "}
+                      {job.ampB && job.ampB !== "-" ? job.ampB : ""}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">VOLTAGE</td>
+                <td>{job.voltage && job.voltage !== "-" ? job.voltage : ""}</td>
+                <td colSpan="2" style={{ padding: "3px 5px" }}>
+                  <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
+                  <strong>STATUS:</strong> {job.status}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">AMPERE</td>
+                <td>{job.ampere && job.ampere !== "-" ? job.ampere : ""}</td>
+                <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
+                  <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
+                  {job.signatureURL ? (
+                    <div
+                      style={{
+                        margin: "6px 0",
+                        borderBottom: "1px dashed #94a3b8",
+                        paddingBottom: "4px",
+                      }}
+                    >
+                      <img
+                        src={job.signatureURL}
+                        alt="Customer Signature"
+                        style={{
+                          maxHeight: "70px",
+                          maxWidth: "100%",
+                          objectFit: "contain",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        height: "45px",
+                        borderBottom: "1px dashed #cbd5e1",
+                        margin: "6px 0",
+                      }}
+                    ></div>
+                  )}
+                  <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                    <strong>REMARK:</strong>{" "}
+                    {job.feedback && job.feedback !== "-" ? job.feedback : ""}
+                  </div>
+                  <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                    <strong>MOBILE:</strong> {job.customerPhone}
+                  </div>
+                  <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                    <strong>DATE:</strong> {job.date}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">COMPRESSOR AMPERE</td>
+                <td>
+                  {job.compressorAmpere && job.compressorAmpere !== "-"
+                    ? job.compressorAmpere
+                    : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">DRAIN WITH SIZE</td>
+                <td>
+                  {job.drainSize && job.drainSize !== "-" ? job.drainSize : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">COPPER PIPE SIZE</td>
+                <td>
+                  {job.copperPipeSize && job.copperPipeSize !== "-"
+                    ? job.copperPipeSize
+                    : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">OUTDOOR CLEAN</td>
+                <td>
+                  {job.outdoorClean && job.outdoorClean !== "-"
+                    ? job.outdoorClean
+                    : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">SUCTION PRESSURE</td>
+                <td>
+                  {job.sectionPressure && job.sectionPressure !== "-"
+                    ? job.sectionPressure
+                    : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">WIRE SIZE &amp; CORE</td>
+                <td>
+                  {job.wireSizeCore && job.wireSizeCore !== "-"
+                    ? job.wireSizeCore
+                    : ""}
+                </td>
+              </tr>
+              <tr>
+                <td className="js-bold">INSULATION</td>
+                <td>
+                  {job.insulation && job.insulation !== "-" ? job.insulation : ""}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
-        {Array.isArray(job.sitePhotoUrls) && job.sitePhotoUrls.length > 0 && (
-          <div style={{ padding: "8px", borderTop: "1px solid #000" }}>
-            <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px" }}>
-              SITE &amp; PART PHOTOS:
-            </div>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {job.sitePhotoUrls.map((url, idx) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt={`Site ${idx + 1}`}
-                  style={{
-                    width: "80px",
-                    height: "80px",
-                    objectFit: "cover",
-                    border: "1px solid #334155",
-                    borderRadius: "4px",
-                  }}
-                />
-              ))}
-            </div>
+      {Array.isArray(job.sitePhotoUrls) && job.sitePhotoUrls.length > 0 && (
+        <div
+          style={{
+            padding: "8px",
+            border: "1px solid #cbd5e1",
+            borderTop: "none",
+            background: "#fff",
+          }}
+        >
+          <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px" }}>
+            SITE &amp; PART PHOTOS:
           </div>
-        )}
-      </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {job.sitePhotoUrls.map((url, idx) => (
+              <img
+                key={idx}
+                src={url}
+                alt={`Site ${idx + 1}`}
+                style={{
+                  width: "80px",
+                  height: "80px",
+                  objectFit: "cover",
+                  border: "1px solid #334155",
+                  borderRadius: "4px",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
+// ==========================================
+// 3. MAIN APPLICATION COMPONENT
+// ==========================================
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [jobSheets, setJobSheets] = useState([]);
@@ -806,7 +1193,6 @@ export default function App() {
     },
   ]);
 
-  // Customer Portal State
   const [custPhone, setCustPhone] = useState("");
   const [custLoggedIn, setCustLoggedIn] = useState(false);
   const [custNameInput, setCustNameInput] = useState("");
@@ -815,7 +1201,6 @@ export default function App() {
   const [productType, setProductType] = useState("Split / Window AC");
   const [problemDesc, setProblemDesc] = useState("");
 
-  // Staff Portal State
   const [staffPhoneInput, setStaffPhoneInput] = useState("");
   const [otpStep, setOtpStep] = useState(1);
   const [enteredOtp, setEnteredOtp] = useState("");
@@ -825,10 +1210,9 @@ export default function App() {
   const [staffGpsLocation, setStaffGpsLocation] = useState("Fetching GPS...");
   const [staffSubTab, setStaffSubTab] = useState("menu");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [wizardStep, setWizardStep] = useState(1); // कुल 4 स्टेप
+  const [wizardStep, setWizardStep] = useState(1);
   const [techSlide, setTechSlide] = useState(1);
 
-  // Admin Login State
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
@@ -837,17 +1221,14 @@ export default function App() {
   const [adminSpareSubTab, setAdminSpareSubTab] = useState("stock");
   const [selectedStaffFolder, setSelectedStaffFolder] = useState(null);
 
-  // New Stock Form State
   const [newStockName, setNewStockName] = useState("");
   const [newStockQty, setNewStockQty] = useState("");
   const [newStockDesc, setNewStockDesc] = useState("");
   const [newStockRate, setNewStockRate] = useState("");
 
-  // Detailed view states
   const [inspectedJob, setInspectedJob] = useState(null);
   const [lastSubmittedJob, setLastSubmittedJob] = useState(null);
 
-  // Job Form State (Step 1)
   const [jobCustName, setJobCustName] = useState("");
   const [jobCustAddress, setJobCustAddress] = useState("");
   const [jobCustPhone, setJobCustPhone] = useState("");
@@ -855,7 +1236,7 @@ export default function App() {
   const [amcDate, setAmcDate] = useState("");
   const [faultDetails, setFaultDetails] = useState("");
 
-  // Job Form State (Step 2 - Complete HVAC Technical Checklist)
+  // AC / HVAC Fields
   const [indoorModel, setIndoorModel] = useState("");
   const [indoorSerial, setIndoorSerial] = useState("");
   const [outdoorModel, setOutdoorModel] = useState("");
@@ -890,15 +1271,36 @@ export default function App() {
   const [ampY, setAmpY] = useState("");
   const [ampB, setAmpB] = useState("");
 
-  // Step 3 (Merged: Work Done + Used Parts/Materials + Service Charge + Auto Total)
+  // Cooler Specific States (From PDF)
+  const [coolerWorkTypes, setCoolerWorkTypes] = useState(["Breakdown / Repair"]);
+  const [coolerBodyMaterial, setCoolerBodyMaterial] = useState("GI / Metal");
+  const [coolerSubType, setCoolerSubType] = useState("Desert Cooler");
+  const [coolerCapacity, setCoolerCapacity] = useState("");
+  const [coolerBrandModel, setCoolerBrandModel] = useState("");
+  const [coolerSerialNo, setCoolerSerialNo] = useState("");
+  const [coolerTotalQty, setCoolerTotalQty] = useState("1");
+
+  const [coolerFanMotor, setCoolerFanMotor] = useState("OK");
+  const [coolerWaterPump, setCoolerWaterPump] = useState("OK");
+  const [coolerSwingBlade, setCoolerSwingBlade] = useState("OK");
+  const [coolerPadType, setCoolerPadType] = useState("Honeycomb");
+  const [coolerPadStatus, setCoolerPadStatus] = useState("Clean");
+  const [coolerTankPlumbing, setCoolerTankPlumbing] = useState("OK");
+  const [coolerElectrical, setCoolerElectrical] = useState("OK");
+  const [coolerBodyPaint, setCoolerBodyPaint] = useState("OK");
+
+  // Work & Billing
   const [workDone, setWorkDone] = useState("");
   const [sparePartOption, setSparePartOption] = useState("Used Part");
   const [sparePartName, setSparePartName] = useState("");
   const [sparePartModel, setSparePartModel] = useState("");
   const [usedParts, setUsedParts] = useState([createEmptyPart()]);
+  const [materials, setMaterials] = useState([
+    { name: "", qty: "", price: "" },
+    { name: "", qty: "", price: "" },
+  ]);
   const [serviceChargeInput, setServiceChargeInput] = useState("");
 
-  // Step 4 (Status, Photos & Signature)
   const [jobStatusType, setJobStatusType] = useState("Completed");
   const [pendingSubOption, setPendingSubOption] = useState("Part Pending");
   const [jobNote, setJobNote] = useState("");
@@ -912,7 +1314,8 @@ export default function App() {
   const fullCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // GPS Location on Mount
+  const isCoolerSelected = productType === "Cooler";
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -930,7 +1333,6 @@ export default function App() {
     }
   }, []);
 
-  // Firestore Real-time Sync
   useEffect(() => {
     const unsubJobs = onSnapshot(
       collection(db, "jobs"),
@@ -974,7 +1376,12 @@ export default function App() {
     }
   }, [isSignatureModalOpen]);
 
-  // Used Parts & Materials helpers
+  const toggleCoolerWorkType = (type) => {
+    setCoolerWorkTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  };
+
   const addPartRow = () => {
     setUsedParts((prev) => [...prev, createEmptyPart()]);
   };
@@ -1001,10 +1408,15 @@ export default function App() {
       }, 0)
     : 0;
 
-  const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
-  const grandTotalBill = usedPartsTotal + serviceChargeVal;
+  const materialsTotal = materials.reduce((sum, item) => {
+    const q = parseFloat(item.qty) || 1;
+    const pr = parseFloat(item.price) || 0;
+    return item.name.trim() ? sum + q * pr : sum;
+  }, 0);
 
-  // Multiple Site Photos upload
+  const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
+  const grandTotalBill = usedPartsTotal + materialsTotal + serviceChargeVal;
+
   const handleSitePhotosChange = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -1169,10 +1581,20 @@ export default function App() {
     const cat = e.target.value;
     setCategoryType(cat);
     if (cat === "HVAC & Refrigeration") setProductType("Split / Window AC");
-    else if (cat === "Electrical Work") setProductType("House Wiring & Panel");
-    else if (cat === "Plumbing Work")
+    else if (cat === "Electrical Work") {
+      setProductType("Cooler");
+      setWorkDone("कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई");
+    } else if (cat === "Plumbing Work")
       setProductType("Pipe Fitting & Leakage Repair");
     else if (cat === "Civil Work") setProductType("Flooring & Tiling");
+  };
+
+  const handleProductChange = (e) => {
+    const prod = e.target.value;
+    setProductType(prod);
+    if (prod === "Cooler" && !workDone) {
+      setWorkDone("कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई");
+    }
   };
 
   const handleNewComplaint = (e) => {
@@ -1333,6 +1755,23 @@ export default function App() {
     setAmpR("");
     setAmpY("");
     setAmpB("");
+
+    setCoolerWorkTypes(["Breakdown / Repair"]);
+    setCoolerBodyMaterial("GI / Metal");
+    setCoolerSubType("Desert Cooler");
+    setCoolerCapacity("");
+    setCoolerBrandModel("");
+    setCoolerSerialNo("");
+    setCoolerTotalQty("1");
+    setCoolerFanMotor("OK");
+    setCoolerWaterPump("OK");
+    setCoolerSwingBlade("OK");
+    setCoolerPadType("Honeycomb");
+    setCoolerPadStatus("Clean");
+    setCoolerTankPlumbing("OK");
+    setCoolerElectrical("OK");
+    setCoolerBodyPaint("OK");
+
     setWorkDone("");
     setSparePartOption("Used Part");
     setSparePartName("");
@@ -1344,6 +1783,10 @@ export default function App() {
     setSavedSignatureURL("");
     setImageFile(null);
     setSitePhotos([]);
+    setMaterials([
+      { name: "", qty: "", price: "" },
+      { name: "", qty: "", price: "" },
+    ]);
     setCategoryType("HVAC & Refrigeration");
     setProductType("Split / Window AC");
     setJobStatusType("Completed");
@@ -1366,7 +1809,11 @@ export default function App() {
     setCategoryType(comp.categoryType || "HVAC & Refrigeration");
     setProductType(comp.productType || "Split / Window AC");
     setFaultDetails(comp.faultDetails || comp.desc || "");
-    setWorkDone(comp.desc || "");
+    setWorkDone(
+      comp.productType === "Cooler"
+        ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
+        : comp.desc || ""
+    );
     setSparePartOption(
       comp.sparePartOption && comp.sparePartOption !== "-"
         ? comp.sparePartOption
@@ -1397,6 +1844,16 @@ export default function App() {
     setImageFile(compressedFile);
   };
 
+  const handleMaterialFieldChange = (index, field, value) => {
+    const newMaterials = [...materials];
+    newMaterials[index][field] = value;
+    setMaterials(newMaterials);
+
+    if (index === newMaterials.length - 1 && value.trim() !== "") {
+      setMaterials([...newMaterials, { name: "", qty: "", price: "" }]);
+    }
+  };
+
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert("कृपया कस्टमर का नाम और मोबाइल नंबर भरें!");
@@ -1413,6 +1870,7 @@ export default function App() {
       ? selectedComplaint.jobSheetNo
       : "JS" + jobCustPhone.slice(-4) + day + month + hours + minutes;
 
+    const filteredMaterials = materials.filter((m) => m.name.trim() !== "");
     const activeUsedParts = isUsedPartSelected
       ? usedParts.filter(
           (p) => p.partName.trim() || (parseFloat(p.amount) || 0) > 0
@@ -1446,7 +1904,11 @@ export default function App() {
       productType,
       product: "[" + categoryType + "] " + productType,
       faultDetails: faultDetails || workDone || "-",
-      desc: workDone || "General Service / Repair",
+      desc:
+        workDone ||
+        (isCoolerSelected
+          ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
+          : "General Service / Repair"),
       status: finalStatus,
       pendingSubOption: jobStatusType === "Pending" ? pendingSubOption : "-",
       date:
@@ -1493,9 +1955,32 @@ export default function App() {
       ampR: ampR || "-",
       ampY: ampY || "-",
       ampB: ampB || "-",
-      materials: [],
+      coolerSpec: isCoolerSelected
+        ? {
+            workTypes: coolerWorkTypes,
+            bodyMaterial: coolerBodyMaterial,
+            coolerSubType: coolerSubType,
+            capacity: coolerCapacity,
+            brandModel: coolerBrandModel,
+            serialNo: coolerSerialNo,
+            totalQty: coolerTotalQty,
+          }
+        : null,
+      coolerChecklist: isCoolerSelected
+        ? {
+            fanMotor: coolerFanMotor,
+            waterPump: coolerWaterPump,
+            swingBlade: coolerSwingBlade,
+            padType: coolerPadType,
+            padStatus: coolerPadStatus,
+            tankPlumbing: coolerTankPlumbing,
+            electrical: coolerElectrical,
+            bodyPaint: coolerBodyPaint,
+          }
+        : null,
+      materials: filteredMaterials,
       usedParts: activeUsedParts,
-      partsTotal: usedPartsTotal,
+      partsTotal: usedPartsTotal + materialsTotal,
       serviceCharge: serviceChargeVal,
       totalAmount: grandTotalBill,
       sparePartOption: sparePartOption,
@@ -1507,14 +1992,12 @@ export default function App() {
 
     const fileToUpload = imageFile;
 
-    // 1. स्क्रीन पर तुरंत अपडेट दिखाएं
     const filteredList = jobSheets.filter((j) => j.jobSheetNo !== jobSheetNo);
     setJobSheets([updatedRecord, ...filteredList]);
     setLastSubmittedJob(updatedRecord);
     resetJobForm();
     setStaffSubTab("menu");
 
-    // 2. Telegram पर स्टाफ़ अपडेट का नोटिस भेजें
     const statusBadge =
       finalStatus === "Completed"
         ? "✅ COMPLETED"
@@ -1522,7 +2005,7 @@ export default function App() {
 
     const partsText =
       activeUsedParts.length > 0
-        ? `\n<b>इस्तेमाल हुए पार्ट्स / मैटेरियल्स:</b> ${activeUsedParts
+        ? `\n<b>इस्तेमाल हुए पार्ट्स:</b> ${activeUsedParts
             .map((p) => {
               const q = parseFloat(p.qty) || 0;
               const a = parseFloat(p.amount) || 0;
@@ -1533,6 +2016,13 @@ export default function App() {
         ? `\n<b>पार्ट (${sparePartOption}):</b> ${sparePartName} (${sparePartModel || "-"})`
         : "";
 
+    const materialsText =
+      filteredMaterials.length > 0
+        ? `\n<b>मैटेरियल्स:</b> ${filteredMaterials
+            .map((m) => `${m.name} (${m.qty || 1} × ₹${m.price || 0})`)
+            .join(", ")}`
+        : "";
+
     const telegramMsg =
       `🛠️ <b>MANQUBE STAFF JOB UPDATE</b>\n` +
       `<b>स्टेटस:</b> ${statusBadge}\n` +
@@ -1540,7 +2030,7 @@ export default function App() {
       `<b>कस्टमर:</b> ${updatedRecord.customerName} (${updatedRecord.customerPhone})\n` +
       `<b>पता:</b> ${updatedRecord.customerAddress || "-"}\n` +
       `<b>उत्पाद:</b> ${updatedRecord.product}\n` +
-      `<b>किया गया कार्य:</b> ${updatedRecord.desc}${partsText}\n` +
+      `<b>किया गया कार्य:</b> ${updatedRecord.desc}${partsText}${materialsText}\n` +
       `<b>सर्विस चार्ज:</b> ₹${serviceChargeVal.toFixed(2)}\n` +
       `<b>कुल बिल:</b> ₹${grandTotalBill.toFixed(2)}\n` +
       `<b>रिमार्क:</b> ${updatedRecord.feedback}\n` +
@@ -1550,7 +2040,6 @@ export default function App() {
 
     sendStaffTelegramAlert(telegramMsg);
 
-    // 3. बैकग्राउंड में Firestore में सेव करें
     setDoc(doc(db, "jobs", jobSheetNo), updatedRecord)
       .then(() => {
         addDoc(collection(db, "jobSheets"), {
@@ -1676,7 +2165,7 @@ export default function App() {
         minHeight: "100vh",
       }}
     >
-      {/* फुल-स्क्रीन मोबाइल/लैपटॉप सिग्नेचर मॉडल */}
+      {/* फुल-स्क्रीन सिग्नेचर मॉडल */}
       {isSignatureModalOpen && (
         <div
           style={{
@@ -2087,10 +2576,10 @@ export default function App() {
                   style={inputStyle}
                 >
                   <option value="HVAC & Refrigeration">
-                    HVAC &amp; Refrigeration (एसी, कूलर, फ्रिज, चिलर, VRV)
+                    HVAC &amp; Refrigeration (एसी, फ्रिज, चिलर, VRV)
                   </option>
                   <option value="Electrical Work">
-                    Electrical Work (इलेक्ट्रिकल कार्य)
+                    Electrical Work (कूलर, इलेक्ट्रिकल कार्य)
                   </option>
                   <option value="Plumbing Work">Plumbing Work (प्लंबिंग)</option>
                   <option value="Civil Work">Civil Work (सिविल कार्य)</option>
@@ -2115,9 +2604,6 @@ export default function App() {
                         AHU Unit (Air Handling Unit)
                       </option>
                       <option value="Chiller Unit">Chiller Unit (चिलर यूनिट)</option>
-                      <option value="Air Cooler (Honeywool/Iron)">
-                        Air Cooler (Honeywool/Iron)
-                      </option>
                       <option value="Deep Freezer / Refrigerator">
                         Deep Freezer / Refrigerator
                       </option>
@@ -2126,6 +2612,7 @@ export default function App() {
                   )}
                   {categoryType === "Electrical Work" && (
                     <>
+                      <option value="Cooler">Cooler (कूलर)</option>
                       <option value="House Wiring & Panel">
                         House Wiring &amp; Panel
                       </option>
@@ -2842,7 +3329,7 @@ export default function App() {
                       </div>
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                        कस्टमर का नाम:
+                        ग्राहक / संस्था का नाम (Customer Name):
                       </label>
                       <input
                         type="text"
@@ -2852,7 +3339,7 @@ export default function App() {
                       />
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                        कस्टमर मोबाइल नंबर:
+                        संपर्क एवं मोबाइल नंबर (Mobile No.):
                       </label>
                       <input
                         type="tel"
@@ -2863,7 +3350,7 @@ export default function App() {
                       />
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                        कस्टमर का पूरा पता (Address):
+                        लोकेशन / साइट का पता (Address):
                       </label>
                       <textarea
                         rows="2"
@@ -2893,7 +3380,7 @@ export default function App() {
                       </label>
                       <select
                         value={productType}
-                        onChange={(e) => setProductType(e.target.value)}
+                        onChange={handleProductChange}
                         style={inputStyle}
                       >
                         {categoryType === "HVAC & Refrigeration" && (
@@ -2907,14 +3394,15 @@ export default function App() {
                             <option value="VRV / VRF System">VRV / VRF System</option>
                             <option value="AHU Unit">AHU Unit</option>
                             <option value="Chiller Unit">Chiller Unit</option>
-                            <option value="Air Cooler">Air Cooler</option>
                             <option value="Refrigerator / Deep Freezer">
                               Refrigerator / Deep Freezer
                             </option>
+                            <option value="Water Cooler">Water Cooler</option>
                           </>
                         )}
                         {categoryType === "Electrical Work" && (
                           <>
+                            <option value="Cooler">Cooler (कूलर)</option>
                             <option value="House Wiring & Panel">
                               House Wiring &amp; Panel
                             </option>
@@ -2978,12 +3466,81 @@ export default function App() {
                         )}
                       </select>
 
+                      {/* यदि कूलर चुना है तो कार्य का प्रकार चेकबॉक्स */}
+                      {isCoolerSelected && (
+                        <div
+                          style={{
+                            background: "#f0f9ff",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #bae6fd",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                              marginBottom: "6px",
+                              color: "#0369a1",
+                            }}
+                          >
+                            कार्य का प्रकार (Cooler Work Type):
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "10px",
+                              fontSize: "12px",
+                            }}
+                          >
+                            {[
+                              { id: "AMC", label: "AMC (वार्षिक रखरखाव)" },
+                              {
+                                id: "Breakdown / Repair",
+                                label: "ब्रेकडाउन / रिपेयर",
+                              },
+                              { id: "Installation", label: "Installation" },
+                              {
+                                id: "Un-installation",
+                                label: "Un-installation",
+                              },
+                              {
+                                id: "Body Repair & Painting",
+                                label: "बॉडी रिपेयर एवं पेंटिंग",
+                              },
+                            ].map((opt) => (
+                              <label
+                                key={opt.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={coolerWorkTypes.includes(opt.id)}
+                                  onChange={() => toggleCoolerWorkType(opt.id)}
+                                />
+                                {opt.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
                         फॉल्ट / समस्या विवरण (Fault / Problem Details):
                       </label>
                       <input
                         type="text"
-                        placeholder="जैसे: No Cooling, Water Leakage..."
+                        placeholder={
+                          isCoolerSelected
+                            ? "जैसे: Motor Jam, Pump Not Working, General Service..."
+                            : "जैसे: No Cooling, Water Leakage..."
+                        }
                         value={faultDetails}
                         onChange={(e) => setFaultDetails(e.target.value)}
                         style={inputStyle}
@@ -3008,8 +3565,318 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 2: Slide 1 to 4 */}
-                  {wizardStep === 2 && (
+                  {/* स्टेप 2: COOLER CHECKLIST */}
+                  {wizardStep === 2 && isCoolerSelected && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                      }}
+                    >
+                      <h4>स्टेप 2: कूलर विवरण एवं निरीक्षण चेकलिस्ट</h4>
+
+                      {/* 2. कूलर का विवरण (Cooler Specifications) */}
+                      <div
+                        style={{
+                          background: "#f8fafc",
+                          padding: "10px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        <strong style={{ fontSize: "12px", color: "#0f172a" }}>
+                          2. कूलर का विवरण (Cooler Specifications):
+                        </strong>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                              बॉडी टाइप (Body Material):
+                            </label>
+                            <select
+                              value={coolerBodyMaterial}
+                              onChange={(e) =>
+                                setCoolerBodyMaterial(e.target.value)
+                              }
+                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                            >
+                              <option value="Fiber / Plastic">
+                                फाइबर / प्लास्टिक
+                              </option>
+                              <option value="GI / Metal">
+                                जी. आई. / लोहा (Metal)
+                              </option>
+                            </select>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                              कूलर टाइप (Cooler Type):
+                            </label>
+                            <select
+                              value={coolerSubType}
+                              onChange={(e) => setCoolerSubType(e.target.value)}
+                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                            >
+                              <option value="Duct Cooler">डक्ट कूलर</option>
+                              <option value="Desert Cooler">डेजर्ट कूलर</option>
+                              <option value="Tower Cooler">टावर कूलर</option>
+                              <option value="Room / Personal Cooler">
+                                रूम कूलर
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <input
+                            type="text"
+                            placeholder="क्षमता / साइज़ (जैसे 70 Ltr)"
+                            value={coolerCapacity}
+                            onChange={(e) => setCoolerCapacity(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="ब्रांड / मॉडल"
+                            value={coolerBrandModel}
+                            onChange={(e) => setCoolerBrandModel(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <input
+                            type="text"
+                            placeholder="सीरियल / टैग नं."
+                            value={coolerSerialNo}
+                            onChange={(e) => setCoolerSerialNo(e.target.value)}
+                            style={{ ...inputStyle, flex: 2, fontSize: "12px" }}
+                          />
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="कुल संख्या"
+                            value={coolerTotalQty}
+                            onChange={(e) => setCoolerTotalQty(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* 3. चेकलिस्ट एवं निरीक्षण */}
+                      <div
+                        style={{
+                          background: "#f8fafc",
+                          padding: "10px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "8px",
+                        }}
+                      >
+                        <div style={{ gridColumn: "1 / -1" }}>
+                          <strong style={{ fontSize: "12px", color: "#0f172a" }}>
+                            3. चेकलिस्ट एवं निरीक्षण (Inspection Checklist):
+                          </strong>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            फैन मोटर (Fan Motor):
+                          </label>
+                          <select
+                            value={coolerFanMotor}
+                            onChange={(e) => setCoolerFanMotor(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">सही</option>
+                            <option value="Jam / Bearing Bad">
+                              जाम / बेयरिंग खराब
+                            </option>
+                            <option value="Winding Burnt">
+                              वाइंडिंग जली हुई
+                            </option>
+                            <option value="Capacitor Bad">कैपेसिटर खराब</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            वाटर पंप (Submersible Pump):
+                          </label>
+                          <select
+                            value={coolerWaterPump}
+                            onChange={(e) => setCoolerWaterPump(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">सही</option>
+                            <option value="Not Pumping">
+                              पानी नहीं उठा रहा
+                            </option>
+                            <option value="Replace Required">
+                              बदलना आवश्यक
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            स्विंग मोटर एवं ब्लेड:
+                          </label>
+                          <select
+                            value={coolerSwingBlade}
+                            onChange={(e) => setCoolerSwingBlade(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">सही</option>
+                            <option value="Swing Bad">स्विंग खराब</option>
+                            <option value="Blade Broken">
+                              फैन ब्लेड टूटा / असंतुलित
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            कूलिंग पैड प्रकार:
+                          </label>
+                          <select
+                            value={coolerPadType}
+                            onChange={(e) => setCoolerPadType(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="Honeycomb">हनीकॉम्ब</option>
+                            <option value="Wood Wool">वुड वूल (घास)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            कूलिंग पैड स्थिति:
+                          </label>
+                          <select
+                            value={coolerPadStatus}
+                            onChange={(e) => setCoolerPadStatus(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="Clean">साफ</option>
+                            <option value="Replaceable">बदलने योग्य</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            वाटर टैंक एवं प्लंबिंग:
+                          </label>
+                          <select
+                            value={coolerTankPlumbing}
+                            onChange={(e) =>
+                              setCoolerTankPlumbing(e.target.value)
+                            }
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">सही</option>
+                            <option value="Leakage">लीकेज है</option>
+                            <option value="Float Valve Bad">
+                              फ्लोट वाल्व खराब
+                            </option>
+                            <option value="Drain / Pipe Jam">
+                              ड्रेन / डिस्ट्रीब्यूशन पाइप जाम
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            इलेक्ट्रिकल एवं वायरिंग:
+                          </label>
+                          <select
+                            value={coolerElectrical}
+                            onChange={(e) => setCoolerElectrical(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">सही</option>
+                            <option value="Rotary Switch Bad">
+                              रोटरी स्विच खराब
+                            </option>
+                            <option value="Wiring Burnt">
+                              वायरिंग कटी / जली
+                            </option>
+                            <option value="Plug / Earthing Checked">
+                              प्लग टॉप खराब / अर्थिंग चेक
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: "bold" }}>
+                            बॉडी एवं पेंट (Body &amp; Paint):
+                          </label>
+                          <select
+                            value={coolerBodyPaint}
+                            onChange={(e) => setCoolerBodyPaint(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">सही</option>
+                            <option value="Rusting">जंग (Rusting) लगी है</option>
+                            <option value="Welding Required">
+                              टैंक में छेद / वेल्डिंग जरूरत
+                            </option>
+                            <option value="Painting Required">
+                              प्राइमर एवं पेंटिंग आवश्यक
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "10px",
+                          marginTop: "8px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(1)}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            backgroundColor: "#64748b",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ← पीछे
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(3)}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            backgroundColor: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          अगला →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* स्टेप 2: AC / HVAC (Slide 1 to 4) */}
+                  {wizardStep === 2 && !isCoolerSelected && (
                     <div
                       style={{
                         display: "flex",
@@ -3546,7 +4413,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 3: मर्ज किया गया — किया गया कार्य, स्पेयर पार्ट्स, सर्विस चार्ज एवं टोटल बिल */}
+                  {/* स्टेप 3: किया गया कार्य + स्पेयर पार्ट्स + मैटेरियल्स + सर्विस चार्ज एवं टोटल बिल */}
                   {wizardStep === 3 && (
                     <div
                       style={{
@@ -3556,10 +4423,9 @@ export default function App() {
                       }}
                     >
                       <h4 style={{ margin: "4px 0", color: "#0f172a" }}>
-                        स्टेप 3: किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल
+                        स्टेप 3: किया गया कार्य, स्पेयर पार्ट्स, मैटेरियल्स एवं टोटल बिल
                       </h4>
 
-                      {/* 1. किया गया कार्य */}
                       <div
                         style={{
                           background: "#f8fafc",
@@ -3571,19 +4437,22 @@ export default function App() {
                           gap: "6px",
                         }}
                       >
-                        <label style={{ fontSize: "12px", fontWeight: "bold", color: "#1e293b" }}>
-                          1. किया गया कार्य (Work / Action Taken):
+                        <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                          1. किया गया कार्य (Work Done):
                         </label>
                         <textarea
                           rows="2"
-                          placeholder="जैसे: AC Gas Top-up, Capacitor Replaced & General Service..."
+                          placeholder={
+                            isCoolerSelected
+                              ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
+                              : "किया गया कार्य लिखें..."
+                          }
                           value={workDone}
                           onChange={(e) => setWorkDone(e.target.value)}
                           style={{ ...inputStyle, width: "100%" }}
                         />
                       </div>
 
-                      {/* 2. स्पेयर पार्ट्स एवं मैटेरियल्स */}
                       <div
                         style={{
                           background: "#f8fafc",
@@ -3595,8 +4464,8 @@ export default function App() {
                           gap: "8px",
                         }}
                       >
-                        <label style={{ fontSize: "12px", fontWeight: "bold", color: "#1e293b" }}>
-                          2. स्पेयर पार्ट / मैटेरियल विकल्प:
+                        <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                          2. स्पेयर पार्ट विकल्प:
                         </label>
                         <select
                           value={sparePartOption}
@@ -3604,7 +4473,7 @@ export default function App() {
                           style={{ ...inputStyle, width: "100%" }}
                         >
                           <option value="Used Part">
-                            Used Part (पार्ट / मैटेरियल इस्तेमाल किया गया)
+                            Used Part (इस्तेमाल किया गया)
                           </option>
                           <option value="Pending Part">
                             Pending Part (पार्ट मंगवाना है)
@@ -3614,25 +4483,18 @@ export default function App() {
                           </option>
                         </select>
 
-                        {isUsedPartSelected && (
-                          <div style={{ marginTop: "4px" }}>
+                        {isUsedPartSelected ? (
+                          <div>
                             <div
                               style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontSize: "11px",
+                                fontSize: "12px",
                                 fontWeight: "bold",
-                                color: "#475569",
                                 marginBottom: "6px",
-                                padding: "0 2px",
+                                color: "#334155",
                               }}
                             >
-                              <span style={{ flex: 2 }}>पार्ट / मैटेरियल का नाम</span>
-                              <span style={{ flex: 0.7, textAlign: "center" }}>Qty</span>
-                              <span style={{ flex: 1, textAlign: "center" }}>Rate ₹</span>
-                              <span style={{ width: "32px" }}></span>
+                              स्पेयर पार्ट का नाम, क्वांटिटी और अमाउंट:
                             </div>
-
                             {usedParts.map((item, idx) => {
                               const rowTotal =
                                 (parseFloat(item.qty) || 0) *
@@ -3646,13 +4508,21 @@ export default function App() {
                                     borderBottom: "1px dashed #cbd5e1",
                                   }}
                                 >
-                                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                  <div style={{ display: "flex", gap: "6px" }}>
                                     <input
                                       type="text"
-                                      placeholder="पार्ट / आइटम नाम"
+                                      placeholder={
+                                        isCoolerSelected
+                                          ? "जैसे: Water Pump, Cooling Pad, Fan Motor..."
+                                          : "स्पेयर पार्ट का नाम"
+                                      }
                                       value={item.partName}
                                       onChange={(e) =>
-                                        updatePartRow(idx, "partName", e.target.value)
+                                        updatePartRow(
+                                          idx,
+                                          "partName",
+                                          e.target.value
+                                        )
                                       }
                                       style={{ ...inputStyle, flex: 2, minWidth: 0 }}
                                     />
@@ -3664,7 +4534,7 @@ export default function App() {
                                       onChange={(e) =>
                                         updatePartRow(idx, "qty", e.target.value)
                                       }
-                                      style={{ ...inputStyle, flex: 0.7, minWidth: 0, textAlign: "center" }}
+                                      style={{ ...inputStyle, flex: 0.7, minWidth: 0 }}
                                     />
                                     <input
                                       type="number"
@@ -3672,7 +4542,11 @@ export default function App() {
                                       placeholder="Rate ₹"
                                       value={item.amount}
                                       onChange={(e) =>
-                                        updatePartRow(idx, "amount", e.target.value)
+                                        updatePartRow(
+                                          idx,
+                                          "amount",
+                                          e.target.value
+                                        )
                                       }
                                       style={{ ...inputStyle, flex: 1, minWidth: 0 }}
                                     />
@@ -3680,15 +4554,13 @@ export default function App() {
                                       type="button"
                                       onClick={() => removePartRow(idx)}
                                       style={{
-                                        width: "32px",
-                                        height: "34px",
+                                        padding: "6px 10px",
                                         background: "#dc2626",
                                         color: "#fff",
                                         border: "none",
-                                        borderRadius: "6px",
+                                        borderRadius: "4px",
                                         fontWeight: "bold",
                                         cursor: "pointer",
-                                        flexShrink: 0,
                                       }}
                                     >
                                       ✕
@@ -3702,64 +4574,135 @@ export default function App() {
                                       marginTop: "3px",
                                     }}
                                   >
-                                    योग: <strong>₹{rowTotal.toFixed(2)}</strong>
+                                    योग: ₹{rowTotal.toFixed(2)}
                                   </div>
                                 </div>
                               );
                             })}
-
                             <div
                               style={{
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
-                                marginTop: "4px",
                               }}
                             >
                               <button
                                 type="button"
                                 onClick={addPartRow}
                                 style={{
-                                  padding: "7px 12px",
+                                  padding: "6px 12px",
                                   background: "#1e3a8a",
                                   color: "#fff",
                                   border: "none",
-                                  borderRadius: "6px",
+                                  borderRadius: "4px",
                                   fontSize: "12px",
                                   fontWeight: "bold",
                                   cursor: "pointer",
                                 }}
                               >
-                                + पार्ट / मैटेरियल जोड़ें
+                                + पार्ट जोड़ें
                               </button>
-                              <span style={{ fontSize: "13px", color: "#0f172a" }}>
-                                पार्ट्स कुल: <strong>₹{usedPartsTotal.toFixed(2)}</strong>
-                              </span>
+                              <strong style={{ fontSize: "13px" }}>
+                                पार्ट्स कुल: ₹{usedPartsTotal.toFixed(2)}
+                              </strong>
                             </div>
                           </div>
-                        )}
-
-                        {sparePartOption === "Pending Part" && (
-                          <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-                            <input
-                              type="text"
-                              placeholder="मंगवाने वाले पार्ट का नाम"
-                              value={sparePartName}
-                              onChange={(e) => setSparePartName(e.target.value)}
-                              style={{ ...inputStyle, flex: 1 }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="मॉडल / साइज"
-                              value={sparePartModel}
-                              onChange={(e) => setSparePartModel(e.target.value)}
-                              style={{ ...inputStyle, flex: 1 }}
-                            />
-                          </div>
+                        ) : (
+                          sparePartOption === "Pending Part" && (
+                            <div style={{ display: "flex", gap: "5px" }}>
+                              <input
+                                type="text"
+                                placeholder="Part Name"
+                                value={sparePartName}
+                                onChange={(e) => setSparePartName(e.target.value)}
+                                style={{ ...inputStyle, flex: 1 }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Model / No."
+                                value={sparePartModel}
+                                onChange={(e) => setSparePartModel(e.target.value)}
+                                style={{ ...inputStyle, flex: 1 }}
+                              />
+                            </div>
+                          )
                         )}
                       </div>
 
-                      {/* 3. सर्विस चार्ज एवं टोटल बिल सारांश */}
+                      <div
+                        style={{
+                          background: "#f8fafc",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                            3. मैटेरियल्स (Materials - पाइप, वायर, टेप आदि):
+                          </label>
+                          <span style={{ fontSize: "12px", fontWeight: "bold" }}>
+                            ₹{materialsTotal.toFixed(2)}
+                          </span>
+                        </div>
+
+                        {materials.map((mat, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              display: "flex",
+                              gap: "5px",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              placeholder="Item Name"
+                              value={mat.name}
+                              onChange={(e) =>
+                                handleMaterialFieldChange(
+                                  idx,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                              style={{ ...inputStyle, flex: 2, minWidth: 0 }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Qty"
+                              value={mat.qty}
+                              onChange={(e) =>
+                                handleMaterialFieldChange(idx, "qty", e.target.value)
+                              }
+                              style={{ ...inputStyle, flex: 0.8, minWidth: 0 }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Rate ₹"
+                              value={mat.price}
+                              onChange={(e) =>
+                                handleMaterialFieldChange(
+                                  idx,
+                                  "price",
+                                  e.target.value
+                                )
+                              }
+                              style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
                       <div
                         style={{
                           background: "#f0fdf4",
@@ -3771,8 +4714,14 @@ export default function App() {
                           gap: "8px",
                         }}
                       >
-                        <label style={{ fontSize: "12px", fontWeight: "bold", color: "#166534" }}>
-                          3. सर्विस / विज़िट चार्ज (₹):
+                        <label
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            color: "#166534",
+                          }}
+                        >
+                          4. सर्विस / अन्य चार्ज (₹):
                         </label>
                         <input
                           type="number"
@@ -3785,12 +4734,11 @@ export default function App() {
 
                         <div
                           style={{
-                            background: "#ffffff",
                             padding: "10px",
                             borderRadius: "6px",
+                            background: "#ffffff",
                             border: "1px solid #cbd5e1",
                             fontSize: "13px",
-                            marginTop: "4px",
                           }}
                         >
                           <div
@@ -3798,29 +4746,29 @@ export default function App() {
                               display: "flex",
                               justifyContent: "space-between",
                               marginBottom: "4px",
-                              color: "#475569",
                             }}
                           >
                             <span>स्पेयर पार्ट्स / मैटेरियल्स कुल:</span>
-                            <strong>₹{usedPartsTotal.toFixed(2)}</strong>
+                            <strong>
+                              ₹{(usedPartsTotal + materialsTotal).toFixed(2)}
+                            </strong>
                           </div>
                           <div
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
                               marginBottom: "4px",
-                              color: "#475569",
                             }}
                           >
                             <span>सर्विस / अन्य चार्ज:</span>
                             <strong>₹{serviceChargeVal.toFixed(2)}</strong>
                           </div>
-                          <hr style={{ margin: "6px 0", borderColor: "#e2e8f0" }} />
+                          <hr style={{ margin: "6px 0" }} />
                           <div
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
-                              fontSize: "16px",
+                              fontSize: "15px",
                               color: "#166534",
                             }}
                           >
@@ -3842,12 +4790,11 @@ export default function App() {
                           onClick={() => setWizardStep(2)}
                           style={{
                             flex: 1,
-                            padding: "11px",
+                            padding: "10px",
                             backgroundColor: "#64748b",
                             color: "#fff",
                             border: "none",
                             borderRadius: "6px",
-                            fontWeight: "bold",
                             cursor: "pointer",
                           }}
                         >
@@ -3858,7 +4805,7 @@ export default function App() {
                           onClick={() => setWizardStep(4)}
                           style={{
                             flex: 1,
-                            padding: "11px",
+                            padding: "10px",
                             backgroundColor: "#166534",
                             color: "#fff",
                             border: "none",
@@ -3867,7 +4814,7 @@ export default function App() {
                             cursor: "pointer",
                           }}
                         >
-                          अगला (फोटो &amp; साइन) →
+                          अगला →
                         </button>
                       </div>
                     </div>
@@ -3917,7 +4864,7 @@ export default function App() {
                       )}
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                        कस्टमर रिमार्क / फीडबैक (Customer Remark):
+                        ग्राहक की टिप्पणी / फीडबैक (Customer Remark):
                       </label>
                       <input
                         type="text"
@@ -4006,7 +4953,7 @@ export default function App() {
                           marginTop: "4px",
                         }}
                       >
-                        कस्टमर हस्ताक्षर (Customer Signature):
+                        ग्राहक / साइट इंचार्ज के हस्ताक्षर (Customer Signature):
                       </label>
                       <button
                         type="button"
