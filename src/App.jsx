@@ -96,18 +96,35 @@ const inputStyle = {
 
 const chkBox = (checked) => (checked ? "☑" : "☐");
 
-// सिंगल-फ़ेज़ आइटम चेक करने के लिए हेल्पर फंक्शन
+// हेल्पर: Water Cooler चेक करने के लिए
+const checkIsWaterCooler = (prodType = "", prodFull = "") => {
+  const combined = `${prodType} ${prodFull}`.toLowerCase();
+  return combined.includes("water cooler");
+};
+
+// हेल्पर: Deep Freezer / Refrigerator / Water Cooler चेक करने के लिए
+const checkIsFridgeOrWaterCooler = (prodType = "", prodFull = "") => {
+  const combined = `${prodType} ${prodFull}`.toLowerCase();
+  return (
+    combined.includes("refrigerator") ||
+    combined.includes("deep freezer") ||
+    combined.includes("water cooler")
+  );
+};
+
+// हेल्पर: सिंगल-फ़ेज़ आइटम चेक करने के लिए
 const checkIsSinglePhase = (prodType = "", prodFull = "") => {
   const combined = `${prodType} ${prodFull}`.toLowerCase();
   return (
     combined.includes("split / window ac") ||
     combined.includes("refrigerator") ||
-    combined.includes("deep freezer")
+    combined.includes("deep freezer") ||
+    combined.includes("water cooler")
   );
 };
 
 // ==========================================
-// 1. COOLER PRINTABLE JOB SHEET (PDF FORMAT)
+// 1. AIR COOLER PRINTABLE JOB SHEET (PDF FORMAT)
 // ==========================================
 const CoolerPrintableJobSheet = ({ job }) => {
   const cSpec = job.coolerSpec || {};
@@ -468,15 +485,21 @@ const CoolerPrintableJobSheet = ({ job }) => {
 };
 
 // ==========================================
-// 2. PRINTABLE JOB SHEET WRAPPER (AC / COOLER)
+// 2. PRINTABLE JOB SHEET WRAPPER (AC / FRIDGE / WATER COOLER / AIR COOLER)
 // ==========================================
 const PrintableJobSheet = ({ job, onClose }) => {
   if (!job) return null;
 
-  const isCoolerJob =
-    job.productType === "Cooler" ||
-    String(job.product || "").toLowerCase().includes("cooler");
+  const isWaterCoolerJob = checkIsWaterCooler(job.productType, job.product);
+  const isAirCoolerJob =
+    !isWaterCoolerJob &&
+    (job.productType === "Cooler" ||
+      String(job.product || "").toLowerCase().includes("cooler"));
 
+  const isFridgeOrWCJob = checkIsFridgeOrWaterCooler(
+    job.productType,
+    job.product
+  );
   const isSinglePhaseJob = checkIsSinglePhase(job.productType, job.product);
 
   const calculatedPartsTotal = Array.isArray(job.usedParts)
@@ -601,7 +624,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
         </div>
       </div>
 
-      {isCoolerJob ? (
+      {isAirCoolerJob ? (
         <CoolerPrintableJobSheet job={job} />
       ) : (
         <div
@@ -630,6 +653,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
             </div>
           </div>
 
+          {/* Customer & Job Meta Table */}
           <table className="js-table" style={{ borderTop: "none" }}>
             <tbody>
               <tr>
@@ -677,562 +701,861 @@ const PrintableJobSheet = ({ job, onClose }) => {
             </tbody>
           </table>
 
-          <table className="js-table" style={{ borderTop: "none" }}>
-            <tbody>
-              <tr>
-                <td style={{ width: "45%", borderTop: "none", borderBottom: "none" }}></td>
-                <td
-                  style={{
-                    width: "18%",
-                    verticalAlign: "middle",
-                    textAlign: "center",
-                    borderTop: "none",
-                  }}
-                  className="js-bold"
-                >
-                  INDOOR
-                </td>
-                <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
-                  <div
-                    style={{
-                      borderBottom: "1px solid #000",
-                      padding: "3px 5px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span className="faint-label">Model:</span>
-                    <span>
-                      {job.indoorModel && job.indoorModel !== "-"
-                        ? job.indoorModel
+          {/* DEEP FREEZER / REFRIGERATOR / WATER COOLER का विशिष्ट सेक्शन */}
+          {isFridgeOrWCJob ? (
+            <>
+              <table className="js-table" style={{ borderTop: "none" }}>
+                <tbody>
+                  <tr className="js-sec-hdr">
+                    <td colSpan="4" style={{ borderTop: "none" }}>
+                      {isWaterCoolerJob
+                        ? "WATER COOLER TECHNICAL DETAILS"
+                        : "DEEP FREEZER / REFRIGERATOR TECHNICAL DETAILS"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ width: "25%" }} className="js-bold">
+                      UNIT MODEL NO.
+                    </td>
+                    <td style={{ width: "25%" }}>
+                      {job.unitModel && job.unitModel !== "-"
+                        ? job.unitModel
                         : ""}
-                    </span>
-                  </div>
-                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                    <span className="faint-label">Serial:</span>
-                    <span>
-                      {job.indoorSerial && job.indoorSerial !== "-"
-                        ? job.indoorSerial
+                    </td>
+                    <td style={{ width: "25%" }} className="js-bold">
+                      UNIT SERIAL NO.
+                    </td>
+                    <td style={{ width: "25%" }}>
+                      {job.unitSerial && job.unitSerial !== "-"
+                        ? job.unitSerial
                         : ""}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ borderTop: "none", borderBottom: "none" }}></td>
-                <td
-                  style={{ verticalAlign: "middle", textAlign: "center" }}
-                  className="js-bold"
-                >
-                  OUT DOOR
-                </td>
-                <td style={{ padding: 0 }}>
-                  <div
-                    style={{
-                      borderBottom: "1px solid #000",
-                      padding: "3px 5px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span className="faint-label">Model:</span>
-                    <span>
-                      {job.outdoorModel && job.outdoorModel !== "-"
-                        ? job.outdoorModel
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">UNIT CAPACITY (IN LITRES)</td>
+                    <td>
+                      {job.unitCapacity && job.unitCapacity !== "-"
+                        ? job.unitCapacity
                         : ""}
-                    </span>
-                  </div>
-                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                    <span className="faint-label">Serial:</span>
-                    <span>
-                      {job.outdoorSerial && job.outdoorSerial !== "-"
-                        ? job.outdoorSerial
+                    </td>
+                    <td className="js-bold">CONDENSER IN / OUT</td>
+                    <td>
+                      {job.condenserInOut && job.condenserInOut !== "-"
+                        ? job.condenserInOut
                         : ""}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ borderTop: "none" }}></td>
-                <td
-                  style={{ verticalAlign: "middle", textAlign: "center" }}
-                  className="js-bold"
-                >
-                  COMPRESSOR
-                </td>
-                <td style={{ padding: 0 }}>
-                  <div
-                    style={{
-                      borderBottom: "1px solid #000",
-                      padding: "3px 5px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span className="faint-label">Model:</span>
-                    <span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">COMPRESSOR MODEL NO.</td>
+                    <td>
                       {job.compressorModel && job.compressorModel !== "-"
                         ? job.compressorModel
                         : ""}
-                    </span>
-                  </div>
-                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                    <span className="faint-label">Serial:</span>
-                    <span>
+                    </td>
+                    <td className="js-bold">COMPRESSOR SERIAL NO.</td>
+                    <td>
                       {job.compressorSerial && job.compressorSerial !== "-"
                         ? job.compressorSerial
                         : ""}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">COMPRESSOR AMPERE</td>
+                    <td>
+                      {job.compressorAmpere && job.compressorAmpere !== "-"
+                        ? job.compressorAmpere
+                        : ""}
+                    </td>
+                    <td className="js-bold">UNIT AMPERE</td>
+                    <td>
+                      {job.ampere && job.ampere !== "-" ? job.ampere : ""}
+                    </td>
+                  </tr>
 
-          <table className="js-table" style={{ borderTop: "none" }}>
-            <tbody>
-              <tr className="js-sec-hdr">
-                <td style={{ width: "45%", borderTop: "none" }}>
-                  FAULT / PROBLEM DETAILS
-                </td>
-                <td style={{ width: "42%", borderTop: "none" }}>
-                  WORK / ACTION TAKEN AND USE PART
-                </td>
-                <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
-              </tr>
-              <tr>
-                <td style={{ minHeight: "45px" }}>
-                  1. {job.faultDetails || job.desc || ""}
-                </td>
-                <td>
-                  <div>1. {job.desc || ""}</div>
-                  {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                    job.usedParts.map((p, i) => {
-                      const q = parseFloat(p.qty) || 0;
-                      const a = parseFloat(p.amount) || 0;
-                      return (
-                        <div key={i} style={{ marginTop: "3px" }}>
-                          {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
+                  {/* Water Cooler के अतिरिक्त 4 ऑप्शन */}
+                  {isWaterCoolerJob && (
+                    <>
+                      <tr>
+                        <td className="js-bold">TANK SIZE (LITRES)</td>
+                        <td>
+                          {job.wcTankSize && job.wcTankSize !== "-"
+                            ? job.wcTankSize
+                            : ""}
+                        </td>
+                        <td className="js-bold">NUMBER OF TAPS (टोटी)</td>
+                        <td>
+                          {job.wcTapCount && job.wcTapCount !== "-"
+                            ? job.wcTapCount
+                            : ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">WATER OVERFLOW SYSTEM</td>
+                        <td>
+                          {job.wcOverflowType && job.wcOverflowType !== "-"
+                            ? job.wcOverflowType
+                            : ""}
+                        </td>
+                        <td className="js-bold">CONDENSING COIL SIZE</td>
+                        <td>
+                          {job.wcCondensingCoilSize &&
+                          job.wcCondensingCoilSize !== "-"
+                            ? job.wcCondensingCoilSize
+                            : ""}
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Fault & Work Done Table */}
+              <table className="js-table" style={{ borderTop: "none" }}>
+                <tbody>
+                  <tr className="js-sec-hdr">
+                    <td style={{ width: "45%", borderTop: "none" }}>
+                      FAULT / PROBLEM DETAILS
+                    </td>
+                    <td style={{ width: "42%", borderTop: "none" }}>
+                      WORK / ACTION TAKEN AND USE PART
+                    </td>
+                    <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+                  </tr>
+                  <tr>
+                    <td style={{ minHeight: "45px" }}>
+                      1. {job.faultDetails || job.desc || ""}
+                    </td>
+                    <td>
+                      <div>1. {job.desc || ""}</div>
+                      {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                        job.usedParts.map((p, i) => {
+                          const q = parseFloat(p.qty) || 0;
+                          const a = parseFloat(p.amount) || 0;
+                          return (
+                            <div key={i} style={{ marginTop: "3px" }}>
+                              {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
+                            </div>
+                          );
+                        })
+                      ) : (
+                        job.sparePartName &&
+                        job.sparePartName !== "-" && (
+                          <div style={{ marginTop: "4px" }}>
+                            2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
+                            {job.sparePartModel && job.sparePartModel !== "-"
+                              ? `(${job.sparePartModel})`
+                              : ""}
+                          </div>
+                        )
+                      )}
+                      {Array.isArray(job.materials) &&
+                        job.materials.length > 0 &&
+                        job.materials.map((m, i) => (
+                          <div key={`mat-${i}`} style={{ marginTop: "3px" }}>
+                            • {m.name} (Qty: {m.qty || 1} × ₹{m.price || 0})
+                          </div>
+                        ))}
+                      {serviceChargeVal > 0 && (
+                        <div style={{ marginTop: "3px" }}>
+                          <strong>Service Charge:</strong> ₹
+                          {serviceChargeVal.toFixed(2)}
                         </div>
-                      );
-                    })
-                  ) : (
-                    job.sparePartName &&
-                    job.sparePartName !== "-" && (
-                      <div style={{ marginTop: "4px" }}>
-                        2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
-                        {job.sparePartModel && job.sparePartModel !== "-"
-                          ? `(${job.sparePartModel})`
+                      )}
+                    </td>
+                    <td>
+                      {Array.isArray(job.usedParts) &&
+                        job.usedParts.length > 0 &&
+                        job.usedParts.map((p, i) => {
+                          const rowAmt =
+                            (parseFloat(p.qty) || 0) *
+                            (parseFloat(p.amount) || 0);
+                          return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
+                        })}
+                      {Array.isArray(job.materials) &&
+                        job.materials.length > 0 &&
+                        job.materials.map((m, i) => {
+                          const matAmt =
+                            (parseFloat(m.qty) || 1) *
+                            (parseFloat(m.price) || 0);
+                          return (
+                            <div key={`mat-amt-${i}`}>₹{matAmt.toFixed(2)}</div>
+                          );
+                        })}
+                      {totalBillVal > 0 && (
+                        <div
+                          style={{
+                            marginTop: "6px",
+                            borderTop: "1px solid #000",
+                            paddingTop: "2px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          Total: ₹{totalBillVal.toFixed(2)}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Sign-Off Table */}
+              <table className="js-table" style={{ borderTop: "none" }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: "50%", borderTop: "none" }}>
+                      <div style={{ marginBottom: "6px" }}>
+                        <strong>TECHNICIAN:</strong> {job.staffName || ""}
+                      </div>
+                      <div style={{ marginBottom: "6px" }}>
+                        <strong>STATUS:</strong> {job.status}
+                      </div>
+                      <div>
+                        <strong>REMARK:</strong>{" "}
+                        {job.feedback && job.feedback !== "-"
+                          ? job.feedback
                           : ""}
                       </div>
-                    )
-                  )}
-                  {Array.isArray(job.materials) &&
-                    job.materials.length > 0 &&
-                    job.materials.map((m, i) => (
-                      <div key={`mat-${i}`} style={{ marginTop: "3px" }}>
-                        • {m.name} (Qty: {m.qty || 1} × ₹{m.price || 0})
-                      </div>
-                    ))}
-                  {serviceChargeVal > 0 && (
-                    <div style={{ marginTop: "3px" }}>
-                      <strong>Service Charge:</strong> ₹{serviceChargeVal.toFixed(2)}
-                    </div>
-                  )}
-                </td>
-                <td>
-                  {Array.isArray(job.usedParts) &&
-                    job.usedParts.length > 0 &&
-                    job.usedParts.map((p, i) => {
-                      const rowAmt =
-                        (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0);
-                      return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                    })}
-                  {Array.isArray(job.materials) &&
-                    job.materials.length > 0 &&
-                    job.materials.map((m, i) => {
-                      const matAmt =
-                        (parseFloat(m.qty) || 1) * (parseFloat(m.price) || 0);
-                      return <div key={`mat-amt-${i}`}>₹{matAmt.toFixed(2)}</div>;
-                    })}
-                  {totalBillVal > 0 && (
-                    <div
+                    </td>
+                    <td style={{ width: "50%", borderTop: "none" }}>
+                      <div className="js-bold">CUSTOMER SIGNATURE</div>
+                      {job.signatureURL ? (
+                        <div style={{ margin: "6px 0" }}>
+                          <img
+                            src={job.signatureURL}
+                            alt="Customer Signature"
+                            style={{
+                              maxHeight: "65px",
+                              maxWidth: "100%",
+                              objectFit: "contain",
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            height: "45px",
+                            borderBottom: "1px dashed #cbd5e1",
+                            margin: "6px 0",
+                          }}
+                        ></div>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          ) : (
+            /* बाक़ी AC यूनिट्स का सेक्शन */
+            <>
+              <table className="js-table" style={{ borderTop: "none" }}>
+                <tbody>
+                  <tr>
+                    <td
                       style={{
-                        marginTop: "6px",
-                        borderTop: "1px solid #000",
-                        paddingTop: "2px",
-                        fontWeight: "bold",
+                        width: "45%",
+                        borderTop: "none",
+                        borderBottom: "none",
                       }}
+                    ></td>
+                    <td
+                      style={{
+                        width: "18%",
+                        verticalAlign: "middle",
+                        textAlign: "center",
+                        borderTop: "none",
+                      }}
+                      className="js-bold"
                     >
-                      Total: ₹{totalBillVal.toFixed(2)}
-                    </div>
+                      INDOOR
+                    </td>
+                    <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          padding: "3px 5px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span className="faint-label">Model:</span>
+                        <span>
+                          {job.indoorModel && job.indoorModel !== "-"
+                            ? job.indoorModel
+                            : ""}
+                        </span>
+                      </div>
+                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                        <span className="faint-label">Serial:</span>
+                        <span>
+                          {job.indoorSerial && job.indoorSerial !== "-"
+                            ? job.indoorSerial
+                            : ""}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ borderTop: "none", borderBottom: "none" }}></td>
+                    <td
+                      style={{ verticalAlign: "middle", textAlign: "center" }}
+                      className="js-bold"
+                    >
+                      OUT DOOR
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          padding: "3px 5px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span className="faint-label">Model:</span>
+                        <span>
+                          {job.outdoorModel && job.outdoorModel !== "-"
+                            ? job.outdoorModel
+                            : ""}
+                        </span>
+                      </div>
+                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                        <span className="faint-label">Serial:</span>
+                        <span>
+                          {job.outdoorSerial && job.outdoorSerial !== "-"
+                            ? job.outdoorSerial
+                            : ""}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ borderTop: "none" }}></td>
+                    <td
+                      style={{ verticalAlign: "middle", textAlign: "center" }}
+                      className="js-bold"
+                    >
+                      COMPRESSOR
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          padding: "3px 5px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span className="faint-label">Model:</span>
+                        <span>
+                          {job.compressorModel && job.compressorModel !== "-"
+                            ? job.compressorModel
+                            : ""}
+                        </span>
+                      </div>
+                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                        <span className="faint-label">Serial:</span>
+                        <span>
+                          {job.compressorSerial && job.compressorSerial !== "-"
+                            ? job.compressorSerial
+                            : ""}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <table className="js-table" style={{ borderTop: "none" }}>
+                <tbody>
+                  <tr className="js-sec-hdr">
+                    <td style={{ width: "45%", borderTop: "none" }}>
+                      FAULT / PROBLEM DETAILS
+                    </td>
+                    <td style={{ width: "42%", borderTop: "none" }}>
+                      WORK / ACTION TAKEN AND USE PART
+                    </td>
+                    <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+                  </tr>
+                  <tr>
+                    <td style={{ minHeight: "45px" }}>
+                      1. {job.faultDetails || job.desc || ""}
+                    </td>
+                    <td>
+                      <div>1. {job.desc || ""}</div>
+                      {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
+                        job.usedParts.map((p, i) => {
+                          const q = parseFloat(p.qty) || 0;
+                          const a = parseFloat(p.amount) || 0;
+                          return (
+                            <div key={i} style={{ marginTop: "3px" }}>
+                              {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
+                            </div>
+                          );
+                        })
+                      ) : (
+                        job.sparePartName &&
+                        job.sparePartName !== "-" && (
+                          <div style={{ marginTop: "4px" }}>
+                            2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
+                            {job.sparePartModel && job.sparePartModel !== "-"
+                              ? `(${job.sparePartModel})`
+                              : ""}
+                          </div>
+                        )
+                      )}
+                      {Array.isArray(job.materials) &&
+                        job.materials.length > 0 &&
+                        job.materials.map((m, i) => (
+                          <div key={`mat-${i}`} style={{ marginTop: "3px" }}>
+                            • {m.name} (Qty: {m.qty || 1} × ₹{m.price || 0})
+                          </div>
+                        ))}
+                      {serviceChargeVal > 0 && (
+                        <div style={{ marginTop: "3px" }}>
+                          <strong>Service Charge:</strong> ₹
+                          {serviceChargeVal.toFixed(2)}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {Array.isArray(job.usedParts) &&
+                        job.usedParts.length > 0 &&
+                        job.usedParts.map((p, i) => {
+                          const rowAmt =
+                            (parseFloat(p.qty) || 0) *
+                            (parseFloat(p.amount) || 0);
+                          return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
+                        })}
+                      {Array.isArray(job.materials) &&
+                        job.materials.length > 0 &&
+                        job.materials.map((m, i) => {
+                          const matAmt =
+                            (parseFloat(m.qty) || 1) *
+                            (parseFloat(m.price) || 0);
+                          return (
+                            <div key={`mat-amt-${i}`}>₹{matAmt.toFixed(2)}</div>
+                          );
+                        })}
+                      {totalBillVal > 0 && (
+                        <div
+                          style={{
+                            marginTop: "6px",
+                            borderTop: "1px solid #000",
+                            paddingTop: "2px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          Total: ₹{totalBillVal.toFixed(2)}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <table className="js-table" style={{ borderTop: "none" }}>
+                <tbody>
+                  <tr>
+                    <td
+                      style={{ width: "30%", borderTop: "none" }}
+                      className="js-bold"
+                    >
+                      FILTER CLEAN
+                    </td>
+                    <td style={{ width: "15%", borderTop: "none" }}>
+                      {job.filterClean && job.filterClean !== "-"
+                        ? job.filterClean
+                        : ""}
+                    </td>
+                    <td
+                      rowSpan="2"
+                      style={{
+                        width: "18%",
+                        verticalAlign: "middle",
+                        textAlign: "center",
+                        borderTop: "none",
+                      }}
+                      className="js-bold"
+                    >
+                      IN-DOOR
+                      <br />
+                      MOTOR
+                    </td>
+                    <td
+                      style={{ width: "37%", padding: 0, borderTop: "none" }}
+                      rowSpan="2"
+                    >
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          padding: "3px 5px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span className="faint-label">Model:</span>
+                        <span>
+                          {job.indoorMotorModel && job.indoorMotorModel !== "-"
+                            ? job.indoorMotorModel
+                            : ""}
+                        </span>
+                      </div>
+                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                        <span className="faint-label">Serial:</span>
+                        <span>
+                          {job.indoorMotorSerial &&
+                          job.indoorMotorSerial !== "-"
+                            ? job.indoorMotorSerial
+                            : ""}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">STAND TYPE</td>
+                    <td>
+                      {job.standType && job.standType !== "-"
+                        ? job.standType
+                        : ""}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">SWING / FLAPPER</td>
+                    <td>
+                      {job.swingFlapper && job.swingFlapper !== "-"
+                        ? job.swingFlapper
+                        : ""}
+                    </td>
+                    <td
+                      rowSpan="2"
+                      style={{ verticalAlign: "middle", textAlign: "center" }}
+                      className="js-bold"
+                    >
+                      OUT-DOOR
+                      <br />
+                      MOTOR
+                    </td>
+                    <td rowSpan="2" style={{ padding: 0 }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          padding: "3px 5px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span className="faint-label">Model:</span>
+                        <span>
+                          {job.outdoorMotorModel &&
+                          job.outdoorMotorModel !== "-"
+                            ? job.outdoorMotorModel
+                            : ""}
+                        </span>
+                      </div>
+                      <div style={{ padding: "3px 5px", textAlign: "left" }}>
+                        <span className="faint-label">Serial:</span>
+                        <span>
+                          {job.outdoorMotorSerial &&
+                          job.outdoorMotorSerial !== "-"
+                            ? job.outdoorMotorSerial
+                            : ""}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">STABILIZER</td>
+                    <td>
+                      {job.stabilizer && job.stabilizer !== "-"
+                        ? job.stabilizer
+                        : ""}
+                    </td>
+                  </tr>
+
+                  {isSinglePhaseJob ? (
+                    <>
+                      <tr>
+                        <td className="js-bold">REMOTE</td>
+                        <td>
+                          {job.remoteStatus && job.remoteStatus !== "-"
+                            ? job.remoteStatus
+                            : ""}
+                        </td>
+                        <td colSpan="2" style={{ padding: "3px 5px" }}>
+                          <strong>POWER SUPPLY:</strong> Single Phase (1-Phase)
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">ROOM TEMP.</td>
+                        <td>
+                          {job.roomTemp && job.roomTemp !== "-"
+                            ? job.roomTemp
+                            : ""}
+                        </td>
+                        <td colSpan="2" style={{ padding: "3px 5px" }}>
+                          <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
+                          <strong>STATUS:</strong> {job.status}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">VOLTAGE</td>
+                        <td>
+                          {job.voltage && job.voltage !== "-" ? job.voltage : ""}
+                        </td>
+                        <td colSpan="2" rowSpan="9" style={{ padding: "6px" }}>
+                          <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
+                          {job.signatureURL ? (
+                            <div
+                              style={{
+                                margin: "6px 0",
+                                borderBottom: "1px dashed #94a3b8",
+                                paddingBottom: "4px",
+                              }}
+                            >
+                              <img
+                                src={job.signatureURL}
+                                alt="Customer Signature"
+                                style={{
+                                  maxHeight: "70px",
+                                  maxWidth: "100%",
+                                  objectFit: "contain",
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                height: "45px",
+                                borderBottom: "1px dashed #cbd5e1",
+                                margin: "6px 0",
+                              }}
+                            ></div>
+                          )}
+                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                            <strong>REMARK:</strong>{" "}
+                            {job.feedback && job.feedback !== "-"
+                              ? job.feedback
+                              : ""}
+                          </div>
+                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                            <strong>MOBILE:</strong> {job.customerPhone}
+                          </div>
+                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                            <strong>DATE:</strong> {job.date}
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">UNIT AMPERE</td>
+                        <td>
+                          {job.ampere && job.ampere !== "-" ? job.ampere : ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">COMPRESSOR AMPERE</td>
+                        <td>
+                          {job.compressorAmpere && job.compressorAmpere !== "-"
+                            ? job.compressorAmpere
+                            : ""}
+                        </td>
+                      </tr>
+                    </>
+                  ) : (
+                    <>
+                      <tr>
+                        <td className="js-bold">REMOTE</td>
+                        <td>
+                          {job.remoteStatus && job.remoteStatus !== "-"
+                            ? job.remoteStatus
+                            : ""}
+                        </td>
+                        <td colSpan="2" style={{ padding: 0 }}>
+                          <div style={{ display: "flex" }}>
+                            <div
+                              style={{
+                                flex: 1,
+                                borderRight: "1px solid #000",
+                                padding: "3px 5px",
+                              }}
+                            >
+                              <strong>R:</strong>{" "}
+                              {job.phaseR && job.phaseR !== "-"
+                                ? job.phaseR
+                                : ""}
+                            </div>
+                            <div
+                              style={{
+                                flex: 1,
+                                borderRight: "1px solid #000",
+                                padding: "3px 5px",
+                              }}
+                            >
+                              <strong>Y:</strong>{" "}
+                              {job.phaseY && job.phaseY !== "-"
+                                ? job.phaseY
+                                : ""}
+                            </div>
+                            <div style={{ flex: 1, padding: "3px 5px" }}>
+                              <strong>B:</strong>{" "}
+                              {job.phaseB && job.phaseB !== "-"
+                                ? job.phaseB
+                                : ""}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">ROOM TEMP.</td>
+                        <td>
+                          {job.roomTemp && job.roomTemp !== "-"
+                            ? job.roomTemp
+                            : ""}
+                        </td>
+                        <td colSpan="2" style={{ padding: 0 }}>
+                          <div style={{ display: "flex" }}>
+                            <div
+                              style={{
+                                flex: 1,
+                                borderRight: "1px solid #000",
+                                padding: "3px 5px",
+                              }}
+                            >
+                              <strong>R:</strong>{" "}
+                              {job.ampR && job.ampR !== "-" ? job.ampR : ""}
+                            </div>
+                            <div
+                              style={{
+                                flex: 1,
+                                borderRight: "1px solid #000",
+                                padding: "3px 5px",
+                              }}
+                            >
+                              <strong>Y:</strong>{" "}
+                              {job.ampY && job.ampY !== "-" ? job.ampY : ""}
+                            </div>
+                            <div style={{ flex: 1, padding: "3px 5px" }}>
+                              <strong>B:</strong>{" "}
+                              {job.ampB && job.ampB !== "-" ? job.ampB : ""}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">VOLTAGE</td>
+                        <td>
+                          {job.voltage && job.voltage !== "-" ? job.voltage : ""}
+                        </td>
+                        <td colSpan="2" style={{ padding: "3px 5px" }}>
+                          <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
+                          <strong>STATUS:</strong> {job.status}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">UNIT AMPERE</td>
+                        <td>
+                          {job.ampere && job.ampere !== "-" ? job.ampere : ""}
+                        </td>
+                        <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
+                          <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
+                          {job.signatureURL ? (
+                            <div
+                              style={{
+                                margin: "6px 0",
+                                borderBottom: "1px dashed #94a3b8",
+                                paddingBottom: "4px",
+                              }}
+                            >
+                              <img
+                                src={job.signatureURL}
+                                alt="Customer Signature"
+                                style={{
+                                  maxHeight: "70px",
+                                  maxWidth: "100%",
+                                  objectFit: "contain",
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                height: "45px",
+                                borderBottom: "1px dashed #cbd5e1",
+                                margin: "6px 0",
+                              }}
+                            ></div>
+                          )}
+                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                            <strong>REMARK:</strong>{" "}
+                            {job.feedback && job.feedback !== "-"
+                              ? job.feedback
+                              : ""}
+                          </div>
+                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                            <strong>MOBILE:</strong> {job.customerPhone}
+                          </div>
+                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                            <strong>DATE:</strong> {job.date}
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="js-bold">COMPRESSOR AMPERE</td>
+                        <td>
+                          {job.compressorAmpere && job.compressorAmpere !== "-"
+                            ? job.compressorAmpere
+                            : ""}
+                        </td>
+                      </tr>
+                    </>
                   )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
 
-          <table className="js-table" style={{ borderTop: "none" }}>
-            <tbody>
-              <tr>
-                <td style={{ width: "30%", borderTop: "none" }} className="js-bold">
-                  FILTER CLEAN
-                </td>
-                <td style={{ width: "15%", borderTop: "none" }}>
-                  {job.filterClean && job.filterClean !== "-" ? job.filterClean : ""}
-                </td>
-                <td
-                  rowSpan="2"
-                  style={{
-                    width: "18%",
-                    verticalAlign: "middle",
-                    textAlign: "center",
-                    borderTop: "none",
-                  }}
-                  className="js-bold"
-                >
-                  IN-DOOR
-                  <br />
-                  MOTOR
-                </td>
-                <td style={{ width: "37%", padding: 0, borderTop: "none" }} rowSpan="2">
-                  <div
-                    style={{
-                      borderBottom: "1px solid #000",
-                      padding: "3px 5px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span className="faint-label">Model:</span>
-                    <span>
-                      {job.indoorMotorModel && job.indoorMotorModel !== "-"
-                        ? job.indoorMotorModel
-                        : ""}
-                    </span>
-                  </div>
-                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                    <span className="faint-label">Serial:</span>
-                    <span>
-                      {job.indoorMotorSerial && job.indoorMotorSerial !== "-"
-                        ? job.indoorMotorSerial
-                        : ""}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">STAND TYPE</td>
-                <td>
-                  {job.standType && job.standType !== "-" ? job.standType : ""}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">SWING / FLAPPER</td>
-                <td>
-                  {job.swingFlapper && job.swingFlapper !== "-"
-                    ? job.swingFlapper
-                    : ""}
-                </td>
-                <td
-                  rowSpan="2"
-                  style={{ verticalAlign: "middle", textAlign: "center" }}
-                  className="js-bold"
-                >
-                  OUT-DOOR
-                  <br />
-                  MOTOR
-                </td>
-                <td rowSpan="2" style={{ padding: 0 }}>
-                  <div
-                    style={{
-                      borderBottom: "1px solid #000",
-                      padding: "3px 5px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span className="faint-label">Model:</span>
-                    <span>
-                      {job.outdoorMotorModel && job.outdoorMotorModel !== "-"
-                        ? job.outdoorMotorModel
-                        : ""}
-                    </span>
-                  </div>
-                  <div style={{ padding: "3px 5px", textAlign: "left" }}>
-                    <span className="faint-label">Serial:</span>
-                    <span>
-                      {job.outdoorMotorSerial && job.outdoorMotorSerial !== "-"
-                        ? job.outdoorMotorSerial
-                        : ""}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">STABILIZER</td>
-                <td>
-                  {job.stabilizer && job.stabilizer !== "-" ? job.stabilizer : ""}
-                </td>
-              </tr>
-
-              {/* सिंगल-फ़ेज़ (Split/Window AC & Refrigerator/Deep Freezer) में R, Y, B नहीं दिखेगा */}
-              {isSinglePhaseJob ? (
-                <>
                   <tr>
-                    <td className="js-bold">REMOTE</td>
+                    <td className="js-bold">DRAIN WITH SIZE</td>
                     <td>
-                      {job.remoteStatus && job.remoteStatus !== "-"
-                        ? job.remoteStatus
-                        : ""}
-                    </td>
-                    <td colSpan="2" style={{ padding: "3px 5px" }}>
-                      <strong>POWER SUPPLY:</strong> Single Phase (1-Phase)
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">ROOM TEMP.</td>
-                    <td>
-                      {job.roomTemp && job.roomTemp !== "-" ? job.roomTemp : ""}
-                    </td>
-                    <td colSpan="2" style={{ padding: "3px 5px" }}>
-                      <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
-                      <strong>STATUS:</strong> {job.status}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">VOLTAGE</td>
-                    <td>{job.voltage && job.voltage !== "-" ? job.voltage : ""}</td>
-                    <td colSpan="2" rowSpan="9" style={{ padding: "6px" }}>
-                      <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
-                      {job.signatureURL ? (
-                        <div
-                          style={{
-                            margin: "6px 0",
-                            borderBottom: "1px dashed #94a3b8",
-                            paddingBottom: "4px",
-                          }}
-                        >
-                          <img
-                            src={job.signatureURL}
-                            alt="Customer Signature"
-                            style={{
-                              maxHeight: "70px",
-                              maxWidth: "100%",
-                              objectFit: "contain",
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            height: "45px",
-                            borderBottom: "1px dashed #cbd5e1",
-                            margin: "6px 0",
-                          }}
-                        ></div>
-                      )}
-                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                        <strong>REMARK:</strong>{" "}
-                        {job.feedback && job.feedback !== "-" ? job.feedback : ""}
-                      </div>
-                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                        <strong>MOBILE:</strong> {job.customerPhone}
-                      </div>
-                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                        <strong>DATE:</strong> {job.date}
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">UNIT AMPERE</td>
-                    <td>{job.ampere && job.ampere !== "-" ? job.ampere : ""}</td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">COMPRESSOR AMPERE</td>
-                    <td>
-                      {job.compressorAmpere && job.compressorAmpere !== "-"
-                        ? job.compressorAmpere
+                      {job.drainSize && job.drainSize !== "-"
+                        ? job.drainSize
                         : ""}
                     </td>
                   </tr>
-                </>
-              ) : (
-                <>
                   <tr>
-                    <td className="js-bold">REMOTE</td>
+                    <td className="js-bold">COPPER PIPE SIZE</td>
                     <td>
-                      {job.remoteStatus && job.remoteStatus !== "-"
-                        ? job.remoteStatus
-                        : ""}
-                    </td>
-                    <td colSpan="2" style={{ padding: 0 }}>
-                      <div style={{ display: "flex" }}>
-                        <div
-                          style={{
-                            flex: 1,
-                            borderRight: "1px solid #000",
-                            padding: "3px 5px",
-                          }}
-                        >
-                          <strong>R:</strong>{" "}
-                          {job.phaseR && job.phaseR !== "-" ? job.phaseR : ""}
-                        </div>
-                        <div
-                          style={{
-                            flex: 1,
-                            borderRight: "1px solid #000",
-                            padding: "3px 5px",
-                          }}
-                        >
-                          <strong>Y:</strong>{" "}
-                          {job.phaseY && job.phaseY !== "-" ? job.phaseY : ""}
-                        </div>
-                        <div style={{ flex: 1, padding: "3px 5px" }}>
-                          <strong>B:</strong>{" "}
-                          {job.phaseB && job.phaseB !== "-" ? job.phaseB : ""}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">ROOM TEMP.</td>
-                    <td>
-                      {job.roomTemp && job.roomTemp !== "-" ? job.roomTemp : ""}
-                    </td>
-                    <td colSpan="2" style={{ padding: 0 }}>
-                      <div style={{ display: "flex" }}>
-                        <div
-                          style={{
-                            flex: 1,
-                            borderRight: "1px solid #000",
-                            padding: "3px 5px",
-                          }}
-                        >
-                          <strong>R:</strong>{" "}
-                          {job.ampR && job.ampR !== "-" ? job.ampR : ""}
-                        </div>
-                        <div
-                          style={{
-                            flex: 1,
-                            borderRight: "1px solid #000",
-                            padding: "3px 5px",
-                          }}
-                        >
-                          <strong>Y:</strong>{" "}
-                          {job.ampY && job.ampY !== "-" ? job.ampY : ""}
-                        </div>
-                        <div style={{ flex: 1, padding: "3px 5px" }}>
-                          <strong>B:</strong>{" "}
-                          {job.ampB && job.ampB !== "-" ? job.ampB : ""}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">VOLTAGE</td>
-                    <td>{job.voltage && job.voltage !== "-" ? job.voltage : ""}</td>
-                    <td colSpan="2" style={{ padding: "3px 5px" }}>
-                      <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
-                      <strong>STATUS:</strong> {job.status}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">UNIT AMPERE</td>
-                    <td>{job.ampere && job.ampere !== "-" ? job.ampere : ""}</td>
-                    <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
-                      <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
-                      {job.signatureURL ? (
-                        <div
-                          style={{
-                            margin: "6px 0",
-                            borderBottom: "1px dashed #94a3b8",
-                            paddingBottom: "4px",
-                          }}
-                        >
-                          <img
-                            src={job.signatureURL}
-                            alt="Customer Signature"
-                            style={{
-                              maxHeight: "70px",
-                              maxWidth: "100%",
-                              objectFit: "contain",
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            height: "45px",
-                            borderBottom: "1px dashed #cbd5e1",
-                            margin: "6px 0",
-                          }}
-                        ></div>
-                      )}
-                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                        <strong>REMARK:</strong>{" "}
-                        {job.feedback && job.feedback !== "-" ? job.feedback : ""}
-                      </div>
-                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                        <strong>MOBILE:</strong> {job.customerPhone}
-                      </div>
-                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                        <strong>DATE:</strong> {job.date}
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">COMPRESSOR AMPERE</td>
-                    <td>
-                      {job.compressorAmpere && job.compressorAmpere !== "-"
-                        ? job.compressorAmpere
+                      {job.copperPipeSize && job.copperPipeSize !== "-"
+                        ? job.copperPipeSize
                         : ""}
                     </td>
                   </tr>
-                </>
-              )}
-
-              <tr>
-                <td className="js-bold">DRAIN WITH SIZE</td>
-                <td>
-                  {job.drainSize && job.drainSize !== "-" ? job.drainSize : ""}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">COPPER PIPE SIZE</td>
-                <td>
-                  {job.copperPipeSize && job.copperPipeSize !== "-"
-                    ? job.copperPipeSize
-                    : ""}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">OUTDOOR CLEAN</td>
-                <td>
-                  {job.outdoorClean && job.outdoorClean !== "-"
-                    ? job.outdoorClean
-                    : ""}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">SUCTION PRESSURE</td>
-                <td>
-                  {job.sectionPressure && job.sectionPressure !== "-"
-                    ? job.sectionPressure
-                    : ""}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">WIRE SIZE &amp; CORE</td>
-                <td>
-                  {job.wireSizeCore && job.wireSizeCore !== "-"
-                    ? job.wireSizeCore
-                    : ""}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">INSULATION</td>
-                <td>
-                  {job.insulation && job.insulation !== "-" ? job.insulation : ""}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <tr>
+                    <td className="js-bold">OUTDOOR CLEAN</td>
+                    <td>
+                      {job.outdoorClean && job.outdoorClean !== "-"
+                        ? job.outdoorClean
+                        : ""}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">SUCTION PRESSURE</td>
+                    <td>
+                      {job.sectionPressure && job.sectionPressure !== "-"
+                        ? job.sectionPressure
+                        : ""}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">WIRE SIZE &amp; CORE</td>
+                    <td>
+                      {job.wireSizeCore && job.wireSizeCore !== "-"
+                        ? job.wireSizeCore
+                        : ""}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="js-bold">INSULATION</td>
+                    <td>
+                      {job.insulation && job.insulation !== "-"
+                        ? job.insulation
+                        : ""}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          )}
         </div>
       )}
 
@@ -1335,6 +1658,18 @@ export default function App() {
   const [amcDate, setAmcDate] = useState("");
   const [faultDetails, setFaultDetails] = useState("");
 
+  // Deep Freezer / Refrigerator / Water Cooler Common Fields
+  const [unitModel, setUnitModel] = useState("");
+  const [unitSerial, setUnitSerial] = useState("");
+  const [unitCapacity, setUnitCapacity] = useState("");
+  const [condenserInOut, setCondenserInOut] = useState("OK");
+
+  // Water Cooler Additional 4 Fields
+  const [wcTankSize, setWcTankSize] = useState("40");
+  const [wcTapCount, setWcTapCount] = useState("2");
+  const [wcOverflowType, setWcOverflowType] = useState("Float Ball");
+  const [wcCondensingCoilSize, setWcCondensingCoilSize] = useState("");
+
   // AC / HVAC Fields
   const [indoorModel, setIndoorModel] = useState("");
   const [indoorSerial, setIndoorSerial] = useState("");
@@ -1370,7 +1705,7 @@ export default function App() {
   const [ampY, setAmpY] = useState("");
   const [ampB, setAmpB] = useState("");
 
-  // Cooler Specific States (From PDF)
+  // Air Cooler Specific States
   const [coolerWorkTypes, setCoolerWorkTypes] = useState(["Breakdown / Repair"]);
   const [coolerBodyMaterial, setCoolerBodyMaterial] = useState("GI / Metal");
   const [coolerSubType, setCoolerSubType] = useState("Desert Cooler");
@@ -1413,7 +1748,9 @@ export default function App() {
   const fullCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  const isCoolerSelected = productType === "Cooler";
+  const isWaterCoolerSelected = checkIsWaterCooler(productType);
+  const isAirCoolerSelected = productType === "Cooler";
+  const isFridgeOrWCSelected = checkIsFridgeOrWaterCooler(productType);
   const isSinglePhaseSelected = checkIsSinglePhase(productType);
 
   useEffect(() => {
@@ -1824,6 +2161,18 @@ export default function App() {
     setBillNo("");
     setAmcDate("");
     setFaultDetails("");
+
+    // Fridge / Deep Freezer / Water Cooler reset
+    setUnitModel("");
+    setUnitSerial("");
+    setUnitCapacity("");
+    setCondenserInOut("OK");
+    setWcTankSize("40");
+    setWcTapCount("2");
+    setWcOverflowType("Float Ball");
+    setWcCondensingCoilSize("");
+
+    // AC / HVAC reset
     setIndoorModel("");
     setIndoorSerial("");
     setOutdoorModel("");
@@ -1856,6 +2205,7 @@ export default function App() {
     setAmpY("");
     setAmpB("");
 
+    // Air Cooler reset
     setCoolerWorkTypes(["Breakdown / Repair"]);
     setCoolerBodyMaterial("GI / Metal");
     setCoolerSubType("Desert Cooler");
@@ -2006,7 +2356,7 @@ export default function App() {
       faultDetails: faultDetails || workDone || "-",
       desc:
         workDone ||
-        (isCoolerSelected
+        (isAirCoolerSelected
           ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
           : "General Service / Repair"),
       status: finalStatus,
@@ -2019,43 +2369,98 @@ export default function App() {
       photoURL: uploadedPhotoUrls[0] || "",
       sitePhotoUrls: uploadedPhotoUrls,
       signatureURL: savedSignatureURL,
-      indoorModel: indoorModel || "-",
-      indoorSerial: indoorSerial || "-",
-      outdoorModel: outdoorModel || "-",
-      outdoorSerial: outdoorSerial || "-",
+
+      // Deep Freezer / Refrigerator / Water Cooler Common Fields
+      unitModel: isFridgeOrWCSelected ? unitModel || "-" : "-",
+      unitSerial: isFridgeOrWCSelected ? unitSerial || "-" : "-",
+      unitCapacity: isFridgeOrWCSelected ? unitCapacity || "-" : "-",
+      condenserInOut: isFridgeOrWCSelected ? condenserInOut || "-" : "-",
+
+      // Water Cooler Specific 4 Fields
+      wcTankSize: isWaterCoolerSelected ? `${wcTankSize} Ltr` : "-",
+      wcTapCount: isWaterCoolerSelected ? `${wcTapCount} Tap` : "-",
+      wcOverflowType: isWaterCoolerSelected ? wcOverflowType || "-" : "-",
+      wcCondensingCoilSize: isWaterCoolerSelected
+        ? wcCondensingCoilSize || "-"
+        : "-",
+
+      // AC / HVAC Fields
+      indoorModel: !isFridgeOrWCSelected ? indoorModel || "-" : "-",
+      indoorSerial: !isFridgeOrWCSelected ? indoorSerial || "-" : "-",
+      outdoorModel: !isFridgeOrWCSelected ? outdoorModel || "-" : "-",
+      outdoorSerial: !isFridgeOrWCSelected ? outdoorSerial || "-" : "-",
       compressorModel: compressorModel || "-",
       compressorSerial: compressorSerial || "-",
-      indoorMotorModel: indoorMotorModel || "-",
-      indoorMotorSerial: indoorMotorSerial || "-",
-      outdoorMotorModel: outdoorMotorModel || "-",
-      outdoorMotorSerial: outdoorMotorSerial || "-",
-      filterClean: categoryType === "HVAC & Refrigeration" ? filterClean : "-",
-      standType: categoryType === "HVAC & Refrigeration" ? standType : "-",
-      swingFlapper: categoryType === "HVAC & Refrigeration" ? swingFlapper : "-",
-      stabilizer: categoryType === "HVAC & Refrigeration" ? stabilizer : "-",
-      remoteStatus: categoryType === "HVAC & Refrigeration" ? remoteStatus : "-",
-      outdoorClean: categoryType === "HVAC & Refrigeration" ? outdoorClean : "-",
+      indoorMotorModel: !isFridgeOrWCSelected ? indoorMotorModel || "-" : "-",
+      indoorMotorSerial: !isFridgeOrWCSelected ? indoorMotorSerial || "-" : "-",
+      outdoorMotorModel: !isFridgeOrWCSelected
+        ? outdoorMotorModel || "-"
+        : "-",
+      outdoorMotorSerial: !isFridgeOrWCSelected
+        ? outdoorMotorSerial || "-"
+        : "-",
+      filterClean:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? filterClean
+          : "-",
+      standType:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? standType
+          : "-",
+      swingFlapper:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? swingFlapper
+          : "-",
+      stabilizer:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? stabilizer
+          : "-",
+      remoteStatus:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? remoteStatus
+          : "-",
+      outdoorClean:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? outdoorClean
+          : "-",
       sectionPressure:
-        categoryType === "HVAC & Refrigeration" ? sectionPressure || "-" : "-",
-      roomTemp: categoryType === "HVAC & Refrigeration" ? roomTemp || "-" : "-",
-      voltage: categoryType !== "Civil Work" ? voltage || "-" : "-",
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? sectionPressure || "-"
+          : "-",
+      roomTemp:
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? roomTemp || "-"
+          : "-",
+      voltage:
+        categoryType !== "Civil Work" && !isFridgeOrWCSelected
+          ? voltage || "-"
+          : "-",
       ampere: categoryType !== "Civil Work" ? ampere || "-" : "-",
       compressorAmpere:
         categoryType === "HVAC & Refrigeration" ? compressorAmpere || "-" : "-",
       drainSize:
-        categoryType === "HVAC & Refrigeration" ? drainSize || "-" : "-",
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? drainSize || "-"
+          : "-",
       copperPipeSize:
-        categoryType === "HVAC & Refrigeration" ? copperPipeSize || "-" : "-",
+        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
+          ? copperPipeSize || "-"
+          : "-",
       wireSizeCore:
-        categoryType !== "Civil Work" ? wireSizeCore || "-" : "-",
-      insulation: categoryType !== "Civil Work" ? insulation : "-",
+        categoryType !== "Civil Work" && !isFridgeOrWCSelected
+          ? wireSizeCore || "-"
+          : "-",
+      insulation:
+        categoryType !== "Civil Work" && !isFridgeOrWCSelected
+          ? insulation
+          : "-",
       phaseR: !isSinglePhaseSelected && phaseR ? phaseR : "-",
       phaseY: !isSinglePhaseSelected && phaseY ? phaseY : "-",
       phaseB: !isSinglePhaseSelected && phaseB ? phaseB : "-",
       ampR: !isSinglePhaseSelected && ampR ? ampR : "-",
       ampY: !isSinglePhaseSelected && ampY ? ampY : "-",
       ampB: !isSinglePhaseSelected && ampB ? ampB : "-",
-      coolerSpec: isCoolerSelected
+      coolerSpec: isAirCoolerSelected
         ? {
             workTypes: coolerWorkTypes,
             bodyMaterial: coolerBodyMaterial,
@@ -2066,7 +2471,7 @@ export default function App() {
             totalQty: coolerTotalQty,
           }
         : null,
-      coolerChecklist: isCoolerSelected
+      coolerChecklist: isAirCoolerSelected
         ? {
             fanMotor: coolerFanMotor,
             waterPump: coolerWaterPump,
@@ -2704,8 +3109,8 @@ export default function App() {
                         AHU Unit (Air Handling Unit)
                       </option>
                       <option value="Chiller Unit">Chiller Unit (चिलर यूनिट)</option>
-                      <option value="Deep Freezer / Refrigerator">
-                        Deep Freezer / Refrigerator
+                      <option value="Refrigerator / Deep Freezer">
+                        Refrigerator / Deep Freezer
                       </option>
                       <option value="Water Cooler">Water Cooler</option>
                     </>
@@ -3566,8 +3971,7 @@ export default function App() {
                         )}
                       </select>
 
-                      {/* यदि कूलर चुना है तो कार्य का प्रकार चेकबॉक्स */}
-                      {isCoolerSelected && (
+                      {isAirCoolerSelected && (
                         <div
                           style={{
                             background: "#f0f9ff",
@@ -3637,8 +4041,10 @@ export default function App() {
                       <input
                         type="text"
                         placeholder={
-                          isCoolerSelected
+                          isAirCoolerSelected
                             ? "जैसे: Motor Jam, Pump Not Working, General Service..."
+                            : isFridgeOrWCSelected
+                            ? "जैसे: Cooling Not Proper, Gas Leakage, Overflow / Tap Fault..."
                             : "जैसे: No Cooling, Water Leakage..."
                         }
                         value={faultDetails}
@@ -3665,8 +4071,371 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 2: COOLER CHECKLIST */}
-                  {wizardStep === 2 && isCoolerSelected && (
+                  {/* स्टेप 2 (A): DEEP FREEZER / REFRIGERATOR / WATER COOLER */}
+                  {wizardStep === 2 && isFridgeOrWCSelected && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                      }}
+                    >
+                      <h4>
+                        {isWaterCoolerSelected
+                          ? "स्टेप 2: Water Cooler तकनीकी विवरण"
+                          : "स्टेप 2: Deep Freezer / Refrigerator तकनीकी विवरण"}
+                      </h4>
+
+                      <div
+                        style={{
+                          background: "#f8fafc",
+                          padding: "12px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "10px",
+                        }}
+                      >
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            1. यूनिट मॉडल नंबर (Unit Model No.):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Unit Model No."
+                            value={unitModel}
+                            onChange={(e) => setUnitModel(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            2. यूनिट सीरियल नंबर (Unit Serial No.):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Unit Serial No."
+                            value={unitSerial}
+                            onChange={(e) => setUnitSerial(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            3. यूनिट कैपेसिटी (in Litres):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="जैसे: 300 Ltr / 500 Ltr"
+                            value={unitCapacity}
+                            onChange={(e) => setUnitCapacity(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            4. कंडेंसर In / Out (Condenser In/Out):
+                          </label>
+                          <select
+                            value={condenserInOut}
+                            onChange={(e) => setCondenserInOut(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          >
+                            <option value="OK">OK</option>
+                            <option value="In">In (इन)</option>
+                            <option value="Out">Out (आउट)</option>
+                            <option value="Clean / Serviced">
+                              Clean / Serviced
+                            </option>
+                            <option value="Choked / Damaged">
+                              Choked / Damaged
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            5. कंप्रेसर मॉडल नंबर (Compressor Model):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Compressor Model No."
+                            value={compressorModel}
+                            onChange={(e) => setCompressorModel(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            6. कंप्रेसर सीरियल नंबर (Compressor Serial):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Compressor Serial No."
+                            value={compressorSerial}
+                            onChange={(e) =>
+                              setCompressorSerial(e.target.value)
+                            }
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            7. कंप्रेसर Ampere:
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 2.4 A"
+                            value={compressorAmpere}
+                            onChange={(e) =>
+                              setCompressorAmpere(e.target.value)
+                            }
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              display: "block",
+                              marginBottom: "3px",
+                            }}
+                          >
+                            8. यूनिट Ampere (Unit Ampere):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 2.8 A"
+                            value={ampere}
+                            onChange={(e) => setAmpere(e.target.value)}
+                            style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                          />
+                        </div>
+
+                        {/* Water Cooler के केवल ये 4 अतिरिक्त ऑप्शन */}
+                        {isWaterCoolerSelected && (
+                          <>
+                            <div>
+                              <label
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: "bold",
+                                  display: "block",
+                                  marginBottom: "3px",
+                                  color: "#0369a1",
+                                }}
+                              >
+                                9. टंकी साइज (Tank Size in Litres):
+                              </label>
+                              <select
+                                value={wcTankSize}
+                                onChange={(e) => setWcTankSize(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="20">20 Litres</option>
+                                <option value="40">40 Litres</option>
+                                <option value="60">60 Litres</option>
+                                <option value="80">80 Litres</option>
+                                <option value="120">120 Litres</option>
+                                <option value="150">150 Litres</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: "bold",
+                                  display: "block",
+                                  marginBottom: "3px",
+                                  color: "#0369a1",
+                                }}
+                              >
+                                10. टोटी कितनी है (Number of Taps):
+                              </label>
+                              <select
+                                value={wcTapCount}
+                                onChange={(e) => setWcTapCount(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="1">1 टोटी</option>
+                                <option value="2">2 टोटी</option>
+                                <option value="3">3 टोटी</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: "bold",
+                                  display: "block",
+                                  marginBottom: "3px",
+                                  color: "#0369a1",
+                                }}
+                              >
+                                11. Water Overflow के लिए क्या लगा है:
+                              </label>
+                              <select
+                                value={wcOverflowType}
+                                onChange={(e) =>
+                                  setWcOverflowType(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="Switch">Switch (स्विच)</option>
+                                <option value="Float Ball">
+                                  Float Ball (फ्लोट बॉल)
+                                </option>
+                                <option value="Electric Unit">
+                                  Electric Unit (इलेक्ट्रिक यूनिट)
+                                </option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: "bold",
+                                  display: "block",
+                                  marginBottom: "3px",
+                                  color: "#0369a1",
+                                }}
+                              >
+                                12. कंडेंसिंग कॉइल साइज (Condensing Coil Size):
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="जैसे: 12×14×2 Row"
+                                value={wcCondensingCoilSize}
+                                onChange={(e) =>
+                                  setWcCondensingCoilSize(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "10px",
+                          marginTop: "8px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(1)}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            backgroundColor: "#64748b",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ← पीछे
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(3)}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            backgroundColor: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          अगला →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* स्टेप 2 (B): AIR COOLER CHECKLIST */}
+                  {wizardStep === 2 && isAirCoolerSelected && (
                     <div
                       style={{
                         display: "flex",
@@ -3676,7 +4445,6 @@ export default function App() {
                     >
                       <h4>स्टेप 2: कूलर विवरण एवं निरीक्षण चेकलिस्ट</h4>
 
-                      {/* 2. कूलर का विवरण (Cooler Specifications) */}
                       <div
                         style={{
                           background: "#f8fafc",
@@ -3766,7 +4534,6 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* 3. चेकलिस्ट एवं निरीक्षण */}
                       <div
                         style={{
                           background: "#f8fafc",
@@ -3975,630 +4742,804 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 2: AC / HVAC (Slide 1 to 4) */}
-                  {wizardStep === 2 && !isCoolerSelected && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                      }}
-                    >
-                      <h4>स्टेप 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट</h4>
-
+                  {/* स्टेप 2 (C): AC / HVAC (Slide 1 to 4) */}
+                  {wizardStep === 2 &&
+                    !isAirCoolerSelected &&
+                    !isFridgeOrWCSelected && (
                       <div
                         style={{
                           display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          background: "#f1f5f9",
-                          padding: "8px 10px",
-                          borderRadius: "6px",
-                        }}
-                      >
-                        <strong style={{ fontSize: "12px" }}>
-                          भाग {techSlide} / 4
-                        </strong>
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          {[1, 2, 3, 4].map((num) => (
-                            <button
-                              key={num}
-                              type="button"
-                              onClick={() => setTechSlide(num)}
-                              style={{
-                                padding: "4px 10px",
-                                borderRadius: "4px",
-                                border: "1px solid #1e3a8a",
-                                background:
-                                  techSlide === num ? "#1e3a8a" : "#ffffff",
-                                color:
-                                  techSlide === num ? "#ffffff" : "#1e3a8a",
-                                fontWeight: "bold",
-                                fontSize: "12px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {num}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {techSlide === 1 && (
-                        <div
-                          style={{
-                            background: "#f8fafc",
-                            padding: "10px",
-                            borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                          }}
-                        >
-                          <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                            1. यूनिट और कंप्रेसर विवरण
-                          </strong>
-                          <div style={{ display: "flex", gap: "5px" }}>
-                            <input
-                              type="text"
-                              placeholder="Indoor Model"
-                              value={indoorModel}
-                              onChange={(e) => setIndoorModel(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Indoor Serial"
-                              value={indoorSerial}
-                              onChange={(e) => setIndoorSerial(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                          </div>
-                          <div style={{ display: "flex", gap: "5px" }}>
-                            <input
-                              type="text"
-                              placeholder="Outdoor Model"
-                              value={outdoorModel}
-                              onChange={(e) => setOutdoorModel(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Outdoor Serial"
-                              value={outdoorSerial}
-                              onChange={(e) => setOutdoorSerial(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                          </div>
-                          <div style={{ display: "flex", gap: "5px" }}>
-                            <input
-                              type="text"
-                              placeholder="Compressor Model"
-                              value={compressorModel}
-                              onChange={(e) =>
-                                setCompressorModel(e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Compressor Serial"
-                              value={compressorSerial}
-                              onChange={(e) =>
-                                setCompressorSerial(e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                          </div>
-                          <div style={{ display: "flex", gap: "5px" }}>
-                            <input
-                              type="text"
-                              placeholder="In-Door Motor Model"
-                              value={indoorMotorModel}
-                              onChange={(e) =>
-                                setIndoorMotorModel(e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="In-Door Motor Serial"
-                              value={indoorMotorSerial}
-                              onChange={(e) =>
-                                setIndoorMotorSerial(e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                          </div>
-                          <div style={{ display: "flex", gap: "5px" }}>
-                            <input
-                              type="text"
-                              placeholder="Out-Door Motor Model"
-                              value={outdoorMotorModel}
-                              onChange={(e) =>
-                                setOutdoorMotorModel(e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Out-Door Motor Serial"
-                              value={outdoorMotorSerial}
-                              onChange={(e) =>
-                                setOutdoorMotorSerial(e.target.value)
-                              }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {techSlide === 2 && (
-                        <div
-                          style={{
-                            background: "#f8fafc",
-                            padding: "10px",
-                            borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: "8px",
-                          }}
-                        >
-                          <div style={{ gridColumn: "1 / -1" }}>
-                            <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                              2. सर्विस एवं फिजिकल चेकलिस्ट:
-                            </strong>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              FILTER CLEAN:
-                            </label>
-                            <select
-                              value={filterClean}
-                              onChange={(e) => setFilterClean(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="OK">OK (साफ किया)</option>
-                              <option value="Not OK">Not OK / Damaged</option>
-                              <option value="NA">N/A</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              STAND TYPE:
-                            </label>
-                            <select
-                              value={standType}
-                              onChange={(e) => setStandType(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="Wall Stand">Wall Stand</option>
-                              <option value="Floor Stand">Floor Stand</option>
-                              <option value="Hanging / Ceiling">
-                                Hanging / Ceiling
-                              </option>
-                              <option value="Not Required">Not Required</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              SWING / FLAPPER:
-                            </label>
-                            <select
-                              value={swingFlapper}
-                              onChange={(e) => setSwingFlapper(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="OK">OK</option>
-                              <option value="Not Working">Not Working</option>
-                              <option value="Broken">Broken</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              STABILIZER:
-                            </label>
-                            <select
-                              value={stabilizer}
-                              onChange={(e) => setStabilizer(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="OK">OK</option>
-                              <option value="Faulty">Faulty</option>
-                              <option value="Not Installed">Not Installed</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              REMOTE:
-                            </label>
-                            <select
-                              value={remoteStatus}
-                              onChange={(e) => setRemoteStatus(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="OK">OK</option>
-                              <option value="Not Working">Not Working</option>
-                              <option value="Missing">Missing</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              OUTDOOR CLEAN:
-                            </label>
-                            <select
-                              value={outdoorClean}
-                              onChange={(e) => setOutdoorClean(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="OK">OK (सर्विस की गई)</option>
-                              <option value="Pending">Pending</option>
-                              <option value="NA">N/A</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      {techSlide === 3 && (
-                        <div
-                          style={{
-                            background: "#f8fafc",
-                            padding: "10px",
-                            borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: "8px",
-                          }}
-                        >
-                          <div style={{ gridColumn: "1 / -1" }}>
-                            <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                              3. गैस, पाइपिंग एवं तापमान माप:
-                            </strong>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              ROOM TEMP (°C):
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. 24°C"
-                              value={roomTemp}
-                              onChange={(e) => setRoomTemp(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              SUCTION PRESSURE:
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. 120 PSI"
-                              value={sectionPressure}
-                              onChange={(e) =>
-                                setSectionPressure(e.target.value)
-                              }
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              DRAIN WITH SIZE:
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. 1 inch PVC"
-                              value={drainSize}
-                              onChange={(e) => setDrainSize(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              COPPER PIPE SIZE:
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. 1/4 & 1/2"
-                              value={copperPipeSize}
-                              onChange={(e) =>
-                                setCopperPipeSize(e.target.value)
-                              }
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              WIRE SIZE &amp; CORE:
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. 2.5 sqmm 3 Core"
-                              value={wireSizeCore}
-                              onChange={(e) => setWireSizeCore(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: "11px", fontWeight: "bold" }}>
-                              INSULATION:
-                            </label>
-                            <select
-                              value={insulation}
-                              onChange={(e) => setInsulation(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                            >
-                              <option value="OK">OK</option>
-                              <option value="Damaged">Damaged</option>
-                              <option value="Replaced">Replaced</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      {techSlide === 4 && (
-                        <div
-                          style={{
-                            background: "#f8fafc",
-                            padding: "10px",
-                            borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                          }}
-                        >
-                          <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                            {isSinglePhaseSelected
-                              ? "4. वोल्टेज एवं एम्पीयर रीडिंग (Single Phase):"
-                              : "4. वोल्टेज, एम्पीयर एवं 3-फ़ेज़ रीडिंग (R / Y / B):"}
-                          </strong>
-
-                          {isSinglePhaseSelected ? (
-                            <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "1fr 1fr 1fr",
-                                gap: "8px",
-                              }}
-                            >
-                              <div>
-                                <label
-                                  style={{
-                                    fontSize: "11px",
-                                    fontWeight: "bold",
-                                    display: "block",
-                                    marginBottom: "3px",
-                                  }}
-                                >
-                                  वोल्टेज (Voltage):
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g. 230V"
-                                  value={voltage}
-                                  onChange={(e) => setVoltage(e.target.value)}
-                                  style={{
-                                    ...inputStyle,
-                                    width: "100%",
-                                    fontSize: "12px",
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  style={{
-                                    fontSize: "11px",
-                                    fontWeight: "bold",
-                                    display: "block",
-                                    marginBottom: "3px",
-                                  }}
-                                >
-                                  कंप्रेसर Ampere:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g. 6.5 A"
-                                  value={compressorAmpere}
-                                  onChange={(e) =>
-                                    setCompressorAmpere(e.target.value)
-                                  }
-                                  style={{
-                                    ...inputStyle,
-                                    width: "100%",
-                                    fontSize: "12px",
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  style={{
-                                    fontSize: "11px",
-                                    fontWeight: "bold",
-                                    display: "block",
-                                    marginBottom: "3px",
-                                  }}
-                                >
-                                  यूनिट Ampere:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g. 7.2 A"
-                                  value={ampere}
-                                  onChange={(e) => setAmpere(e.target.value)}
-                                  style={{
-                                    ...inputStyle,
-                                    width: "100%",
-                                    fontSize: "12px",
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div style={{ display: "flex", gap: "5px" }}>
-                                <input
-                                  type="text"
-                                  placeholder="Voltage (415V / 230V)"
-                                  value={voltage}
-                                  onChange={(e) => setVoltage(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Compressor Ampere"
-                                  value={compressorAmpere}
-                                  onChange={(e) =>
-                                    setCompressorAmpere(e.target.value)
-                                  }
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Unit Ampere"
-                                  value={ampere}
-                                  onChange={(e) => setAmpere(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                              </div>
-                              <div style={{ display: "flex", gap: "5px" }}>
-                                <input
-                                  type="text"
-                                  placeholder="R Voltage"
-                                  value={phaseR}
-                                  onChange={(e) => setPhaseR(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Y Voltage"
-                                  value={phaseY}
-                                  onChange={(e) => setPhaseY(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="B Voltage"
-                                  value={phaseB}
-                                  onChange={(e) => setPhaseB(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                              </div>
-                              <div style={{ display: "flex", gap: "5px" }}>
-                                <input
-                                  type="text"
-                                  placeholder="R Ampere"
-                                  value={ampR}
-                                  onChange={(e) => setAmpR(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Y Ampere"
-                                  value={ampY}
-                                  onChange={(e) => setAmpY(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="B Ampere"
-                                  value={ampB}
-                                  onChange={(e) => setAmpB(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button
-                          type="button"
-                          disabled={techSlide === 1}
-                          onClick={() =>
-                            setTechSlide((prev) => Math.max(1, prev - 1))
-                          }
-                          style={{
-                            flex: 1,
-                            padding: "8px",
-                            background: "#e2e8f0",
-                            color: "#1e293b",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontWeight: "bold",
-                            opacity: techSlide === 1 ? 0.5 : 1,
-                            cursor: "pointer",
-                          }}
-                        >
-                          ← पिछला भाग
-                        </button>
-                        <button
-                          type="button"
-                          disabled={techSlide === 4}
-                          onClick={() =>
-                            setTechSlide((prev) => Math.min(4, prev + 1))
-                          }
-                          style={{
-                            flex: 1,
-                            padding: "8px",
-                            background: "#1e3a8a",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontWeight: "bold",
-                            opacity: techSlide === 4 ? 0.5 : 1,
-                            cursor: "pointer",
-                          }}
-                        >
-                          अगला भाग →
-                        </button>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
+                          flexDirection: "column",
                           gap: "10px",
-                          marginTop: "8px",
                         }}
                       >
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(1)}
+                        <h4>स्टेप 2: टेक्निकल पैरामीटर्स एवं चेकलिस्ट</h4>
+
+                        <div
                           style={{
-                            flex: 1,
-                            padding: "10px",
-                            backgroundColor: "#64748b",
-                            color: "#fff",
-                            border: "none",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            background: "#f1f5f9",
+                            padding: "8px 10px",
                             borderRadius: "6px",
-                            cursor: "pointer",
                           }}
                         >
-                          ← पीछे
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(3)}
+                          <strong style={{ fontSize: "12px" }}>
+                            भाग {techSlide} / 4
+                          </strong>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            {[1, 2, 3, 4].map((num) => (
+                              <button
+                                key={num}
+                                type="button"
+                                onClick={() => setTechSlide(num)}
+                                style={{
+                                  padding: "4px 10px",
+                                  borderRadius: "4px",
+                                  border: "1px solid #1e3a8a",
+                                  background:
+                                    techSlide === num ? "#1e3a8a" : "#ffffff",
+                                  color:
+                                    techSlide === num ? "#ffffff" : "#1e3a8a",
+                                  fontWeight: "bold",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {num}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {techSlide === 1 && (
+                          <div
+                            style={{
+                              background: "#f8fafc",
+                              padding: "10px",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "8px",
+                            }}
+                          >
+                            <strong
+                              style={{ fontSize: "12px", color: "#0f172a" }}
+                            >
+                              1. यूनिट और कंप्रेसर विवरण
+                            </strong>
+                            <div style={{ display: "flex", gap: "5px" }}>
+                              <input
+                                type="text"
+                                placeholder="Indoor Model"
+                                value={indoorModel}
+                                onChange={(e) => setIndoorModel(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Indoor Serial"
+                                value={indoorSerial}
+                                onChange={(e) =>
+                                  setIndoorSerial(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div style={{ display: "flex", gap: "5px" }}>
+                              <input
+                                type="text"
+                                placeholder="Outdoor Model"
+                                value={outdoorModel}
+                                onChange={(e) =>
+                                  setOutdoorModel(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Outdoor Serial"
+                                value={outdoorSerial}
+                                onChange={(e) =>
+                                  setOutdoorSerial(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div style={{ display: "flex", gap: "5px" }}>
+                              <input
+                                type="text"
+                                placeholder="Compressor Model"
+                                value={compressorModel}
+                                onChange={(e) =>
+                                  setCompressorModel(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Compressor Serial"
+                                value={compressorSerial}
+                                onChange={(e) =>
+                                  setCompressorSerial(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div style={{ display: "flex", gap: "5px" }}>
+                              <input
+                                type="text"
+                                placeholder="In-Door Motor Model"
+                                value={indoorMotorModel}
+                                onChange={(e) =>
+                                  setIndoorMotorModel(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="In-Door Motor Serial"
+                                value={indoorMotorSerial}
+                                onChange={(e) =>
+                                  setIndoorMotorSerial(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div style={{ display: "flex", gap: "5px" }}>
+                              <input
+                                type="text"
+                                placeholder="Out-Door Motor Model"
+                                value={outdoorMotorModel}
+                                onChange={(e) =>
+                                  setOutdoorMotorModel(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Out-Door Motor Serial"
+                                value={outdoorMotorSerial}
+                                onChange={(e) =>
+                                  setOutdoorMotorSerial(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  flex: 1,
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {techSlide === 2 && (
+                          <div
+                            style={{
+                              background: "#f8fafc",
+                              padding: "10px",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: "8px",
+                            }}
+                          >
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              <strong
+                                style={{ fontSize: "12px", color: "#0f172a" }}
+                              >
+                                2. सर्विस एवं फिजिकल चेकलिस्ट:
+                              </strong>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                FILTER CLEAN:
+                              </label>
+                              <select
+                                value={filterClean}
+                                onChange={(e) => setFilterClean(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="OK">OK (साफ किया)</option>
+                                <option value="Not OK">Not OK / Damaged</option>
+                                <option value="NA">N/A</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                STAND TYPE:
+                              </label>
+                              <select
+                                value={standType}
+                                onChange={(e) => setStandType(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="Wall Stand">Wall Stand</option>
+                                <option value="Floor Stand">Floor Stand</option>
+                                <option value="Hanging / Ceiling">
+                                  Hanging / Ceiling
+                                </option>
+                                <option value="Not Required">Not Required</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                SWING / FLAPPER:
+                              </label>
+                              <select
+                                value={swingFlapper}
+                                onChange={(e) =>
+                                  setSwingFlapper(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="OK">OK</option>
+                                <option value="Not Working">Not Working</option>
+                                <option value="Broken">Broken</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                STABILIZER:
+                              </label>
+                              <select
+                                value={stabilizer}
+                                onChange={(e) => setStabilizer(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="OK">OK</option>
+                                <option value="Faulty">Faulty</option>
+                                <option value="Not Installed">
+                                  Not Installed
+                                </option>
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                REMOTE:
+                              </label>
+                              <select
+                                value={remoteStatus}
+                                onChange={(e) =>
+                                  setRemoteStatus(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="OK">OK</option>
+                                <option value="Not Working">Not Working</option>
+                                <option value="Missing">Missing</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                OUTDOOR CLEAN:
+                              </label>
+                              <select
+                                value={outdoorClean}
+                                onChange={(e) =>
+                                  setOutdoorClean(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="OK">OK (सर्विस की गई)</option>
+                                <option value="Pending">Pending</option>
+                                <option value="NA">N/A</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
+                        {techSlide === 3 && (
+                          <div
+                            style={{
+                              background: "#f8fafc",
+                              padding: "10px",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: "8px",
+                            }}
+                          >
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              <strong
+                                style={{ fontSize: "12px", color: "#0f172a" }}
+                              >
+                                3. गैस, पाइपिंग एवं तापमान माप:
+                              </strong>
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                ROOM TEMP (°C):
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 24°C"
+                                value={roomTemp}
+                                onChange={(e) => setRoomTemp(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                SUCTION PRESSURE:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 120 PSI"
+                                value={sectionPressure}
+                                onChange={(e) =>
+                                  setSectionPressure(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                DRAIN WITH SIZE:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 1 inch PVC"
+                                value={drainSize}
+                                onChange={(e) => setDrainSize(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                COPPER PIPE SIZE:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 1/4 & 1/2"
+                                value={copperPipeSize}
+                                onChange={(e) =>
+                                  setCopperPipeSize(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                WIRE SIZE &amp; CORE:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 2.5 sqmm 3 Core"
+                                value={wireSizeCore}
+                                onChange={(e) =>
+                                  setWireSizeCore(e.target.value)
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                style={{ fontSize: "11px", fontWeight: "bold" }}
+                              >
+                                INSULATION:
+                              </label>
+                              <select
+                                value={insulation}
+                                onChange={(e) => setInsulation(e.target.value)}
+                                style={{
+                                  ...inputStyle,
+                                  width: "100%",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                <option value="OK">OK</option>
+                                <option value="Damaged">Damaged</option>
+                                <option value="Replaced">Replaced</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
+                        {techSlide === 4 && (
+                          <div
+                            style={{
+                              background: "#f8fafc",
+                              padding: "10px",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "8px",
+                            }}
+                          >
+                            <strong
+                              style={{ fontSize: "12px", color: "#0f172a" }}
+                            >
+                              {isSinglePhaseSelected
+                                ? "4. वोल्टेज एवं एम्पीयर रीडिंग (Single Phase):"
+                                : "4. वोल्टेज, एम्पीयर एवं 3-फ़ेज़ रीडिंग (R / Y / B):"}
+                            </strong>
+
+                            {isSinglePhaseSelected ? (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr 1fr 1fr",
+                                  gap: "8px",
+                                }}
+                              >
+                                <div>
+                                  <label
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "bold",
+                                      display: "block",
+                                      marginBottom: "3px",
+                                    }}
+                                  >
+                                    वोल्टेज (Voltage):
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. 230V"
+                                    value={voltage}
+                                    onChange={(e) => setVoltage(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      width: "100%",
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <label
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "bold",
+                                      display: "block",
+                                      marginBottom: "3px",
+                                    }}
+                                  >
+                                    कंप्रेसर Ampere:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. 6.5 A"
+                                    value={compressorAmpere}
+                                    onChange={(e) =>
+                                      setCompressorAmpere(e.target.value)
+                                    }
+                                    style={{
+                                      ...inputStyle,
+                                      width: "100%",
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <label
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "bold",
+                                      display: "block",
+                                      marginBottom: "3px",
+                                    }}
+                                  >
+                                    यूनिट Ampere:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. 7.2 A"
+                                    value={ampere}
+                                    onChange={(e) => setAmpere(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      width: "100%",
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div style={{ display: "flex", gap: "5px" }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Voltage (415V / 230V)"
+                                    value={voltage}
+                                    onChange={(e) => setVoltage(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Compressor Ampere"
+                                    value={compressorAmpere}
+                                    onChange={(e) =>
+                                      setCompressorAmpere(e.target.value)
+                                    }
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Unit Ampere"
+                                    value={ampere}
+                                    onChange={(e) => setAmpere(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                </div>
+                                <div style={{ display: "flex", gap: "5px" }}>
+                                  <input
+                                    type="text"
+                                    placeholder="R Voltage"
+                                    value={phaseR}
+                                    onChange={(e) => setPhaseR(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Y Voltage"
+                                    value={phaseY}
+                                    onChange={(e) => setPhaseY(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="B Voltage"
+                                    value={phaseB}
+                                    onChange={(e) => setPhaseB(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                </div>
+                                <div style={{ display: "flex", gap: "5px" }}>
+                                  <input
+                                    type="text"
+                                    placeholder="R Ampere"
+                                    value={ampR}
+                                    onChange={(e) => setAmpR(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Y Ampere"
+                                    value={ampY}
+                                    onChange={(e) => setAmpY(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="B Ampere"
+                                    value={ampB}
+                                    onChange={(e) => setAmpB(e.target.value)}
+                                    style={{
+                                      ...inputStyle,
+                                      flex: 1,
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            type="button"
+                            disabled={techSlide === 1}
+                            onClick={() =>
+                              setTechSlide((prev) => Math.max(1, prev - 1))
+                            }
+                            style={{
+                              flex: 1,
+                              padding: "8px",
+                              background: "#e2e8f0",
+                              color: "#1e293b",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontWeight: "bold",
+                              opacity: techSlide === 1 ? 0.5 : 1,
+                              cursor: "pointer",
+                            }}
+                          >
+                            ← पिछला भाग
+                          </button>
+                          <button
+                            type="button"
+                            disabled={techSlide === 4}
+                            onClick={() =>
+                              setTechSlide((prev) => Math.min(4, prev + 1))
+                            }
+                            style={{
+                              flex: 1,
+                              padding: "8px",
+                              background: "#1e3a8a",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontWeight: "bold",
+                              opacity: techSlide === 4 ? 0.5 : 1,
+                              cursor: "pointer",
+                            }}
+                          >
+                            अगला भाग →
+                          </button>
+                        </div>
+
+                        <div
                           style={{
-                            flex: 1,
-                            padding: "10px",
-                            backgroundColor: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
+                            display: "flex",
+                            gap: "10px",
+                            marginTop: "8px",
                           }}
                         >
-                          अगला →
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => setWizardStep(1)}
+                            style={{
+                              flex: 1,
+                              padding: "10px",
+                              backgroundColor: "#64748b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "6px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ← पीछे
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWizardStep(3)}
+                            style={{
+                              flex: 1,
+                              padding: "10px",
+                              backgroundColor: "#166534",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "6px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                            }}
+                          >
+                            अगला →
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* स्टेप 3: किया गया कार्य + स्पेयर पार्ट्स + मैटेरियल्स + सर्विस चार्ज एवं टोटल बिल */}
                   {wizardStep === 3 && (
@@ -4630,7 +5571,7 @@ export default function App() {
                         <textarea
                           rows="2"
                           placeholder={
-                            isCoolerSelected
+                            isAirCoolerSelected
                               ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
                               : "किया गया कार्य लिखें..."
                           }
@@ -4699,8 +5640,10 @@ export default function App() {
                                     <input
                                       type="text"
                                       placeholder={
-                                        isCoolerSelected
+                                        isAirCoolerSelected
                                           ? "जैसे: Water Pump, Cooling Pad, Fan Motor..."
+                                          : isFridgeOrWCSelected
+                                          ? "जैसे: Tap, Float Valve, Relay, OLP, Gas..."
                                           : "स्पेयर पार्ट का नाम"
                                       }
                                       value={item.partName}
