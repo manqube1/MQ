@@ -11,6 +11,7 @@ import {
   increment,
   serverTimestamp,
   onSnapshot,
+  arrayUnion,
 } from "firebase/firestore";
 import {
   getStorage,
@@ -36,6 +37,21 @@ export const storage = getStorage(app);
 
 const TELEGRAM_BOT_TOKEN = "8692296744:AAEsSO0K5x0yv_gnjljcAYvNCaIauNvCSac";
 const TELEGRAM_CHAT_ID = "5603316430";
+
+const HINDI_MONTHS = [
+  "जनवरी (January)",
+  "फ़रवरी (February)",
+  "मार्च (March)",
+  "अप्रैल (April)",
+  "मई (May)",
+  "जून (June)",
+  "जुलाई (July)",
+  "अगस्त (August)",
+  "सितंबर (September)",
+  "अक्टूबर (October)",
+  "नवंबर (November)",
+  "दिसंबर (December)",
+];
 
 const sendStaffTelegramAlert = async (messageText) => {
   try {
@@ -95,6 +111,58 @@ const inputStyle = {
 };
 
 const chkBox = (checked) => (checked ? "☑" : "☐");
+
+// हेल्पर: समय और काम की अवधि निकालना
+const formatTime12 = (ts) => {
+  if (!ts) return "-";
+  const d = new Date(ts);
+  return d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const calcWorkDuration = (inTs, outTs) => {
+  if (!inTs) return "-";
+  const endTs = outTs || Date.now();
+  const diffMs = Math.max(0, endTs - inTs);
+  const hrs = Math.floor(diffMs / 3600000);
+  const mins = Math.floor((diffMs % 3600000) / 60000);
+  return `${hrs} घंटे ${mins} मिनट${!outTs ? " (Active)" : ""}`;
+};
+
+const getTodayKey = (dateObj = new Date()) => {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+// Reverse Geocoding (OpenStreetMap / Nominatim से लोकेशन का नाम टेक्स्ट में लाना)
+const fetchReadableAddress = async (lat, lng) => {
+  try {
+    if (!navigator.onLine) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`
+    );
+    const data = await res.json();
+    if (data && data.address) {
+      const a = data.address;
+      const parts = [
+        a.road || a.neighbourhood || a.suburb,
+        a.city_district || a.town || a.city || a.county,
+      ].filter(Boolean);
+      if (parts.length > 0) return parts.join(", ");
+    }
+    if (data && data.display_name) {
+      return data.display_name.split(",").slice(0, 3).join(",");
+    }
+  } catch (e) {
+    // Fallback to lat, lng
+  }
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+};
 
 // हेल्पर: Water Cooler चेक करने के लिए
 const checkIsWaterCooler = (prodType = "", prodFull = "") => {
@@ -162,7 +230,6 @@ const CoolerPrintableJobSheet = ({ job }) => {
 
   return (
     <div id="printable-job-card" className="print-sheet-wrapper">
-      {/* केवल लोगो ऊपर लेफ्ट साइड में (बिना कंपनी नाम व एड्रेस के) */}
       <div
         style={{
           display: "flex",
@@ -212,6 +279,12 @@ const CoolerPrintableJobSheet = ({ job }) => {
           <tr>
             <td colSpan="2">
               <strong>लोकेशन / साइट का पता:</strong> {job.customerAddress}
+            </td>
+          </tr>
+          <tr>
+            <td colSpan="2">
+              <strong>समस्या / फॉल्ट विवरण (Fault Details):</strong>{" "}
+              {job.faultDetails || job.desc || ""}
             </td>
           </tr>
           <tr>
@@ -622,7 +695,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
         <CoolerPrintableJobSheet job={job} />
       ) : (
         <div id="printable-job-card" className="print-sheet-wrapper">
-          {/* केवल लोगो ऊपर लेफ्ट साइड में (कंपनी नाम और एड्रेस नहीं दिखेगा) */}
+          {/* केवल लोगो ऊपर लेफ्ट साइड में */}
           <div
             style={{
               display: "flex",
@@ -657,15 +730,15 @@ const PrintableJobSheet = ({ job, onClose }) => {
               <tr>
                 <td rowSpan="6" style={{ width: "55%", borderTop: "none" }}>
                   <div className="js-bold">CUSTOMER NAME :-</div>
-                  <div style={{ marginBottom: "8px", minHeight: "16px" }}>
+                  <div style={{ marginBottom: "6px", minHeight: "15px" }}>
                     {job.customerName}
                   </div>
                   <div className="js-bold">MOBILE :-</div>
-                  <div style={{ marginBottom: "8px", minHeight: "16px" }}>
+                  <div style={{ marginBottom: "6px", minHeight: "15px" }}>
                     {job.customerPhone}
                   </div>
                   <div className="js-bold">ADDRESS :-</div>
-                  <div style={{ minHeight: "26px" }}>{job.customerAddress}</div>
+                  <div style={{ minHeight: "22px" }}>{job.customerAddress}</div>
                 </td>
                 <td style={{ width: "18%", borderTop: "none" }} className="js-bold">
                   JOB NO.
@@ -704,8 +777,15 @@ const PrintableJobSheet = ({ job, onClose }) => {
             <>
               <table className="js-table" style={{ borderTop: "none" }}>
                 <tbody>
+                  {/* Customer वाले के ठीक नीचे Fault / Problem Details */}
+                  <tr>
+                    <td colSpan="4" style={{ borderTop: "none", background: "#fafafa" }}>
+                      <span className="js-bold">FAULT / PROBLEM DETAILS :- </span>
+                      <span>{job.faultDetails || job.desc || ""}</span>
+                    </td>
+                  </tr>
                   <tr className="js-sec-hdr">
-                    <td colSpan="4" style={{ borderTop: "none" }}>
+                    <td colSpan="4">
                       {isWaterCoolerJob
                         ? "WATER COOLER TECHNICAL DETAILS"
                         : "DEEP FREEZER / REFRIGERATOR TECHNICAL DETAILS"}
@@ -770,7 +850,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                     </td>
                   </tr>
 
-                  {/* Water Cooler के अतिरिक्त 4 ऑप्शन */}
                   {isWaterCoolerJob && (
                     <>
                       <tr>
@@ -807,26 +886,20 @@ const PrintableJobSheet = ({ job, onClose }) => {
                 </tbody>
               </table>
 
-              {/* Fault & Work Done Table */}
+              {/* Work / Action Taken को अब पूरी चौड़ाई मिल रही है */}
               <table
                 className="js-table"
                 style={{ borderTop: "none", flex: 1 }}
               >
                 <tbody>
                   <tr className="js-sec-hdr">
-                    <td style={{ width: "45%", borderTop: "none" }}>
-                      FAULT / PROBLEM DETAILS
-                    </td>
-                    <td style={{ width: "42%", borderTop: "none" }}>
+                    <td style={{ width: "82%", borderTop: "none" }}>
                       WORK / ACTION TAKEN AND USE PART
                     </td>
-                    <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+                    <td style={{ width: "18%", borderTop: "none" }}>RATE</td>
                   </tr>
                   <tr>
                     <td style={{ height: "110px" }}>
-                      1. {job.faultDetails || job.desc || ""}
-                    </td>
-                    <td>
                       <div>1. {job.desc || ""}</div>
                       {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
                         job.usedParts.map((p, i) => {
@@ -929,18 +1002,34 @@ const PrintableJobSheet = ({ job, onClose }) => {
               </table>
             </>
           ) : (
-            /* बाक़ी AC यूनिट्स का सेक्शन */
+            /* बाक़ी AC यूनिट्स का सेक्शन: Customer वाले के ठीक नीचे खाली जगह में Fault / Problem Details */
             <>
               <table className="js-table" style={{ borderTop: "none" }}>
                 <tbody>
                   <tr>
                     <td
+                      rowSpan="3"
                       style={{
                         width: "45%",
                         borderTop: "none",
-                        borderBottom: "none",
+                        verticalAlign: "top",
+                        background: "#fafafa",
                       }}
-                    ></td>
+                    >
+                      <div
+                        className="js-bold"
+                        style={{
+                          borderBottom: "1px solid #cbd5e1",
+                          paddingBottom: "3px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        FAULT / PROBLEM DETAILS :-
+                      </div>
+                      <div style={{ fontSize: "11px", lineHeight: "1.35" }}>
+                        {job.faultDetails || job.desc || ""}
+                      </div>
+                    </td>
                     <td
                       style={{
                         width: "18%",
@@ -978,7 +1067,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ borderTop: "none", borderBottom: "none" }}></td>
                     <td
                       style={{ verticalAlign: "middle", textAlign: "center" }}
                       className="js-bold"
@@ -1011,7 +1099,6 @@ const PrintableJobSheet = ({ job, onClose }) => {
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ borderTop: "none" }}></td>
                     <td
                       style={{ verticalAlign: "middle", textAlign: "center" }}
                       className="js-bold"
@@ -1046,25 +1133,20 @@ const PrintableJobSheet = ({ job, onClose }) => {
                 </tbody>
               </table>
 
+              {/* Work / Action Taken को अब पूरी चौड़ाई मिल रही है */}
               <table
                 className="js-table"
                 style={{ borderTop: "none", flex: 1 }}
               >
                 <tbody>
                   <tr className="js-sec-hdr">
-                    <td style={{ width: "45%", borderTop: "none" }}>
-                      FAULT / PROBLEM DETAILS
-                    </td>
-                    <td style={{ width: "42%", borderTop: "none" }}>
+                    <td style={{ width: "82%", borderTop: "none" }}>
                       WORK / ACTION TAKEN AND USE PART
                     </td>
-                    <td style={{ width: "13%", borderTop: "none" }}>RATE</td>
+                    <td style={{ width: "18%", borderTop: "none" }}>RATE</td>
                   </tr>
                   <tr>
                     <td style={{ height: "75px" }}>
-                      1. {job.faultDetails || job.desc || ""}
-                    </td>
-                    <td>
                       <div>1. {job.desc || ""}</div>
                       {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
                         job.usedParts.map((p, i) => {
@@ -1571,6 +1653,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [jobSheets, setJobSheets] = useState([]);
   const [loginLogs, setLoginLogs] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
   const [spareStock, setSpareStock] = useState([
     {
       name: "Compressor 1.5 Ton",
@@ -1594,12 +1680,25 @@ export default function App() {
   const [productType, setProductType] = useState("Split / Window AC");
   const [problemDesc, setProblemDesc] = useState("");
 
-  const [staffPhoneInput, setStaffPhoneInput] = useState("");
+  // Persistent Staff Session (जब तक Logout न करे, In रहेगा और लोकेशन सेव होगी)
+  const savedStaffSession = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("mq_active_staff_session") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const [staffPhoneInput, setStaffPhoneInput] = useState(
+    savedStaffSession?.phone || ""
+  );
   const [otpStep, setOtpStep] = useState(1);
   const [enteredOtp, setEnteredOtp] = useState("");
   const [generatedOtp, setGeneratedOtp] = useState("");
-  const [staffLoggedIn, setStaffLoggedIn] = useState(false);
-  const [currentStaffName, setCurrentStaffName] = useState("");
+  const [staffLoggedIn, setStaffLoggedIn] = useState(Boolean(savedStaffSession));
+  const [currentStaffName, setCurrentStaffName] = useState(
+    savedStaffSession?.name || ""
+  );
   const [staffGpsLocation, setStaffGpsLocation] = useState("Fetching GPS...");
   const [staffSubTab, setStaffSubTab] = useState("menu");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
@@ -1613,6 +1712,11 @@ export default function App() {
   const [adminJobSubTab, setAdminJobSubTab] = useState("completed");
   const [adminSpareSubTab, setAdminSpareSubTab] = useState("stock");
   const [selectedStaffFolder, setSelectedStaffFolder] = useState(null);
+
+  // Admin Attendance Drill-Down States (Year -> Month -> Staff -> Daily Logs)
+  const [attSelectedYear, setAttSelectedYear] = useState(null);
+  const [attSelectedMonth, setAttSelectedMonth] = useState(null);
+  const [attSelectedStaffPhone, setAttSelectedStaffPhone] = useState(null);
 
   const [newStockName, setNewStockName] = useState("");
   const [newStockQty, setNewStockQty] = useState("");
@@ -1720,22 +1824,285 @@ export default function App() {
   const isFridgeOrWCSelected = checkIsFridgeOrWaterCooler(productType);
   const isSinglePhaseSelected = checkIsSinglePhase(productType);
 
+  // =========================================================
+  // OFFLINE QUEUE & SERVER SYNC ENGINE (इंटरनेट मिलते ही सिंक)
+  // =========================================================
+  const enqueueOfflinePayload = (payload) => {
+    try {
+      const q = JSON.parse(localStorage.getItem("mq_offline_sync_queue") || "[]");
+      q.push(payload);
+      localStorage.setItem("mq_offline_sync_queue", JSON.stringify(q));
+      setPendingSyncCount(q.length);
+    } catch (e) {
+      console.error("Queue write error:", e);
+    }
+  };
+
+  const flushOfflineQueueToServer = async () => {
+    if (!navigator.onLine) return;
+    let q = [];
+    try {
+      q = JSON.parse(localStorage.getItem("mq_offline_sync_queue") || "[]");
+    } catch {
+      q = [];
+    }
+    if (q.length === 0) {
+      setPendingSyncCount(0);
+      return;
+    }
+
+    const remaining = [];
+    for (const item of q) {
+      try {
+        if (item.type === "ATTENDANCE_UPSERT") {
+          const attRef = doc(db, "staff_attendance", item.docId);
+          const snap = await getDoc(attRef);
+          if (snap.exists()) {
+            const existing = snap.data();
+            const updates = {};
+            if (!existing.inTime && item.inTime) updates.inTime = item.inTime;
+            if (item.outTime) updates.outTime = item.outTime;
+            if (item.point) updates.routePoints = arrayUnion(item.point);
+            await updateDoc(attRef, updates);
+          } else {
+            await setDoc(attRef, {
+              docId: item.docId,
+              staffPhone: item.staffPhone,
+              staffName: item.staffName,
+              dateKey: item.dateKey,
+              year: item.year,
+              month: item.month,
+              day: item.day,
+              inTime: item.inTime || Date.now(),
+              outTime: item.outTime || null,
+              routePoints: item.point ? [item.point] : [],
+            });
+          }
+        } else if (item.type === "JOB_SAVE") {
+          await setDoc(doc(db, "jobs", item.jobSheetNo), item.record);
+        }
+      } catch (err) {
+        remaining.push(item);
+      }
+    }
+    localStorage.setItem("mq_offline_sync_queue", JSON.stringify(remaining));
+    setPendingSyncCount(remaining.length);
+  };
+
   useEffect(() => {
-    if (navigator.geolocation) {
+    const handleOnline = () => {
+      setIsOnline(true);
+      flushOfflineQueueToServer();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    flushOfflineQueueToServer();
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // =========================================================
+  // STAFF AUTO IN / OUT & CONTINUOUS GPS ROUTE TRACKING
+  // =========================================================
+  const logStaffAttendancePoint = async (
+    phone,
+    name,
+    coords,
+    eventType = "ROUTE"
+  ) => {
+    if (!phone) return;
+    const now = new Date();
+    const dateKey = getTodayKey(now);
+    const year = String(now.getFullYear());
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const docId = `${phone}_${dateKey}`;
+    const ts = now.getTime();
+
+    const addressText = coords
+      ? await fetchReadableAddress(coords.lat, coords.lng)
+      : "Location Unavailable";
+
+    const point = coords
+      ? {
+          lat: coords.lat,
+          lng: coords.lng,
+          address: addressText,
+          timeText: formatTime12(ts),
+          timestamp: ts,
+          event: eventType,
+        }
+      : null;
+
+    // Local State तुरंत अपडेट करें
+    setAttendanceRecords((prev) => {
+      const idx = prev.findIndex((r) => r.docId === docId);
+      if (idx > -1) {
+        const updated = [...prev];
+        const cur = updated[idx];
+        updated[idx] = {
+          ...cur,
+          inTime: cur.inTime || ts,
+          outTime: eventType === "OUT" ? ts : cur.outTime,
+          routePoints: point ? [...(cur.routePoints || []), point] : cur.routePoints || [],
+        };
+        return updated;
+      } else {
+        return [
+          {
+            docId,
+            staffPhone: phone,
+            staffName: name,
+            dateKey,
+            year,
+            month,
+            day,
+            inTime: ts,
+            outTime: eventType === "OUT" ? ts : null,
+            routePoints: point ? [point] : [],
+          },
+          ...prev,
+        ];
+      }
+    });
+
+    const payload = {
+      type: "ATTENDANCE_UPSERT",
+      docId,
+      staffPhone: phone,
+      staffName: name,
+      dateKey,
+      year,
+      month,
+      day,
+      inTime: eventType === "IN" ? ts : null,
+      outTime: eventType === "OUT" ? ts : null,
+      point,
+    };
+
+    if (navigator.onLine) {
+      try {
+        const attRef = doc(db, "staff_attendance", docId);
+        const snap = await getDoc(attRef);
+        if (snap.exists()) {
+          const updates = {};
+          if (!snap.data().inTime) updates.inTime = ts;
+          if (eventType === "OUT") updates.outTime = ts;
+          if (point) updates.routePoints = arrayUnion(point);
+          await updateDoc(attRef, updates);
+        } else {
+          await setDoc(attRef, {
+            docId,
+            staffPhone: phone,
+            staffName: name,
+            dateKey,
+            year,
+            month,
+            day,
+            inTime: ts,
+            outTime: eventType === "OUT" ? ts : null,
+            routePoints: point ? [point] : [],
+          });
+        }
+      } catch (e) {
+        enqueueOfflinePayload(payload);
+      }
+    } else {
+      enqueueOfflinePayload(payload);
+    }
+  };
+
+  // ऐप खुलते ही अगर स्टाफ पहले से लॉगिन है (Logout नहीं किया है) तो ऑटो IN और लगातार रूट ट्रैकिंग
+  useEffect(() => {
+    let watchId = null;
+    let intervalId = null;
+    let lastSavedCoords = null;
+
+    const captureCurrentPos = (evType = "ROUTE") => {
+      if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude.toFixed(4);
-          const lng = position.coords.longitude.toFixed(4);
-          setStaffGpsLocation(`Lat: ${lat}, Lng: ${lng} (GPS Active)`);
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setStaffGpsLocation(
+            `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (${
+              navigator.onLine ? "GPS Live" : "Offline Saved"
+            })`
+          );
+
+          if (staffLoggedIn && staffPhoneInput) {
+            const movedEnough =
+              !lastSavedCoords ||
+              Math.abs(lastSavedCoords.lat - lat) > 0.0008 ||
+              Math.abs(lastSavedCoords.lng - lng) > 0.0008 ||
+              evType === "IN";
+
+            if (movedEnough) {
+              lastSavedCoords = { lat, lng };
+              logStaffAttendancePoint(
+                staffPhoneInput,
+                currentStaffName || `Staff (${staffPhoneInput})`,
+                { lat, lng },
+                evType
+              );
+            }
+          }
         },
         () => {
-          setStaffGpsLocation("Lat: 25.4591, Lng: 81.8611 (GPS Active)");
-        }
+          setStaffGpsLocation("Prayagraj (GPS Active)");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
-    } else {
-      setStaffGpsLocation("Lat: 25.4591, Lng: 81.8611 (GPS Active)");
+    };
+
+    // पहली बार ऐप खुलते ही IN दर्ज करें
+    captureCurrentPos(staffLoggedIn ? "IN" : "PING");
+
+    if (staffLoggedIn && staffPhoneInput) {
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            setStaffGpsLocation(
+              `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (${
+                navigator.onLine ? "GPS Live" : "Offline Saved"
+              })`
+            );
+            const moved =
+              !lastSavedCoords ||
+              Math.abs(lastSavedCoords.lat - lat) > 0.001 ||
+              Math.abs(lastSavedCoords.lng - lng) > 0.001;
+            if (moved) {
+              lastSavedCoords = { lat, lng };
+              logStaffAttendancePoint(
+                staffPhoneInput,
+                currentStaffName || `Staff (${staffPhoneInput})`,
+                { lat, lng },
+                "ROUTE"
+              );
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 30000 }
+        );
+      }
+      // हर 3 मिनट में लोकेशन पॉइंट चेक करें
+      intervalId = setInterval(() => captureCurrentPos("ROUTE"), 180000);
     }
-  }, []);
+
+    return () => {
+      if (watchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+      if (intervalId !== null) clearInterval(intervalId);
+    };
+  }, [staffLoggedIn, staffPhoneInput]);
 
   useEffect(() => {
     const unsubJobs = onSnapshot(
@@ -1762,9 +2129,22 @@ export default function App() {
       (err) => console.log("Logs sync info:", err.message)
     );
 
+    const unsubAttendance = onSnapshot(
+      collection(db, "staff_attendance"),
+      (snapshot) => {
+        const att = [];
+        snapshot.forEach((d) => {
+          att.push({ id: d.id, ...d.data() });
+        });
+        setAttendanceRecords(att);
+      },
+      (err) => console.log("Attendance sync info:", err.message)
+    );
+
     return () => {
       unsubJobs();
       unsubLogs();
+      unsubAttendance();
     };
   }, []);
 
@@ -2074,24 +2454,71 @@ export default function App() {
       setOtpStep(1);
       setEnteredOtp("");
 
+      // लॉगिन सेशन सेव करें ताकि ऐप बंद होने या दोबारा खुलने पर भी IN बना रहे
+      localStorage.setItem(
+        "mq_active_staff_session",
+        JSON.stringify({
+          phone: staffPhoneInput,
+          name: staffLabel,
+          loginTime: Date.now(),
+        })
+      );
+
       recordUserLogin(staffPhoneInput, "staff", staffLabel);
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const lat = position.coords.latitude.toFixed(4);
-            const lng = position.coords.longitude.toFixed(4);
-            setStaffGpsLocation(`Lat: ${lat}, Lng: ${lng} (GPS Active)`);
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            setStaffGpsLocation(
+              `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (GPS Active)`
+            );
+            logStaffAttendancePoint(
+              staffPhoneInput,
+              staffLabel,
+              { lat, lng },
+              "IN"
+            );
           },
           () => {
             setStaffGpsLocation("Prayagraj (GPS Default)");
+            logStaffAttendancePoint(staffPhoneInput, staffLabel, null, "IN");
           }
         );
       } else {
         setStaffGpsLocation("Prayagraj (No GPS Support)");
+        logStaffAttendancePoint(staffPhoneInput, staffLabel, null, "IN");
       }
     } else {
       alert("गलत OTP! कृपया सही OTP दर्ज करें।");
+    }
+  };
+
+  // जब स्टाफ खुद Log Out पर क्लिक करेगा तभी उसका OUT टाइम सेव होगा
+  const handleStaffLogout = () => {
+    const phone = staffPhoneInput;
+    const name = currentStaffName || `Staff (${phone})`;
+
+    const finalizeLogout = (coords) => {
+      logStaffAttendancePoint(phone, name, coords, "OUT");
+      localStorage.removeItem("mq_active_staff_session");
+      setStaffLoggedIn(false);
+      alert("आप सफलतापूर्वक लॉग आउट हो गए हैं। आपका OUT समय और आज का रूट सेव हो गया है।");
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          finalizeLogout({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
+        () => finalizeLogout(null),
+        { timeout: 4000 }
+      );
+    } else {
+      finalizeLogout(null);
     }
   };
 
@@ -2119,7 +2546,6 @@ export default function App() {
     setAmcDate("");
     setFaultDetails("");
 
-    // Fridge / Deep Freezer / Water Cooler reset
     setUnitModel("");
     setUnitSerial("");
     setUnitCapacity("");
@@ -2129,7 +2555,6 @@ export default function App() {
     setWcOverflowType("Float Ball");
     setWcCondensingCoilSize("");
 
-    // AC / HVAC reset
     setIndoorModel("");
     setIndoorSerial("");
     setOutdoorModel("");
@@ -2162,7 +2587,6 @@ export default function App() {
     setAmpY("");
     setAmpB("");
 
-    // Air Cooler reset
     setCoolerWorkTypes(["Breakdown / Repair"]);
     setCoolerBodyMaterial("GI / Metal");
     setCoolerSubType("Desert Cooler");
@@ -2312,13 +2736,11 @@ export default function App() {
       sitePhotoUrls: uploadedPhotoUrls,
       signatureURL: savedSignatureURL,
 
-      // Deep Freezer / Refrigerator / Water Cooler Common Fields
       unitModel: isFridgeOrWCSelected ? unitModel || "-" : "-",
       unitSerial: isFridgeOrWCSelected ? unitSerial || "-" : "-",
       unitCapacity: isFridgeOrWCSelected ? unitCapacity || "-" : "-",
       condenserInOut: isFridgeOrWCSelected ? condenserInOut || "-" : "-",
 
-      // Water Cooler Specific 4 Fields
       wcTankSize: isWaterCoolerSelected ? `${wcTankSize} Ltr` : "-",
       wcTapCount: isWaterCoolerSelected ? `${wcTapCount} Tap` : "-",
       wcOverflowType: isWaterCoolerSelected ? wcOverflowType || "-" : "-",
@@ -2326,7 +2748,6 @@ export default function App() {
         ? wcCondensingCoilSize || "-"
         : "-",
 
-      // AC / HVAC Fields
       indoorModel: !isFridgeOrWCSelected ? indoorModel || "-" : "-",
       indoorSerial: !isFridgeOrWCSelected ? indoorSerial || "-" : "-",
       outdoorModel: !isFridgeOrWCSelected ? outdoorModel || "-" : "-",
@@ -2477,7 +2898,18 @@ export default function App() {
       `<b>लोकेशन:</b> ${updatedRecord.location}\n` +
       `<b>समय:</b> ${updatedRecord.date}`;
 
-    sendStaffTelegramAlert(telegramMsg);
+    if (navigator.onLine) {
+      sendStaffTelegramAlert(telegramMsg);
+    }
+
+    if (!navigator.onLine) {
+      enqueueOfflinePayload({
+        type: "JOB_SAVE",
+        jobSheetNo,
+        record: updatedRecord,
+      });
+      return;
+    }
 
     setDoc(doc(db, "jobs", jobSheetNo), updatedRecord)
       .then(() => {
@@ -2504,8 +2936,12 @@ export default function App() {
           );
         }
       })
-      .catch((error) => {
-        console.error("Background Firestore sync error:", error);
+      .catch(() => {
+        enqueueOfflinePayload({
+          type: "JOB_SAVE",
+          jobSheetNo,
+          record: updatedRecord,
+        });
       });
   };
 
@@ -2566,6 +3002,14 @@ export default function App() {
     acc[pName].push(job);
     return acc;
   }, {});
+
+  // अटेंडेंस के लिए उपलब्ध वर्ष (Years) निकालना
+  const availableYears = Array.from(
+    new Set([
+      String(new Date().getFullYear()),
+      ...attendanceRecords.map((r) => r.year).filter(Boolean),
+    ])
+  ).sort((a, b) => b.localeCompare(a));
 
   if (activeTab === "printSheet") {
     return (
@@ -2723,13 +3167,13 @@ export default function App() {
         </div>
       )}
 
-      {/* हेडर (केवल लोगो लेफ्ट साइड में) */}
+      {/* हेडर (केवल लोगो लेफ्ट साइड में + Network Sync स्टेटस) */}
       <div
         className="no-print"
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-start",
+          justifyContent: "space-between",
           padding: "12px 16px",
           background: "#fff",
           borderRadius: "8px",
@@ -2746,6 +3190,24 @@ export default function App() {
             objectFit: "contain",
           }}
         />
+        <div style={{ textAlign: "right", fontSize: "11px" }}>
+          <span
+            style={{
+              padding: "4px 8px",
+              borderRadius: "12px",
+              background: isOnline ? "#dcfce7" : "#fef3c7",
+              color: isOnline ? "#166534" : "#92400e",
+              fontWeight: "bold",
+            }}
+          >
+            {isOnline ? "🟢 Online (Synced)" : "🟠 Offline (Local Saving)"}
+          </span>
+          {pendingSyncCount > 0 && (
+            <div style={{ marginTop: "4px", color: "#b45309", fontWeight: "bold" }}>
+              Pending Sync: {pendingSyncCount} items
+            </div>
+          )}
+        </div>
       </div>
 
       {activeTab !== "home" && (
@@ -2878,7 +3340,7 @@ export default function App() {
               📊 एडमिन &amp; ऑफिस स्टाफ पैनल (Office Login)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
-              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक, अटेंडेंस और लॉगिन हिस्ट्री देखें
+              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक, अटेंडेंस (रूट व मैप) देखें
             </p>
           </div>
         </div>
@@ -3293,25 +3755,32 @@ export default function App() {
                   background: "#f8fafc",
                   padding: "10px",
                   borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
                 }}
               >
-                <span style={{ fontSize: "13px" }}>
-                  स्टाफ: <strong>{currentStaffName}</strong>
-                </span>
+                <div>
+                  <div style={{ fontSize: "13px" }}>
+                    स्टाफ: <strong>{currentStaffName}</strong>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#166534", fontWeight: "bold" }}>
+                    ● Duty IN Active (GPS रूट रिकॉर्ड हो रहा है)
+                  </div>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setStaffLoggedIn(false)}
+                  onClick={handleStaffLogout}
                   style={{
-                    padding: "5px 10px",
+                    padding: "6px 12px",
                     background: "#ef4444",
                     color: "#fff",
                     border: "none",
                     borderRadius: "4px",
                     fontSize: "12px",
+                    fontWeight: "bold",
                     cursor: "pointer",
                   }}
                 >
-                  लॉग आउट
+                  लॉग आउट (Duty OUT)
                 </button>
               </div>
 
@@ -4201,7 +4670,6 @@ export default function App() {
                           />
                         </div>
 
-                        {/* Water Cooler के केवल ये 4 अतिरिक्त ऑप्शन */}
                         {isWaterCoolerSelected && (
                           <>
                             <div>
@@ -6148,7 +6616,12 @@ export default function App() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setAdminMainTab("attendance")}
+                      onClick={() => {
+                        setAdminMainTab("attendance");
+                        setAttSelectedYear(null);
+                        setAttSelectedMonth(null);
+                        setAttSelectedStaffPhone(null);
+                      }}
                       style={{
                         padding: "10px",
                         backgroundColor:
@@ -6161,8 +6634,7 @@ export default function App() {
                         cursor: "pointer",
                       }}
                     >
-                      📅 अटेंडेंस (
-                      {loginLogs.filter((l) => l.role === "staff").length})
+                      📅 अटेंडेंस व रूट ({attendanceRecords.length})
                     </button>
                     <button
                       type="button"
@@ -6649,32 +7121,379 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* ==========================================================
+                      ATTENDANCE DRILL-DOWN: YEAR -> MONTH -> STAFF -> DAILY LOGS
+                      ========================================================== */}
                   {adminMainTab === "attendance" && (
                     <div>
-                      <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>
-                        स्टाफ अटेंडेंस व लॉगिन रिकॉर्ड
-                      </h4>
-                      {loginLogs
-                        .filter((l) => l.role === "staff")
-                        .map((log, idx) => (
-                          <div
-                            key={idx}
+                      {/* STEP 1: YEAR SELECTION */}
+                      {!attSelectedYear && (
+                        <div>
+                          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f172a" }}>
+                            📅 वर्ष चुनें (Select Year):
+                          </h4>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+                            {availableYears.map((yr) => (
+                              <button
+                                key={yr}
+                                type="button"
+                                onClick={() => setAttSelectedYear(yr)}
+                                style={{
+                                  padding: "14px",
+                                  background: "#f8fafc",
+                                  border: "1.5px solid #0284c7",
+                                  borderRadius: "8px",
+                                  fontWeight: "bold",
+                                  fontSize: "15px",
+                                  color: "#0369a1",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                📁 वर्ष {yr}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STEP 2: MONTH SELECTION */}
+                      {attSelectedYear && !attSelectedMonth && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setAttSelectedYear(null)}
                             style={{
-                              border: "1px solid #e2e8f0",
-                              padding: "8px 10px",
-                              borderRadius: "6px",
-                              marginBottom: "8px",
-                              background: "#f8fafc",
+                              marginBottom: "10px",
+                              padding: "6px 12px",
+                              background: "#64748b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
                               fontSize: "12px",
+                              cursor: "pointer",
                             }}
                           >
-                            <strong>{log.name || log.phone}</strong> — Logins:{" "}
-                            {log.loginCount || 1}
-                            <div style={{ color: "#64748b" }}>
-                              Last Login: {log.lastLoginText || "-"}
-                            </div>
+                            ← वर्ष (Year) पर वापस जाएं
+                          </button>
+                          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f172a" }}>
+                            📆 महीना चुनें (वर्ष {attSelectedYear}):
+                          </h4>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+                            {HINDI_MONTHS.map((mLabel, index) => {
+                              const mCode = String(index + 1).padStart(2, "0");
+                              const countInMonth = attendanceRecords.filter(
+                                (r) => r.year === attSelectedYear && r.month === mCode
+                              ).length;
+                              return (
+                                <button
+                                  key={mCode}
+                                  type="button"
+                                  onClick={() => setAttSelectedMonth(mCode)}
+                                  style={{
+                                    padding: "10px",
+                                    background: countInMonth > 0 ? "#f0fdf4" : "#f8fafc",
+                                    border:
+                                      countInMonth > 0
+                                        ? "1.5px solid #166534"
+                                        : "1px solid #cbd5e1",
+                                    borderRadius: "6px",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  <div>{mLabel}</div>
+                                  <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                    रिकॉर्ड्स: {countInMonth}
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
-                        ))}
+                        </div>
+                      )}
+
+                      {/* STEP 3: STAFF LIST FOR SELECTED YEAR & MONTH */}
+                      {attSelectedYear && attSelectedMonth && !attSelectedStaffPhone && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setAttSelectedMonth(null)}
+                            style={{
+                              marginBottom: "10px",
+                              padding: "6px 12px",
+                              background: "#64748b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ← महीनों की सूची पर वापस जाएं
+                          </button>
+                          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f172a" }}>
+                            👷 स्टाफ चुनें ({HINDI_MONTHS[parseInt(attSelectedMonth, 10) - 1]} {attSelectedYear}):
+                          </h4>
+                          {(() => {
+                            const monthRecords = attendanceRecords.filter(
+                              (r) =>
+                                r.year === attSelectedYear &&
+                                r.month === attSelectedMonth
+                            );
+                            const staffMap = {};
+                            monthRecords.forEach((r) => {
+                              if (!staffMap[r.staffPhone]) {
+                                staffMap[r.staffPhone] = {
+                                  phone: r.staffPhone,
+                                  name: r.staffName || `Staff (${r.staffPhone})`,
+                                  days: 0,
+                                };
+                              }
+                              staffMap[r.staffPhone].days += 1;
+                            });
+                            const staffList = Object.values(staffMap);
+
+                            if (staffList.length === 0) {
+                              return (
+                                <p style={{ color: "#64748b", fontSize: "13px" }}>
+                                  इस महीने में किसी स्टाफ की अटेंडेंस दर्ज नहीं है।
+                                </p>
+                              );
+                            }
+
+                            return staffList.map((st) => (
+                              <div
+                                key={st.phone}
+                                onClick={() => setAttSelectedStaffPhone(st.phone)}
+                                style={{
+                                  border: "1px solid #cbd5e1",
+                                  padding: "12px",
+                                  borderRadius: "6px",
+                                  marginBottom: "8px",
+                                  background: "#f8fafc",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div>
+                                  👤 <strong>{st.name}</strong>
+                                  <div style={{ fontSize: "11px", color: "#64748b" }}>
+                                    मोबाइल: {st.phone}
+                                  </div>
+                                </div>
+                                <span
+                                  style={{
+                                    background: "#166534",
+                                    color: "#fff",
+                                    padding: "3px 10px",
+                                    borderRadius: "12px",
+                                    fontSize: "11px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  {st.days} दिन उपस्थित →
+                                </span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
+
+                      {/* STEP 4: FULL MONTH DAILY IN/OUT, DURATION, TEXT ROUTE & GOOGLE MAP */}
+                      {attSelectedYear && attSelectedMonth && attSelectedStaffPhone && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setAttSelectedStaffPhone(null)}
+                            style={{
+                              marginBottom: "10px",
+                              padding: "6px 12px",
+                              background: "#64748b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ← स्टाफ सूची पर वापस जाएं
+                          </button>
+                          {(() => {
+                            const dailyLogs = attendanceRecords
+                              .filter(
+                                (r) =>
+                                  r.year === attSelectedYear &&
+                                  r.month === attSelectedMonth &&
+                                  r.staffPhone === attSelectedStaffPhone
+                              )
+                              .sort((a, b) =>
+                                String(b.dateKey).localeCompare(String(a.dateKey))
+                              );
+
+                            const staffTitle =
+                              dailyLogs[0]?.staffName ||
+                              `Staff (${attSelectedStaffPhone})`;
+
+                            return (
+                              <div>
+                                <h4
+                                  style={{
+                                    margin: "0 0 10px 0",
+                                    color: "#166534",
+                                    fontSize: "14px",
+                                  }}
+                                >
+                                  📋 {staffTitle} — {HINDI_MONTHS[parseInt(attSelectedMonth, 10) - 1]}{" "}
+                                  {attSelectedYear}
+                                </h4>
+
+                                {dailyLogs.map((rec) => {
+                                  const pts = Array.isArray(rec.routePoints)
+                                    ? rec.routePoints
+                                    : [];
+
+                                  // पूरे दिन का टेक्स्ट रूट
+                                  const textRoute =
+                                    pts.length > 0
+                                      ? pts
+                                          .map(
+                                            (p) =>
+                                              `${p.timeText} (${p.address})`
+                                          )
+                                          .join(" ➔ ")
+                                      : "लोकेशन डेटा उपलब्ध नहीं";
+
+                                  // Google Maps पूरा रूट लिंक
+                                  const validCoords = pts.filter(
+                                    (p) => p.lat && p.lng
+                                  );
+                                  let googleMapUrl = "";
+                                  if (validCoords.length === 1) {
+                                    googleMapUrl = `https://www.google.com/maps/search/?api=1&query=${validCoords[0].lat},${validCoords[0].lng}`;
+                                  } else if (validCoords.length >= 2) {
+                                    const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
+                                    const dest = `${
+                                      validCoords[validCoords.length - 1].lat
+                                    },${validCoords[validCoords.length - 1].lng}`;
+                                    const mid = validCoords
+                                      .slice(1, -1)
+                                      .slice(0, 8)
+                                      .map((c) => `${c.lat},${c.lng}`)
+                                      .join("|");
+                                    googleMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
+                                      mid ? `&waypoints=${encodeURIComponent(mid)}` : ""
+                                    }&travelmode=driving`;
+                                  }
+
+                                  return (
+                                    <div
+                                      key={rec.docId}
+                                      style={{
+                                        border: "1px solid #cbd5e1",
+                                        borderRadius: "8px",
+                                        padding: "10px",
+                                        marginBottom: "10px",
+                                        background: "#f8fafc",
+                                        fontSize: "12px",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                          borderBottom: "1px solid #e2e8f0",
+                                          paddingBottom: "5px",
+                                          marginBottom: "6px",
+                                        }}
+                                      >
+                                        <strong style={{ fontSize: "13px", color: "#0f172a" }}>
+                                          📅 दिनांक: {rec.dateKey}
+                                        </strong>
+                                        <span
+                                          style={{
+                                            background: rec.outTime
+                                              ? "#dcfce7"
+                                              : "#fef3c7",
+                                            color: rec.outTime
+                                              ? "#166534"
+                                              : "#92400e",
+                                            padding: "2px 8px",
+                                            borderRadius: "10px",
+                                            fontWeight: "bold",
+                                            fontSize: "11px",
+                                          }}
+                                        >
+                                          कुल समय: {calcWorkDuration(rec.inTime, rec.outTime)}
+                                        </span>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: "15px",
+                                          marginBottom: "6px",
+                                        }}
+                                      >
+                                        <div>
+                                          <strong>🟢 IN Time:</strong>{" "}
+                                          {formatTime12(rec.inTime)}
+                                        </div>
+                                        <div>
+                                          <strong>🔴 OUT Time:</strong>{" "}
+                                          {rec.outTime
+                                            ? formatTime12(rec.outTime)
+                                            : "अभी ऑन ड्यूटी (Logged In)"}
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          background: "#ffffff",
+                                          border: "1px solid #e2e8f0",
+                                          borderRadius: "6px",
+                                          padding: "7px",
+                                          marginBottom: "6px",
+                                          lineHeight: "1.45",
+                                        }}
+                                      >
+                                        <strong>📍 पूरे दिन का रूट (Text Route):</strong>
+                                        <div style={{ color: "#334155", marginTop: "3px" }}>
+                                          {textRoute}
+                                        </div>
+                                      </div>
+
+                                      {googleMapUrl && (
+                                        <a
+                                          href={googleMapUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={{
+                                            display: "inline-block",
+                                            padding: "6px 12px",
+                                            background: "#2563eb",
+                                            color: "#fff",
+                                            textDecoration: "none",
+                                            borderRadius: "5px",
+                                            fontWeight: "bold",
+                                            fontSize: "11px",
+                                          }}
+                                        >
+                                          🗺️ Google Map पर पूरा रूट देखें ({validCoords.length} Points)
+                                        </a>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   )}
 
