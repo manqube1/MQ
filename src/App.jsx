@@ -84,16 +84,6 @@ export const compressImage = (file) => {
 
 const createEmptyPart = () => ({ partName: "", qty: 1, amount: "" });
 
-const inputStyle = {
-  padding: "8px 10px",
-  borderRadius: "6px",
-  border: "1px solid #cbd5e1",
-  backgroundColor: "#ffffff",
-  color: "#0f172a",
-  fontSize: "13px",
-  boxSizing: "border-box",
-};
-
 // प्रिंटेड रसीद जैसा जॉब शीट टेम्पलेट कंपोनेंट
 const PrintableJobSheet = ({ job, onClose }) => {
   if (!job) return null;
@@ -825,8 +815,8 @@ export default function App() {
   const [staffGpsLocation, setStaffGpsLocation] = useState("Fetching GPS...");
   const [staffSubTab, setStaffSubTab] = useState("menu");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [wizardStep, setWizardStep] = useState(1); // कुल 4 स्टेप
-  const [techSlide, setTechSlide] = useState(1);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [techSlide, setTechSlide] = useState(1); // स्टेप 2 के 1 से 4 भाग
 
   // Admin Login State
   const [adminUser, setAdminUser] = useState("");
@@ -890,15 +880,19 @@ export default function App() {
   const [ampY, setAmpY] = useState("");
   const [ampB, setAmpB] = useState("");
 
-  // Step 3 (Merged: Work Done + Used Parts/Materials + Service Charge + Auto Total)
+  // Step 3 & Step 4 (Used Parts + Service Charge + Auto Total)
   const [workDone, setWorkDone] = useState("");
   const [sparePartOption, setSparePartOption] = useState("Used Part");
   const [sparePartName, setSparePartName] = useState("");
   const [sparePartModel, setSparePartModel] = useState("");
   const [usedParts, setUsedParts] = useState([createEmptyPart()]);
   const [serviceChargeInput, setServiceChargeInput] = useState("");
+  const [materials, setMaterials] = useState([
+    { name: "", qty: "", price: "" },
+    { name: "", qty: "", price: "" },
+  ]);
 
-  // Step 4 (Status, Photos & Signature)
+  // Step 5, Multiple Site Photos & Full-Screen Signature Modal
   const [jobStatusType, setJobStatusType] = useState("Completed");
   const [pendingSubOption, setPendingSubOption] = useState("Part Pending");
   const [jobNote, setJobNote] = useState("");
@@ -974,7 +968,7 @@ export default function App() {
     }
   }, [isSignatureModalOpen]);
 
-  // Used Parts & Materials helpers
+  // Used Parts helpers
   const addPartRow = () => {
     setUsedParts((prev) => [...prev, createEmptyPart()]);
   };
@@ -1001,8 +995,14 @@ export default function App() {
       }, 0)
     : 0;
 
+  const materialsTotal = materials.reduce((sum, item) => {
+    const q = parseFloat(item.qty) || 1;
+    const pr = parseFloat(item.price) || 0;
+    return item.name.trim() ? sum + q * pr : sum;
+  }, 0);
+
   const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
-  const grandTotalBill = usedPartsTotal + serviceChargeVal;
+  const grandTotalBill = usedPartsTotal + materialsTotal + serviceChargeVal;
 
   // Multiple Site Photos upload
   const handleSitePhotosChange = async (e) => {
@@ -1344,6 +1344,10 @@ export default function App() {
     setSavedSignatureURL("");
     setImageFile(null);
     setSitePhotos([]);
+    setMaterials([
+      { name: "", qty: "", price: "" },
+      { name: "", qty: "", price: "" },
+    ]);
     setCategoryType("HVAC & Refrigeration");
     setProductType("Split / Window AC");
     setJobStatusType("Completed");
@@ -1397,6 +1401,16 @@ export default function App() {
     setImageFile(compressedFile);
   };
 
+  const handleMaterialFieldChange = (index, field, value) => {
+    const newMaterials = [...materials];
+    newMaterials[index][field] = value;
+    setMaterials(newMaterials);
+
+    if (index === newMaterials.length - 1 && value.trim() !== "") {
+      setMaterials([...newMaterials, { name: "", qty: "", price: "" }]);
+    }
+  };
+
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert("कृपया कस्टमर का नाम और मोबाइल नंबर भरें!");
@@ -1413,6 +1427,7 @@ export default function App() {
       ? selectedComplaint.jobSheetNo
       : "JS" + jobCustPhone.slice(-4) + day + month + hours + minutes;
 
+    const filteredMaterials = materials.filter((m) => m.name.trim() !== "");
     const activeUsedParts = isUsedPartSelected
       ? usedParts.filter(
           (p) => p.partName.trim() || (parseFloat(p.amount) || 0) > 0
@@ -1493,9 +1508,9 @@ export default function App() {
       ampR: ampR || "-",
       ampY: ampY || "-",
       ampB: ampB || "-",
-      materials: [],
+      materials: filteredMaterials,
       usedParts: activeUsedParts,
-      partsTotal: usedPartsTotal,
+      partsTotal: usedPartsTotal + materialsTotal,
       serviceCharge: serviceChargeVal,
       totalAmount: grandTotalBill,
       sparePartOption: sparePartOption,
@@ -1522,7 +1537,7 @@ export default function App() {
 
     const partsText =
       activeUsedParts.length > 0
-        ? `\n<b>इस्तेमाल हुए पार्ट्स / मैटेरियल्स:</b> ${activeUsedParts
+        ? `\n<b>इस्तेमाल हुए पार्ट्स:</b> ${activeUsedParts
             .map((p) => {
               const q = parseFloat(p.qty) || 0;
               const a = parseFloat(p.amount) || 0;
@@ -1541,7 +1556,6 @@ export default function App() {
       `<b>पता:</b> ${updatedRecord.customerAddress || "-"}\n` +
       `<b>उत्पाद:</b> ${updatedRecord.product}\n` +
       `<b>किया गया कार्य:</b> ${updatedRecord.desc}${partsText}\n` +
-      `<b>सर्विस चार्ज:</b> ₹${serviceChargeVal.toFixed(2)}\n` +
       `<b>कुल बिल:</b> ₹${grandTotalBill.toFixed(2)}\n` +
       `<b>रिमार्क:</b> ${updatedRecord.feedback}\n` +
       `<b>स्टाफ:</b> ${updatedRecord.staffName}\n` +
@@ -1598,7 +1612,7 @@ export default function App() {
     setNewStockQty("");
     setNewStockDesc("");
     setNewStockRate("");
-    alert("स्पेयर पार्ट स्टॉक में सफलतापूर्वक जोड़ दिया गया!");
+    alert("स्पेयर पार्ट स्टॉक में सफलतापूर्वक जोड़ दिया गया!");
   };
 
   const onlineComplaintsList = jobSheets.filter(
@@ -1987,7 +2001,11 @@ export default function App() {
                 placeholder="मोबाइल नंबर दर्ज करें"
                 value={custPhone}
                 onChange={(e) => setCustPhone(e.target.value)}
-                style={inputStyle}
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                }}
                 required
               />
               <button
@@ -2062,7 +2080,11 @@ export default function App() {
                   placeholder="अपना पूरा नाम दर्ज करें"
                   value={custNameInput}
                   onChange={(e) => setCustNameInput(e.target.value)}
-                  style={inputStyle}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                  }}
                   required
                 />
 
@@ -2074,7 +2096,11 @@ export default function App() {
                   placeholder="लोकेशन/पता विस्तार से लिखें..."
                   value={custAddressInput}
                   onChange={(e) => setCustAddressInput(e.target.value)}
-                  style={inputStyle}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                  }}
                   required
                 />
 
@@ -2084,7 +2110,11 @@ export default function App() {
                 <select
                   value={categoryType}
                   onChange={handleCategoryChange}
-                  style={inputStyle}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                  }}
                 >
                   <option value="HVAC & Refrigeration">
                     HVAC &amp; Refrigeration (एसी, कूलर, फ्रिज, चिलर, VRV)
@@ -2102,7 +2132,11 @@ export default function App() {
                 <select
                   value={productType}
                   onChange={(e) => setProductType(e.target.value)}
-                  style={inputStyle}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                  }}
                 >
                   {categoryType === "HVAC & Refrigeration" && (
                     <>
@@ -2197,7 +2231,11 @@ export default function App() {
                   placeholder="क्या समस्या आ रही है विस्तार से लिखें..."
                   value={problemDesc}
                   onChange={(e) => setProblemDesc(e.target.value)}
-                  style={inputStyle}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                  }}
                   required
                 />
 
@@ -2308,7 +2346,11 @@ export default function App() {
                     placeholder="10 अंकों का मोबाइल नंबर"
                     value={staffPhoneInput}
                     onChange={(e) => setStaffPhoneInput(e.target.value)}
-                    style={inputStyle}
+                    style={{
+                      padding: "10px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                    }}
                     required
                   />
                   <button
@@ -2341,7 +2383,11 @@ export default function App() {
                     placeholder="4 अंकों का OTP"
                     value={enteredOtp}
                     onChange={(e) => setEnteredOtp(e.target.value)}
-                    style={inputStyle}
+                    style={{
+                      padding: "10px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                    }}
                     required
                   />
                   <button
@@ -2800,7 +2846,7 @@ export default function App() {
                       ← मेनू पर वापस जाएं
                     </button>
                     <span style={{ fontSize: "13px", fontWeight: "bold" }}>
-                      Wizard Step: {wizardStep} / 4
+                      Wizard Step: {wizardStep} / 5
                     </span>
                   </div>
 
@@ -2824,7 +2870,13 @@ export default function App() {
                             placeholder="Bill No."
                             value={billNo}
                             onChange={(e) => setBillNo(e.target.value)}
-                            style={{ ...inputStyle, width: "100%" }}
+                            style={{
+                              width: "100%",
+                              padding: "8px",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                              boxSizing: "border-box",
+                            }}
                           />
                         </div>
                         <div style={{ flex: 1 }}>
@@ -2836,7 +2888,13 @@ export default function App() {
                             placeholder="DD/MM/YYYY"
                             value={amcDate}
                             onChange={(e) => setAmcDate(e.target.value)}
-                            style={{ ...inputStyle, width: "100%" }}
+                            style={{
+                              width: "100%",
+                              padding: "8px",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                              boxSizing: "border-box",
+                            }}
                           />
                         </div>
                       </div>
@@ -2848,7 +2906,11 @@ export default function App() {
                         type="text"
                         value={jobCustName}
                         onChange={(e) => setJobCustName(e.target.value)}
-                        style={inputStyle}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1",
+                        }}
                       />
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
@@ -2859,7 +2921,11 @@ export default function App() {
                         maxLength="10"
                         value={jobCustPhone}
                         onChange={(e) => setJobCustPhone(e.target.value)}
-                        style={inputStyle}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1",
+                        }}
                       />
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
@@ -2869,7 +2935,11 @@ export default function App() {
                         rows="2"
                         value={jobCustAddress}
                         onChange={(e) => setJobCustAddress(e.target.value)}
-                        style={inputStyle}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1",
+                        }}
                       />
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
@@ -2878,7 +2948,11 @@ export default function App() {
                       <select
                         value={categoryType}
                         onChange={handleCategoryChange}
-                        style={inputStyle}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1",
+                        }}
                       >
                         <option value="HVAC & Refrigeration">
                           HVAC &amp; Refrigeration
@@ -2894,7 +2968,11 @@ export default function App() {
                       <select
                         value={productType}
                         onChange={(e) => setProductType(e.target.value)}
-                        style={inputStyle}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1",
+                        }}
                       >
                         {categoryType === "HVAC & Refrigeration" && (
                           <>
@@ -2986,7 +3064,11 @@ export default function App() {
                         placeholder="जैसे: No Cooling, Water Leakage..."
                         value={faultDetails}
                         onChange={(e) => setFaultDetails(e.target.value)}
-                        style={inputStyle}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1",
+                        }}
                       />
 
                       <button
@@ -3070,7 +3152,7 @@ export default function App() {
                           }}
                         >
                           <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                            1. यूनिट और कंप्रेसर विवरण
+                            1. यूनिट और कंप्रेसर विवरण:
                           </strong>
                           <div style={{ display: "flex", gap: "5px" }}>
                             <input
@@ -3078,14 +3160,14 @@ export default function App() {
                               placeholder="Indoor Model"
                               value={indoorModel}
                               onChange={(e) => setIndoorModel(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="Indoor Serial"
                               value={indoorSerial}
                               onChange={(e) => setIndoorSerial(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                           <div style={{ display: "flex", gap: "5px" }}>
@@ -3094,14 +3176,14 @@ export default function App() {
                               placeholder="Outdoor Model"
                               value={outdoorModel}
                               onChange={(e) => setOutdoorModel(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="Outdoor Serial"
                               value={outdoorSerial}
                               onChange={(e) => setOutdoorSerial(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                           <div style={{ display: "flex", gap: "5px" }}>
@@ -3112,7 +3194,7 @@ export default function App() {
                               onChange={(e) =>
                                 setCompressorModel(e.target.value)
                               }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
@@ -3121,7 +3203,7 @@ export default function App() {
                               onChange={(e) =>
                                 setCompressorSerial(e.target.value)
                               }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                           <div style={{ display: "flex", gap: "5px" }}>
@@ -3132,7 +3214,7 @@ export default function App() {
                               onChange={(e) =>
                                 setIndoorMotorModel(e.target.value)
                               }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
@@ -3141,7 +3223,7 @@ export default function App() {
                               onChange={(e) =>
                                 setIndoorMotorSerial(e.target.value)
                               }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                           <div style={{ display: "flex", gap: "5px" }}>
@@ -3152,7 +3234,7 @@ export default function App() {
                               onChange={(e) =>
                                 setOutdoorMotorModel(e.target.value)
                               }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
@@ -3161,7 +3243,7 @@ export default function App() {
                               onChange={(e) =>
                                 setOutdoorMotorSerial(e.target.value)
                               }
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                         </div>
@@ -3191,7 +3273,7 @@ export default function App() {
                             <select
                               value={filterClean}
                               onChange={(e) => setFilterClean(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="OK">OK (साफ किया)</option>
                               <option value="Not OK">Not OK / Damaged</option>
@@ -3205,7 +3287,7 @@ export default function App() {
                             <select
                               value={standType}
                               onChange={(e) => setStandType(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="Wall Stand">Wall Stand</option>
                               <option value="Floor Stand">Floor Stand</option>
@@ -3222,7 +3304,7 @@ export default function App() {
                             <select
                               value={swingFlapper}
                               onChange={(e) => setSwingFlapper(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="OK">OK</option>
                               <option value="Not Working">Not Working</option>
@@ -3236,7 +3318,7 @@ export default function App() {
                             <select
                               value={stabilizer}
                               onChange={(e) => setStabilizer(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="OK">OK</option>
                               <option value="Faulty">Faulty</option>
@@ -3250,7 +3332,7 @@ export default function App() {
                             <select
                               value={remoteStatus}
                               onChange={(e) => setRemoteStatus(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="OK">OK</option>
                               <option value="Not Working">Not Working</option>
@@ -3264,7 +3346,7 @@ export default function App() {
                             <select
                               value={outdoorClean}
                               onChange={(e) => setOutdoorClean(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="OK">OK (सर्विस की गई)</option>
                               <option value="Pending">Pending</option>
@@ -3300,7 +3382,12 @@ export default function App() {
                               placeholder="e.g. 24°C"
                               value={roomTemp}
                               onChange={(e) => setRoomTemp(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{
+                                width: "100%",
+                                padding: "6px",
+                                fontSize: "12px",
+                                boxSizing: "border-box",
+                              }}
                             />
                           </div>
                           <div>
@@ -3314,7 +3401,12 @@ export default function App() {
                               onChange={(e) =>
                                 setSectionPressure(e.target.value)
                               }
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{
+                                width: "100%",
+                                padding: "6px",
+                                fontSize: "12px",
+                                boxSizing: "border-box",
+                              }}
                             />
                           </div>
                           <div>
@@ -3328,7 +3420,12 @@ export default function App() {
                               onChange={(e) =>
                                 setCompressorAmpere(e.target.value)
                               }
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{
+                                width: "100%",
+                                padding: "6px",
+                                fontSize: "12px",
+                                boxSizing: "border-box",
+                              }}
                             />
                           </div>
                           <div>
@@ -3340,7 +3437,12 @@ export default function App() {
                               placeholder="e.g. 1 inch PVC"
                               value={drainSize}
                               onChange={(e) => setDrainSize(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{
+                                width: "100%",
+                                padding: "6px",
+                                fontSize: "12px",
+                                boxSizing: "border-box",
+                              }}
                             />
                           </div>
                           <div>
@@ -3354,7 +3456,12 @@ export default function App() {
                               onChange={(e) =>
                                 setCopperPipeSize(e.target.value)
                               }
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{
+                                width: "100%",
+                                padding: "6px",
+                                fontSize: "12px",
+                                boxSizing: "border-box",
+                              }}
                             />
                           </div>
                           <div>
@@ -3364,7 +3471,7 @@ export default function App() {
                             <select
                               value={insulation}
                               onChange={(e) => setInsulation(e.target.value)}
-                              style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
+                              style={{ width: "100%", padding: "6px", fontSize: "12px" }}
                             >
                               <option value="OK">OK</option>
                               <option value="Damaged">Damaged</option>
@@ -3395,21 +3502,21 @@ export default function App() {
                               placeholder="Voltage (230V)"
                               value={voltage}
                               onChange={(e) => setVoltage(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="Total Ampere"
                               value={ampere}
                               onChange={(e) => setAmpere(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="Wire Size & Core"
                               value={wireSizeCore}
                               onChange={(e) => setWireSizeCore(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                           <div style={{ display: "flex", gap: "5px" }}>
@@ -3418,21 +3525,21 @@ export default function App() {
                               placeholder="R Voltage"
                               value={phaseR}
                               onChange={(e) => setPhaseR(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="Y Voltage"
                               value={phaseY}
                               onChange={(e) => setPhaseY(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="B Voltage"
                               value={phaseB}
                               onChange={(e) => setPhaseB(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                           <div style={{ display: "flex", gap: "5px" }}>
@@ -3441,21 +3548,21 @@ export default function App() {
                               placeholder="R Ampere"
                               value={ampR}
                               onChange={(e) => setAmpR(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="Y Ampere"
                               value={ampY}
                               onChange={(e) => setAmpY(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                             <input
                               type="text"
                               placeholder="B Ampere"
                               value={ampB}
                               onChange={(e) => setAmpB(e.target.value)}
-                              style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                              style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                             />
                           </div>
                         </div>
@@ -3546,295 +3653,220 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* स्टेप 3: मर्ज किया गया — किया गया कार्य, स्पेयर पार्ट्स, सर्विस चार्ज एवं टोटल बिल */}
+                  {/* स्टेप 3 */}
                   {wizardStep === 3 && (
                     <div
                       style={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: "12px",
+                        gap: "10px",
                       }}
                     >
-                      <h4 style={{ margin: "4px 0", color: "#0f172a" }}>
-                        स्टेप 3: किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल
-                      </h4>
-
-                      {/* 1. किया गया कार्य */}
-                      <div
+                      <h4>स्टेप 3: किया गया कार्य और स्पेयर पार्ट्स</h4>
+                      <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                        किया गया कार्य (Work Done):
+                      </label>
+                      <textarea
+                        rows="3"
+                        value={workDone}
+                        onChange={(e) => setWorkDone(e.target.value)}
                         style={{
-                          background: "#f8fafc",
-                          padding: "10px",
-                          borderRadius: "8px",
+                          padding: "8px",
+                          borderRadius: "4px",
                           border: "1px solid #cbd5e1",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
                         }}
-                      >
-                        <label style={{ fontSize: "12px", fontWeight: "bold", color: "#1e293b" }}>
-                          1. किया गया कार्य (Work / Action Taken):
-                        </label>
-                        <textarea
-                          rows="2"
-                          placeholder="जैसे: AC Gas Top-up, Capacitor Replaced & General Service..."
-                          value={workDone}
-                          onChange={(e) => setWorkDone(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-                      </div>
+                      />
 
-                      {/* 2. स्पेयर पार्ट्स एवं मैटेरियल्स */}
-                      <div
+                      <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                        स्पेयर पार्ट विकल्प:
+                      </label>
+                      <select
+                        value={sparePartOption}
+                        onChange={(e) => setSparePartOption(e.target.value)}
                         style={{
-                          background: "#f8fafc",
-                          padding: "10px",
-                          borderRadius: "8px",
+                          padding: "8px",
+                          borderRadius: "4px",
                           border: "1px solid #cbd5e1",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
                         }}
                       >
-                        <label style={{ fontSize: "12px", fontWeight: "bold", color: "#1e293b" }}>
-                          2. स्पेयर पार्ट / मैटेरियल विकल्प:
-                        </label>
-                        <select
-                          value={sparePartOption}
-                          onChange={(e) => setSparePartOption(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        >
-                          <option value="Used Part">
-                            Used Part (पार्ट / मैटेरियल इस्तेमाल किया गया)
-                          </option>
-                          <option value="Pending Part">
-                            Pending Part (पार्ट मंगवाना है)
-                          </option>
-                          <option value="No Part Used">
-                            No Part Used (कोई पार्ट नहीं लगा)
-                          </option>
-                        </select>
+                        <option value="Used Part">
+                          Used Part (इस्तेमाल किया गया)
+                        </option>
+                        <option value="Pending Part">
+                          Pending Part (पार्ट मंगवाना है)
+                        </option>
+                        <option value="No Part Used">
+                          No Part Used (कोई पार्ट नहीं लगा)
+                        </option>
+                      </select>
 
-                        {isUsedPartSelected && (
-                          <div style={{ marginTop: "4px" }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontSize: "11px",
-                                fontWeight: "bold",
-                                color: "#475569",
-                                marginBottom: "6px",
-                                padding: "0 2px",
-                              }}
-                            >
-                              <span style={{ flex: 2 }}>पार्ट / मैटेरियल का नाम</span>
-                              <span style={{ flex: 0.7, textAlign: "center" }}>Qty</span>
-                              <span style={{ flex: 1, textAlign: "center" }}>Rate ₹</span>
-                              <span style={{ width: "32px" }}></span>
-                            </div>
-
-                            {usedParts.map((item, idx) => {
-                              const rowTotal =
-                                (parseFloat(item.qty) || 0) *
-                                (parseFloat(item.amount) || 0);
-                              return (
-                                <div
-                                  key={idx}
-                                  style={{
-                                    marginBottom: "8px",
-                                    paddingBottom: "6px",
-                                    borderBottom: "1px dashed #cbd5e1",
-                                  }}
-                                >
-                                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                                    <input
-                                      type="text"
-                                      placeholder="पार्ट / आइटम नाम"
-                                      value={item.partName}
-                                      onChange={(e) =>
-                                        updatePartRow(idx, "partName", e.target.value)
-                                      }
-                                      style={{ ...inputStyle, flex: 2, minWidth: 0 }}
-                                    />
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      placeholder="Qty"
-                                      value={item.qty}
-                                      onChange={(e) =>
-                                        updatePartRow(idx, "qty", e.target.value)
-                                      }
-                                      style={{ ...inputStyle, flex: 0.7, minWidth: 0, textAlign: "center" }}
-                                    />
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      placeholder="Rate ₹"
-                                      value={item.amount}
-                                      onChange={(e) =>
-                                        updatePartRow(idx, "amount", e.target.value)
-                                      }
-                                      style={{ ...inputStyle, flex: 1, minWidth: 0 }}
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => removePartRow(idx)}
-                                      style={{
-                                        width: "32px",
-                                        height: "34px",
-                                        background: "#dc2626",
-                                        color: "#fff",
-                                        border: "none",
-                                        borderRadius: "6px",
-                                        fontWeight: "bold",
-                                        cursor: "pointer",
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontSize: "11px",
-                                      color: "#475569",
-                                      textAlign: "right",
-                                      marginTop: "3px",
-                                    }}
-                                  >
-                                    योग: <strong>₹{rowTotal.toFixed(2)}</strong>
-                                  </div>
-                                </div>
-                              );
-                            })}
-
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                marginTop: "4px",
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={addPartRow}
-                                style={{
-                                  padding: "7px 12px",
-                                  background: "#1e3a8a",
-                                  color: "#fff",
-                                  border: "none",
-                                  borderRadius: "6px",
-                                  fontSize: "12px",
-                                  fontWeight: "bold",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                + पार्ट / मैटेरियल जोड़ें
-                              </button>
-                              <span style={{ fontSize: "13px", color: "#0f172a" }}>
-                                पार्ट्स कुल: <strong>₹{usedPartsTotal.toFixed(2)}</strong>
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {sparePartOption === "Pending Part" && (
-                          <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-                            <input
-                              type="text"
-                              placeholder="मंगवाने वाले पार्ट का नाम"
-                              value={sparePartName}
-                              onChange={(e) => setSparePartName(e.target.value)}
-                              style={{ ...inputStyle, flex: 1 }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="मॉडल / साइज"
-                              value={sparePartModel}
-                              onChange={(e) => setSparePartModel(e.target.value)}
-                              style={{ ...inputStyle, flex: 1 }}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 3. सर्विस चार्ज एवं टोटल बिल सारांश */}
-                      <div
-                        style={{
-                          background: "#f0fdf4",
-                          padding: "12px",
-                          borderRadius: "8px",
-                          border: "1px solid #86efac",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                        }}
-                      >
-                        <label style={{ fontSize: "12px", fontWeight: "bold", color: "#166534" }}>
-                          3. सर्विस / विज़िट चार्ज (₹):
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0.00"
-                          value={serviceChargeInput}
-                          onChange={(e) => setServiceChargeInput(e.target.value)}
-                          style={{ ...inputStyle, width: "100%", fontWeight: "bold" }}
-                        />
-
+                      {isUsedPartSelected ? (
                         <div
                           style={{
-                            background: "#ffffff",
                             padding: "10px",
                             borderRadius: "6px",
                             border: "1px solid #cbd5e1",
-                            fontSize: "13px",
-                            marginTop: "4px",
+                            background: "#f8fafc",
                           }}
                         >
                           <div
                             style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              marginBottom: "4px",
-                              color: "#475569",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                              marginBottom: "8px",
                             }}
                           >
-                            <span>स्पेयर पार्ट्स / मैटेरियल्स कुल:</span>
-                            <strong>₹{usedPartsTotal.toFixed(2)}</strong>
+                            स्पेयर पार्ट का नाम, क्वांटिटी और अमाउंट:
                           </div>
+                          {usedParts.map((item, idx) => {
+                            const rowTotal =
+                              (parseFloat(item.qty) || 0) *
+                              (parseFloat(item.amount) || 0);
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  marginBottom: "8px",
+                                  paddingBottom: "6px",
+                                  borderBottom: "1px dashed #cbd5e1",
+                                }}
+                              >
+                                <div style={{ display: "flex", gap: "6px" }}>
+                                  <input
+                                    type="text"
+                                    placeholder="स्पेयर पार्ट का नाम"
+                                    value={item.partName}
+                                    onChange={(e) =>
+                                      updatePartRow(
+                                        idx,
+                                        "partName",
+                                        e.target.value
+                                      )
+                                    }
+                                    style={{
+                                      flex: 2,
+                                      padding: "7px",
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Qty"
+                                    value={item.qty}
+                                    onChange={(e) =>
+                                      updatePartRow(idx, "qty", e.target.value)
+                                    }
+                                    style={{
+                                      flex: 0.8,
+                                      padding: "7px",
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Rate ₹"
+                                    value={item.amount}
+                                    onChange={(e) =>
+                                      updatePartRow(
+                                        idx,
+                                        "amount",
+                                        e.target.value
+                                      )
+                                    }
+                                    style={{
+                                      flex: 1,
+                                      padding: "7px",
+                                      fontSize: "12px",
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removePartRow(idx)}
+                                    style={{
+                                      padding: "6px 10px",
+                                      background: "#dc2626",
+                                      color: "#fff",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      fontWeight: "bold",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#475569",
+                                    textAlign: "right",
+                                    marginTop: "3px",
+                                  }}
+                                >
+                                  योग: ₹{rowTotal.toFixed(2)}
+                                </div>
+                              </div>
+                            );
+                          })}
                           <div
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
-                              marginBottom: "4px",
-                              color: "#475569",
+                              alignItems: "center",
                             }}
                           >
-                            <span>सर्विस / अन्य चार्ज:</span>
-                            <strong>₹{serviceChargeVal.toFixed(2)}</strong>
-                          </div>
-                          <hr style={{ margin: "6px 0", borderColor: "#e2e8f0" }} />
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: "16px",
-                              color: "#166534",
-                            }}
-                          >
-                            <strong>टोटल बिल (Total Amount):</strong>
-                            <strong>₹{grandTotalBill.toFixed(2)}</strong>
+                            <button
+                              type="button"
+                              onClick={addPartRow}
+                              style={{
+                                padding: "6px 12px",
+                                background: "#1e3a8a",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                                cursor: "pointer",
+                              }}
+                            >
+                              + पार्ट जोड़ें
+                            </button>
+                            <strong style={{ fontSize: "13px" }}>
+                              पार्ट्स कुल: ₹{usedPartsTotal.toFixed(2)}
+                            </strong>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                            स्पेयर पार्ट का नाम और मॉडल:
+                          </label>
+                          <div style={{ display: "flex", gap: "5px" }}>
+                            <input
+                              type="text"
+                              placeholder="Part Name"
+                              value={sparePartName}
+                              onChange={(e) => setSparePartName(e.target.value)}
+                              style={{ flex: 1, padding: "8px" }}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Model / No."
+                              value={sparePartModel}
+                              onChange={(e) => setSparePartModel(e.target.value)}
+                              style={{ flex: 1, padding: "8px" }}
+                            />
+                          </div>
+                        </>
+                      )}
 
                       <div
                         style={{
                           display: "flex",
                           gap: "10px",
-                          marginTop: "6px",
+                          marginTop: "10px",
                         }}
                       >
                         <button
@@ -3842,12 +3874,11 @@ export default function App() {
                           onClick={() => setWizardStep(2)}
                           style={{
                             flex: 1,
-                            padding: "11px",
+                            padding: "10px",
                             backgroundColor: "#64748b",
                             color: "#fff",
                             border: "none",
                             borderRadius: "6px",
-                            fontWeight: "bold",
                             cursor: "pointer",
                           }}
                         >
@@ -3858,7 +3889,7 @@ export default function App() {
                           onClick={() => setWizardStep(4)}
                           style={{
                             flex: 1,
-                            padding: "11px",
+                            padding: "10px",
                             backgroundColor: "#166534",
                             color: "#fff",
                             border: "none",
@@ -3867,13 +3898,13 @@ export default function App() {
                             cursor: "pointer",
                           }}
                         >
-                          अगला (फोटो &amp; साइन) →
+                          अगला →
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* स्टेप 4: स्टेटस, फोटो और कस्टमर हस्ताक्षर */}
+                  {/* स्टेप 4 */}
                   {wizardStep === 4 && (
                     <div
                       style={{
@@ -3882,14 +3913,169 @@ export default function App() {
                         gap: "10px",
                       }}
                     >
-                      <h4>स्टेप 4: स्टेटस, फोटो और कस्टमर हस्ताक्षर</h4>
+                      <h4>स्टेप 4: मैटेरियल्स, सर्विस चार्ज एवं टोटल बिल</h4>
+                      {materials.map((mat, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            gap: "5px",
+                            marginBottom: "5px",
+                          }}
+                        >
+                          <input
+                            type="text"
+                            placeholder="Item Name"
+                            value={mat.name}
+                            onChange={(e) =>
+                              handleMaterialFieldChange(
+                                idx,
+                                "name",
+                                e.target.value
+                              )
+                            }
+                            style={{ flex: 2, padding: "6px" }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Qty"
+                            value={mat.qty}
+                            onChange={(e) =>
+                              handleMaterialFieldChange(idx, "qty", e.target.value)
+                            }
+                            style={{ flex: 1, padding: "6px" }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Rate ₹"
+                            value={mat.price}
+                            onChange={(e) =>
+                              handleMaterialFieldChange(
+                                idx,
+                                "price",
+                                e.target.value
+                              )
+                            }
+                            style={{ flex: 1, padding: "6px" }}
+                          />
+                        </div>
+                      ))}
+
+                      <label style={{ fontSize: "12px", fontWeight: "bold" }}>
+                        सर्विस / अन्य चार्ज (₹):
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0.00"
+                        value={serviceChargeInput}
+                        onChange={(e) => setServiceChargeInput(e.target.value)}
+                        style={{ padding: "8px" }}
+                      />
+
+                      <div
+                        style={{
+                          padding: "10px",
+                          borderRadius: "6px",
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          <span>स्पेयर पार्ट्स / मैटेरियल्स कुल:</span>
+                          <strong>
+                            ₹{(usedPartsTotal + materialsTotal).toFixed(2)}
+                          </strong>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          <span>सर्विस / अन्य चार्ज:</span>
+                          <strong>₹{serviceChargeVal.toFixed(2)}</strong>
+                        </div>
+                        <hr style={{ margin: "6px 0" }} />
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "15px",
+                          }}
+                        >
+                          <strong>टोटल बिल (Total Amount):</strong>
+                          <strong>₹{grandTotalBill.toFixed(2)}</strong>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "10px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(3)}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            backgroundColor: "#64748b",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ← पीछे
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(5)}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            backgroundColor: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          अगला →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* स्टेप 5 */}
+                  {wizardStep === 5 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                      }}
+                    >
+                      <h4>स्टेप 5: स्टेटस, फोटो और कस्टमर हस्ताक्षर</h4>
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
                         जॉब स्टेटस:
                       </label>
                       <select
                         value={jobStatusType}
                         onChange={(e) => setJobStatusType(e.target.value)}
-                        style={inputStyle}
+                        style={{ padding: "8px" }}
                       >
                         <option value="Completed">Completed (पूर्ण)</option>
                         <option value="Pending">Pending (लंबित)</option>
@@ -3903,7 +4089,7 @@ export default function App() {
                           <select
                             value={pendingSubOption}
                             onChange={(e) => setPendingSubOption(e.target.value)}
-                            style={inputStyle}
+                            style={{ padding: "8px" }}
                           >
                             <option value="Part Pending">
                               Part Pending (पार्ट प्रतीक्षित)
@@ -3924,7 +4110,7 @@ export default function App() {
                         placeholder="जैसे: Working Fine / Good Service"
                         value={customerFeedback}
                         onChange={(e) => setCustomerFeedback(e.target.value)}
-                        style={inputStyle}
+                        style={{ padding: "8px" }}
                       />
 
                       <label style={{ fontSize: "12px", fontWeight: "bold" }}>
@@ -4070,7 +4256,7 @@ export default function App() {
                       >
                         <button
                           type="button"
-                          onClick={() => setWizardStep(3)}
+                          onClick={() => setWizardStep(4)}
                           style={{
                             flex: 1,
                             padding: "12px",
@@ -4132,7 +4318,11 @@ export default function App() {
                 placeholder="Admin"
                 value={adminUser}
                 onChange={(e) => setAdminUser(e.target.value)}
-                style={inputStyle}
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                }}
                 required
               />
               <label style={{ fontWeight: "bold" }}>पासवर्ड (Password):</label>
@@ -4141,7 +4331,11 @@ export default function App() {
                 placeholder="Password"
                 value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}
-                style={inputStyle}
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                }}
                 required
               />
               <button
@@ -4621,7 +4815,7 @@ export default function App() {
                               placeholder="पार्ट का नाम"
                               value={newStockName}
                               onChange={(e) => setNewStockName(e.target.value)}
-                              style={{ ...inputStyle, fontSize: "12px" }}
+                              style={{ padding: "7px", fontSize: "12px" }}
                             />
                             <div style={{ display: "flex", gap: "6px" }}>
                               <input
@@ -4629,7 +4823,7 @@ export default function App() {
                                 placeholder="Qty"
                                 value={newStockQty}
                                 onChange={(e) => setNewStockQty(e.target.value)}
-                                style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                                style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                               />
                               <input
                                 type="text"
@@ -4638,7 +4832,7 @@ export default function App() {
                                 onChange={(e) =>
                                   setNewStockRate(e.target.value)
                                 }
-                                style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
+                                style={{ flex: 1, padding: "7px", fontSize: "12px" }}
                               />
                             </div>
                             <input
@@ -4646,7 +4840,7 @@ export default function App() {
                               placeholder="विवरण (वैकल्पिक)"
                               value={newStockDesc}
                               onChange={(e) => setNewStockDesc(e.target.value)}
-                              style={{ ...inputStyle, fontSize: "12px" }}
+                              style={{ padding: "7px", fontSize: "12px" }}
                             />
                             <button
                               type="submit"
