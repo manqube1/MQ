@@ -101,23 +101,23 @@ export const compressImage = (file) => {
 const createEmptyPart = () => ({ partName: "", qty: 1, amount: "" });
 
 const inputStyle = {
-  padding: "10px 12px",
-  borderRadius: "6px",
+  padding: "12px 14px",
+  borderRadius: "8px",
   border: "1.5px solid #cbd5e1",
   backgroundColor: "#ffffff",
   color: "#0f172a",
-  fontSize: "14px",
+  fontSize: "15px",
   boxSizing: "border-box",
 };
 
 const choiceBtnStyle = (selected) => ({
-  padding: "12px 10px",
+  padding: "13px 12px",
   borderRadius: "8px",
   border: selected ? "2px solid #166534" : "1.5px solid #cbd5e1",
   backgroundColor: selected ? "#dcfce7" : "#ffffff",
   color: selected ? "#166534" : "#0f172a",
   fontWeight: "bold",
-  fontSize: "13px",
+  fontSize: "14px",
   cursor: "pointer",
   textAlign: "left",
 });
@@ -1696,9 +1696,8 @@ export default function App() {
   const [staffSubTab, setStaffSubTab] = useState("menu");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  // Slide-by-Slide Job Sheet Wizard State (एक-एक स्लाइड के लिए)
+  // Slide-by-Slide Job Sheet Wizard State (हर फील्ड अलग स्लाइड में)
   const [slideIndex, setSlideIndex] = useState(0);
-  const [techSlide, setTechSlide] = useState(1);
 
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
@@ -2362,10 +2361,6 @@ export default function App() {
     }
   };
 
-  const handleProductChange = (e) => {
-    selectProductValue(e.target.value);
-  };
-
   const handleNewComplaint = (e) => {
     e.preventDefault();
     if (!custNameInput.trim() || !custAddressInput.trim()) {
@@ -2608,7 +2603,6 @@ export default function App() {
     setJobStatusType("Completed");
     setPendingSubOption("Part Pending");
     setSlideIndex(0);
-    setTechSlide(1);
   };
 
   const handleOpenBlankNewJob = () => {
@@ -3001,41 +2995,6 @@ export default function App() {
     ])
   ).sort((a, b) => b.localeCompare(a));
 
-  // =========================================================
-  // SLIDE-BY-SLIDE CONFIGURATION & LIVE SUMMARY CHIPS
-  // =========================================================
-  const jobSlidesList = [
-    { id: "custName", label: "कस्टमर नाम", summaryVal: jobCustName },
-    { id: "custPhone", label: "मोबाइल नं.", summaryVal: jobCustPhone },
-    { id: "custAddress", label: "पता", summaryVal: jobCustAddress },
-    { id: "billAmc", label: "बिल / AMC", summaryVal: billNo || amcDate ? `${billNo || "-"} / ${amcDate || "-"}` : "" },
-    { id: "category", label: "कैटेगरी", summaryVal: categoryType },
-    { id: "product", label: "उपकरण", summaryVal: productType },
-    { id: "fault", label: "समस्या / फॉल्ट", summaryVal: faultDetails },
-    {
-      id: "techSpecs",
-      label: "तकनीकी रीडिंग",
-      summaryVal: isFridgeOrWCSelected
-        ? unitModel || compressorModel || ampere || "भरा गया"
-        : isAirCoolerSelected
-        ? `${coolerSubType} (${coolerFanMotor})`
-        : indoorModel || voltage || ampere || "भरा गया",
-    },
-    {
-      id: "workBilling",
-      label: "कार्य व बिल",
-      summaryVal:
-        workDone || grandTotalBill > 0
-          ? `${workDone ? workDone.slice(0, 14) + ".." : "कार्य"} (₹${grandTotalBill})`
-          : "",
-    },
-    {
-      id: "statusSign",
-      label: "स्टेटस व साइन",
-      summaryVal: `${jobStatusType}${savedSignatureURL ? " + Sign" : ""}`,
-    },
-  ];
-
   const subOptionsByCategory = {
     "HVAC & Refrigeration": [
       { value: "Split / Window AC", label: "Split / Window AC" },
@@ -3072,6 +3031,835 @@ export default function App() {
       { value: "Foundation & Excavation", label: "Foundation & Excavation" },
       { value: "Wall Putty & Painting", label: "Wall Putty & Painting" },
     ],
+  };
+
+  // =========================================================
+  // हर यूनिट के लिए 100% SLIDE-BY-SLIDE (1-FIELD PER SLIDE) ARRAY
+  // =========================================================
+  const buildAllSlides = () => {
+    const slides = [
+      {
+        id: "custName",
+        chipLabel: "कस्टमर नाम",
+        title: "ग्राहक / संस्था का नाम लिखें (Customer Name)",
+        type: "text",
+        placeholder: "जैसे: Green Leaf Enterprises / रेलवे ऑफिस / ग्राहक का नाम",
+        value: jobCustName,
+        setter: setJobCustName,
+        required: true,
+        summaryVal: jobCustName,
+      },
+      {
+        id: "custPhone",
+        chipLabel: "मोबाइल नं.",
+        title: "संपर्क एवं मोबाइल नंबर दर्ज करें (Mobile No.)",
+        type: "tel",
+        maxLength: 10,
+        placeholder: "10 अंकों का मोबाइल नंबर",
+        value: jobCustPhone,
+        setter: setJobCustPhone,
+        required: true,
+        summaryVal: jobCustPhone,
+      },
+      {
+        id: "custAddress",
+        chipLabel: "पता",
+        title: "लोकेशन / साइट का पूरा पता लिखें (Address)",
+        type: "textarea",
+        placeholder: "जैसे: नैनी / झूंसी / प्रयागराज...",
+        value: jobCustAddress,
+        setter: setJobCustAddress,
+        required: true,
+        summaryVal: jobCustAddress,
+      },
+      {
+        id: "billNo",
+        chipLabel: "बिल नं.",
+        title: "बिल नंबर दर्ज करें (Bill No. - वैकल्पिक)",
+        type: "text",
+        placeholder: "यदि बिल बन चुका है तो नंबर लिखें, वरना आगे बढ़ें",
+        value: billNo,
+        setter: setBillNo,
+        summaryVal: billNo,
+      },
+      {
+        id: "amcDate",
+        chipLabel: "AMC दिनांक",
+        title: "AMC दिनांक दर्ज करें (DD/MM/YYYY - वैकल्पिक)",
+        type: "text",
+        placeholder: "जैसे: 20/11/2026 (वैकल्पिक)",
+        value: amcDate,
+        setter: setAmcDate,
+        summaryVal: amcDate,
+      },
+      {
+        id: "category",
+        chipLabel: "कैटेगरी",
+        title: "काम की मुख्य श्रेणी चुनें (Category)",
+        type: "choice",
+        options: [
+          { value: "HVAC & Refrigeration", label: "❄️ HVAC & Refrigeration (AC, Fridge, Chiller, Water Cooler)" },
+          { value: "Electrical Work", label: "⚡ Electrical Work (Cooler, Wiring, Panel, Earthing)" },
+          { value: "Plumbing Work", label: "🚰 Plumbing Work (Pipe, Tank, Pump)" },
+          { value: "Civil Work", label: "🏗️ Civil Work (Flooring, Plaster, Waterproofing)" },
+        ],
+        value: categoryType,
+        onSelect: (val) => selectCategoryValue(val),
+        summaryVal: categoryType,
+      },
+      {
+        id: "product",
+        chipLabel: "उपकरण",
+        title: `${categoryType} का उपकरण चुनें`,
+        type: "choice",
+        options: subOptionsByCategory[categoryType] || [],
+        value: productType,
+        onSelect: (val) => selectProductValue(val),
+        summaryVal: productType,
+      },
+      {
+        id: "fault",
+        chipLabel: "समस्या / फॉल्ट",
+        title: `${productType} की समस्या / फॉल्ट विवरण लिखें`,
+        type: "faultStep",
+        summaryVal: faultDetails,
+      },
+    ];
+
+    // उपकरण के अनुसार तकनीकी स्लाइड्स जोड़ें (हर एक बॉक्स अलग स्लाइड पर!)
+    if (isFridgeOrWCSelected) {
+      slides.push(
+        {
+          id: "unitModel",
+          chipLabel: "यूनिट मॉडल",
+          title: "यूनिट मॉडल नंबर दर्ज करें (Unit Model No.)",
+          type: "text",
+          placeholder: "Unit Model No.",
+          value: unitModel,
+          setter: setUnitModel,
+          summaryVal: unitModel,
+        },
+        {
+          id: "unitSerial",
+          chipLabel: "यूनिट सीरियल",
+          title: "यूनिट सीरियल नंबर दर्ज करें (Unit Serial No.)",
+          type: "text",
+          placeholder: "Unit Serial No.",
+          value: unitSerial,
+          setter: setUnitSerial,
+          summaryVal: unitSerial,
+        },
+        {
+          id: "unitCapacity",
+          chipLabel: "कैपेसिटी (Ltr)",
+          title: "यूनिट कैपेसिटी (Litres में) लिखें",
+          type: "text",
+          placeholder: "जैसे: 300 Ltr / 500 Ltr",
+          value: unitCapacity,
+          setter: setUnitCapacity,
+          summaryVal: unitCapacity,
+        },
+        {
+          id: "condenserInOut",
+          chipLabel: "कंडेंसर In/Out",
+          title: "कंडेंसर की स्थिति चुनें (Condenser In / Out)",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK (सही है)" },
+            { value: "In", label: "In (इन)" },
+            { value: "Out", label: "Out (आउट)" },
+            { value: "Clean / Serviced", label: "Clean / Serviced (सर्विस की गई)" },
+            { value: "Choked / Damaged", label: "Choked / Damaged (चोक / खराब)" },
+          ],
+          value: condenserInOut,
+          onSelect: setCondenserInOut,
+          summaryVal: condenserInOut,
+        },
+        {
+          id: "compModel",
+          chipLabel: "कंप्रेसर मॉडल",
+          title: "कंप्रेसर मॉडल नंबर लिखें (Compressor Model No.)",
+          type: "text",
+          placeholder: "Compressor Model No.",
+          value: compressorModel,
+          setter: setCompressorModel,
+          summaryVal: compressorModel,
+        },
+        {
+          id: "compSerial",
+          chipLabel: "कंप्रेसर सीरियल",
+          title: "कंप्रेसर सीरियल नंबर लिखें (Compressor Serial No.)",
+          type: "text",
+          placeholder: "Compressor Serial No.",
+          value: compressorSerial,
+          setter: setCompressorSerial,
+          summaryVal: compressorSerial,
+        },
+        {
+          id: "compAmp",
+          chipLabel: "कंप्रेसर Amp",
+          title: "कंप्रेसर एम्पीयर दर्ज करें (Compressor Ampere)",
+          type: "text",
+          placeholder: "जैसे: 2.4 A",
+          value: compressorAmpere,
+          setter: setCompressorAmpere,
+          summaryVal: compressorAmpere,
+        },
+        {
+          id: "unitAmp",
+          chipLabel: "यूनिट Amp",
+          title: "यूनिट एम्पीयर दर्ज करें (Unit Ampere)",
+          type: "text",
+          placeholder: "जैसे: 2.8 A",
+          value: ampere,
+          setter: setAmpere,
+          summaryVal: ampere,
+        }
+      );
+
+      if (isWaterCoolerSelected) {
+        slides.push(
+          {
+            id: "wcTankSize",
+            chipLabel: "टंकी साइज",
+            title: "Water Cooler टंकी का साइज चुनें (Litres)",
+            type: "choice",
+            options: [
+              { value: "20", label: "20 Litres" },
+              { value: "40", label: "40 Litres" },
+              { value: "60", label: "60 Litres" },
+              { value: "80", label: "80 Litres" },
+              { value: "120", label: "120 Litres" },
+              { value: "150", label: "150 Litres" },
+            ],
+            value: wcTankSize,
+            onSelect: setWcTankSize,
+            summaryVal: wcTankSize ? `${wcTankSize} Ltr` : "",
+          },
+          {
+            id: "wcTapCount",
+            chipLabel: "टोटी संख्या",
+            title: "Water Cooler में टोटी कितनी है?",
+            type: "choice",
+            options: [
+              { value: "1", label: "1 टोटी (1 Tap)" },
+              { value: "2", label: "2 टोटी (2 Taps)" },
+              { value: "3", label: "3 टोटी (3 Taps)" },
+            ],
+            value: wcTapCount,
+            onSelect: setWcTapCount,
+            summaryVal: wcTapCount ? `${wcTapCount} टोटी` : "",
+          },
+          {
+            id: "wcOverflow",
+            chipLabel: "Overflow सिस्टम",
+            title: "Water Overflow सिस्टम चुनें",
+            type: "choice",
+            options: [
+              { value: "Switch", label: "Switch (स्विच)" },
+              { value: "Float Ball", label: "Float Ball (फ्लोट बॉल)" },
+              { value: "Electric Unit", label: "Electric Unit (इलेक्ट्रिक यूनिट)" },
+            ],
+            value: wcOverflowType,
+            onSelect: setWcOverflowType,
+            summaryVal: wcOverflowType,
+          },
+          {
+            id: "wcCoilSize",
+            chipLabel: "कॉइल साइज",
+            title: "कंडेंसिंग कॉइल साइज लिखें (Condensing Coil Size)",
+            type: "text",
+            placeholder: "जैसे: 12×14×2 Row",
+            value: wcCondensingCoilSize,
+            setter: setWcCondensingCoilSize,
+            summaryVal: wcCondensingCoilSize,
+          }
+        );
+      }
+    } else if (isAirCoolerSelected) {
+      slides.push(
+        {
+          id: "coolerBodyMat",
+          chipLabel: "कूलर बॉडी",
+          title: "कूलर की बॉडी किस चीज़ की है? (Body Type)",
+          type: "choice",
+          options: [
+            { value: "GI / Metal", label: "जी. आई. / लोहा (GI / Metal)" },
+            { value: "Fiber / Plastic", label: "फाइबर / प्लास्टिक (Fiber / Plastic)" },
+          ],
+          value: coolerBodyMaterial,
+          onSelect: setCoolerBodyMaterial,
+          summaryVal: coolerBodyMaterial,
+        },
+        {
+          id: "coolerSubType",
+          chipLabel: "कूलर प्रकार",
+          title: "कूलर का प्रकार चुनें (Cooler Sub-Type)",
+          type: "choice",
+          options: [
+            { value: "Desert Cooler", label: "डेजर्ट कूलर (Desert Cooler)" },
+            { value: "Duct Cooler", label: "डक्ट कूलर (Duct Cooler)" },
+            { value: "Tower Cooler", label: "टावर कूलर (Tower Cooler)" },
+            { value: "Room / Personal Cooler", label: "रूम कूलर (Room Cooler)" },
+          ],
+          value: coolerSubType,
+          onSelect: setCoolerSubType,
+          summaryVal: coolerSubType,
+        },
+        {
+          id: "coolerCap",
+          chipLabel: "कूलर क्षमता",
+          title: "कूलर की क्षमता / टैंक साइज़ लिखें",
+          type: "text",
+          placeholder: "जैसे: 70 Ltr / 100 Ltr",
+          value: coolerCapacity,
+          setter: setCoolerCapacity,
+          summaryVal: coolerCapacity,
+        },
+        {
+          id: "coolerBrand",
+          chipLabel: "ब्रांड / मॉडल",
+          title: "कूलर का ब्रांड / मॉडल लिखें",
+          type: "text",
+          placeholder: "जैसे: Symphony / Kenstar / Local",
+          value: coolerBrandModel,
+          setter: setCoolerBrandModel,
+          summaryVal: coolerBrandModel,
+        },
+        {
+          id: "coolerSerial",
+          chipLabel: "सीरियल नं.",
+          title: "कूलर का सीरियल / टैग नं. लिखें",
+          type: "text",
+          placeholder: "Serial / Tag No.",
+          value: coolerSerialNo,
+          setter: setCoolerSerialNo,
+          summaryVal: coolerSerialNo,
+        },
+        {
+          id: "coolerQty",
+          chipLabel: "कुल कूलर",
+          title: "कुल कूलर की संख्या दर्ज करें",
+          type: "text",
+          placeholder: "1",
+          value: coolerTotalQty,
+          setter: setCoolerTotalQty,
+          summaryVal: coolerTotalQty,
+        },
+        {
+          id: "coolerFan",
+          chipLabel: "फैन मोटर",
+          title: "फैन मोटर की स्थिति चुनें (Fan Motor)",
+          type: "choice",
+          options: [
+            { value: "OK", label: "सही (OK)" },
+            { value: "Jam / Bearing Bad", label: "जाम / बेयरिंग खराब" },
+            { value: "Winding Burnt", label: "वाइंडिंग जली हुई" },
+            { value: "Capacitor Bad", label: "कैपेसिटर खराब" },
+          ],
+          value: coolerFanMotor,
+          onSelect: setCoolerFanMotor,
+          summaryVal: coolerFanMotor,
+        },
+        {
+          id: "coolerPump",
+          chipLabel: "वाटर पंप",
+          title: "वाटर पंप की स्थिति चुनें (Submersible Pump)",
+          type: "choice",
+          options: [
+            { value: "OK", label: "सही (OK)" },
+            { value: "Not Pumping", label: "पानी नहीं उठा रहा" },
+            { value: "Replace Required", label: "बदलना आवश्यक" },
+          ],
+          value: coolerWaterPump,
+          onSelect: setCoolerWaterPump,
+          summaryVal: coolerWaterPump,
+        },
+        {
+          id: "coolerSwing",
+          chipLabel: "स्विंग / ब्लेड",
+          title: "स्विंग मोटर एवं ब्लेड की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "सही (OK)" },
+            { value: "Swing Bad", label: "स्विंग खराब" },
+            { value: "Blade Broken", label: "फैन ब्लेड टूटा / असंतुलित" },
+          ],
+          value: coolerSwingBlade,
+          onSelect: setCoolerSwingBlade,
+          summaryVal: coolerSwingBlade,
+        },
+        {
+          id: "coolerPadType",
+          chipLabel: "पैड प्रकार",
+          title: "कूलिंग पैड का प्रकार चुनें (Cooling Pad Type)",
+          type: "choice",
+          options: [
+            { value: "Honeycomb", label: "हनीकॉम्ब (Honeycomb)" },
+            { value: "Wood Wool", label: "वुड वूल / घास (Wood Wool)" },
+          ],
+          value: coolerPadType,
+          onSelect: setCoolerPadType,
+          summaryVal: coolerPadType,
+        },
+        {
+          id: "coolerPadStat",
+          chipLabel: "पैड स्थिति",
+          title: "कूलिंग पैड की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "Clean", label: "साफ (Clean)" },
+            { value: "Replaceable", label: "बदलने योग्य (Replaceable)" },
+          ],
+          value: coolerPadStatus,
+          onSelect: setCoolerPadStatus,
+          summaryVal: coolerPadStatus,
+        },
+        {
+          id: "coolerTank",
+          chipLabel: "टैंक / प्लंबिंग",
+          title: "वाटर टैंक एवं प्लंबिंग की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "सही (OK)" },
+            { value: "Leakage", label: "लीकेज है (Leakage)" },
+            { value: "Float Valve Bad", label: "फ्लोट वाल्व खराब" },
+            { value: "Drain / Pipe Jam", label: "ड्रेन / पाइप जाम" },
+          ],
+          value: coolerTankPlumbing,
+          onSelect: setCoolerTankPlumbing,
+          summaryVal: coolerTankPlumbing,
+        },
+        {
+          id: "coolerElec",
+          chipLabel: "वायरिंग / स्विच",
+          title: "इलेक्ट्रिकल एवं वायरिंग की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "सही (OK)" },
+            { value: "Rotary Switch Bad", label: "रोटरी स्विच खराब" },
+            { value: "Wiring Burnt", label: "वायरिंग कटी / जली" },
+            { value: "Plug / Earthing Checked", label: "प्लग / अर्थिंग चेक" },
+          ],
+          value: coolerElectrical,
+          onSelect: setCoolerElectrical,
+          summaryVal: coolerElectrical,
+        },
+        {
+          id: "coolerPaint",
+          chipLabel: "बॉडी / पेंट",
+          title: "बॉडी एवं पेंट की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "सही (OK)" },
+            { value: "Rusting", label: "जंग (Rusting)" },
+            { value: "Welding Required", label: "वेल्डिंग जरूरत" },
+            { value: "Painting Required", label: "प्राइमर एवं पेंटिंग आवश्यक" },
+          ],
+          value: coolerBodyPaint,
+          onSelect: setCoolerBodyPaint,
+          summaryVal: coolerBodyPaint,
+        }
+      );
+    } else {
+      // AC / VRV / Chiller / AHU / अन्य यूनिट्स के सारे फील्ड एक-एक स्लाइड में
+      slides.push(
+        {
+          id: "indoorModel",
+          chipLabel: "Indoor Model",
+          title: "Indoor Model नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Indoor Model No.",
+          value: indoorModel,
+          setter: setIndoorModel,
+          summaryVal: indoorModel,
+        },
+        {
+          id: "indoorSerial",
+          chipLabel: "Indoor Serial",
+          title: "Indoor Serial नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Indoor Serial No.",
+          value: indoorSerial,
+          setter: setIndoorSerial,
+          summaryVal: indoorSerial,
+        },
+        {
+          id: "outdoorModel",
+          chipLabel: "Outdoor Model",
+          title: "Outdoor Model नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Outdoor Model No.",
+          value: outdoorModel,
+          setter: setOutdoorModel,
+          summaryVal: outdoorModel,
+        },
+        {
+          id: "outdoorSerial",
+          chipLabel: "Outdoor Serial",
+          title: "Outdoor Serial नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Outdoor Serial No.",
+          value: outdoorSerial,
+          setter: setOutdoorSerial,
+          summaryVal: outdoorSerial,
+        },
+        {
+          id: "compressorModel",
+          chipLabel: "Comp. Model",
+          title: "Compressor Model नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Compressor Model No.",
+          value: compressorModel,
+          setter: setCompressorModel,
+          summaryVal: compressorModel,
+        },
+        {
+          id: "compressorSerial",
+          chipLabel: "Comp. Serial",
+          title: "Compressor Serial नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Compressor Serial No.",
+          value: compressorSerial,
+          setter: setCompressorSerial,
+          summaryVal: compressorSerial,
+        },
+        {
+          id: "indoorMotorModel",
+          chipLabel: "In-Motor Model",
+          title: "In-Door Motor Model नंबर दर्ज करें",
+          type: "text",
+          placeholder: "In-Door Motor Model",
+          value: indoorMotorModel,
+          setter: setIndoorMotorModel,
+          summaryVal: indoorMotorModel,
+        },
+        {
+          id: "indoorMotorSerial",
+          chipLabel: "In-Motor Serial",
+          title: "In-Door Motor Serial नंबर दर्ज करें",
+          type: "text",
+          placeholder: "In-Door Motor Serial",
+          value: indoorMotorSerial,
+          setter: setIndoorMotorSerial,
+          summaryVal: indoorMotorSerial,
+        },
+        {
+          id: "outdoorMotorModel",
+          chipLabel: "Out-Motor Model",
+          title: "Out-Door Motor Model नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Out-Door Motor Model",
+          value: outdoorMotorModel,
+          setter: setOutdoorMotorModel,
+          summaryVal: outdoorMotorModel,
+        },
+        {
+          id: "outdoorMotorSerial",
+          chipLabel: "Out-Motor Serial",
+          title: "Out-Door Motor Serial नंबर दर्ज करें",
+          type: "text",
+          placeholder: "Out-Door Motor Serial",
+          value: outdoorMotorSerial,
+          setter: setOutdoorMotorSerial,
+          summaryVal: outdoorMotorSerial,
+        },
+        {
+          id: "filterClean",
+          chipLabel: "Filter Clean",
+          title: "Filter Clean की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK (साफ किया)" },
+            { value: "Not OK", label: "Not OK / Damaged" },
+            { value: "NA", label: "N/A" },
+          ],
+          value: filterClean,
+          onSelect: setFilterClean,
+          summaryVal: filterClean,
+        },
+        {
+          id: "standType",
+          chipLabel: "Stand Type",
+          title: "Stand Type चुनें",
+          type: "choice",
+          options: [
+            { value: "Wall Stand", label: "Wall Stand" },
+            { value: "Floor Stand", label: "Floor Stand" },
+            { value: "Hanging / Ceiling", label: "Hanging / Ceiling" },
+            { value: "Not Required", label: "Not Required" },
+          ],
+          value: standType,
+          onSelect: setStandType,
+          summaryVal: standType,
+        },
+        {
+          id: "swingFlapper",
+          chipLabel: "Swing/Flapper",
+          title: "Swing / Flapper की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK (सही काम कर रहा है)" },
+            { value: "Not Working", label: "Not Working" },
+            { value: "Broken", label: "Broken" },
+          ],
+          value: swingFlapper,
+          onSelect: setSwingFlapper,
+          summaryVal: swingFlapper,
+        },
+        {
+          id: "stabilizer",
+          chipLabel: "Stabilizer",
+          title: "Stabilizer की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK" },
+            { value: "Faulty", label: "Faulty" },
+            { value: "Not Installed", label: "Not Installed" },
+          ],
+          value: stabilizer,
+          onSelect: setStabilizer,
+          summaryVal: stabilizer,
+        },
+        {
+          id: "remoteStatus",
+          chipLabel: "Remote",
+          title: "Remote की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK" },
+            { value: "Not Working", label: "Not Working" },
+            { value: "Missing", label: "Missing" },
+          ],
+          value: remoteStatus,
+          onSelect: setRemoteStatus,
+          summaryVal: remoteStatus,
+        },
+        {
+          id: "outdoorClean",
+          chipLabel: "Outdoor Clean",
+          title: "Outdoor Clean की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK (सर्विस की गई)" },
+            { value: "Pending", label: "Pending" },
+            { value: "NA", label: "N/A" },
+          ],
+          value: outdoorClean,
+          onSelect: setOutdoorClean,
+          summaryVal: outdoorClean,
+        },
+        {
+          id: "roomTemp",
+          chipLabel: "Room Temp",
+          title: "Room Temp (°C) दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 24°C",
+          value: roomTemp,
+          setter: setRoomTemp,
+          summaryVal: roomTemp,
+        },
+        {
+          id: "suctionPressure",
+          chipLabel: "Suction Pressure",
+          title: "Suction Pressure दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 120 PSI",
+          value: sectionPressure,
+          setter: setSectionPressure,
+          summaryVal: sectionPressure,
+        },
+        {
+          id: "drainSize",
+          chipLabel: "Drain Size",
+          title: "Drain With Size दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 1 inch PVC",
+          value: drainSize,
+          setter: setDrainSize,
+          summaryVal: drainSize,
+        },
+        {
+          id: "copperPipeSize",
+          chipLabel: "Copper Pipe",
+          title: "Copper Pipe Size दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 1/4 & 1/2",
+          value: copperPipeSize,
+          setter: setCopperPipeSize,
+          summaryVal: copperPipeSize,
+        },
+        {
+          id: "wireSizeCore",
+          chipLabel: "Wire Size",
+          title: "Wire Size & Core दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 2.5 sqmm 3 Core",
+          value: wireSizeCore,
+          setter: setWireSizeCore,
+          summaryVal: wireSizeCore,
+        },
+        {
+          id: "insulation",
+          chipLabel: "Insulation",
+          title: "Insulation की स्थिति चुनें",
+          type: "choice",
+          options: [
+            { value: "OK", label: "OK" },
+            { value: "Damaged", label: "Damaged" },
+            { value: "Replaced", label: "Replaced" },
+          ],
+          value: insulation,
+          onSelect: setInsulation,
+          summaryVal: insulation,
+        },
+        {
+          id: "voltage",
+          chipLabel: "Voltage",
+          title: "Voltage दर्ज करें",
+          type: "text",
+          placeholder: isSinglePhaseSelected ? "जैसे: 230V" : "जैसे: 415V / 230V",
+          value: voltage,
+          setter: setVoltage,
+          summaryVal: voltage,
+        },
+        {
+          id: "compressorAmpere",
+          chipLabel: "Comp. Amp",
+          title: "Compressor Ampere दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 6.5 A",
+          value: compressorAmpere,
+          setter: setCompressorAmpere,
+          summaryVal: compressorAmpere,
+        },
+        {
+          id: "unitAmpere",
+          chipLabel: "Unit Amp",
+          title: "Unit Ampere दर्ज करें",
+          type: "text",
+          placeholder: "जैसे: 7.2 A",
+          value: ampere,
+          setter: setAmpere,
+          summaryVal: ampere,
+        }
+      );
+
+      // यदि 3-फ़ेज़ यूनिट है तो R / Y / B वोल्टेज व एम्पीयर भी एक-एक स्लाइड में आएंगे
+      if (!isSinglePhaseSelected) {
+        slides.push(
+          {
+            id: "phaseR",
+            chipLabel: "R Voltage",
+            title: "R-Phase Voltage दर्ज करें",
+            type: "text",
+            placeholder: "R Voltage",
+            value: phaseR,
+            setter: setPhaseR,
+            summaryVal: phaseR,
+          },
+          {
+            id: "phaseY",
+            chipLabel: "Y Voltage",
+            title: "Y-Phase Voltage दर्ज करें",
+            type: "text",
+            placeholder: "Y Voltage",
+            value: phaseY,
+            setter: setPhaseY,
+            summaryVal: phaseY,
+          },
+          {
+            id: "phaseB",
+            chipLabel: "B Voltage",
+            title: "B-Phase Voltage दर्ज करें",
+            type: "text",
+            placeholder: "B Voltage",
+            value: phaseB,
+            setter: setPhaseB,
+            summaryVal: phaseB,
+          },
+          {
+            id: "ampR",
+            chipLabel: "R Ampere",
+            title: "R-Phase Ampere दर्ज करें",
+            type: "text",
+            placeholder: "R Ampere",
+            value: ampR,
+            setter: setAmpR,
+            summaryVal: ampR,
+          },
+          {
+            id: "ampY",
+            chipLabel: "Y Ampere",
+            title: "Y-Phase Ampere दर्ज करें",
+            type: "text",
+            placeholder: "Y Ampere",
+            value: ampY,
+            setter: setAmpY,
+            summaryVal: ampY,
+          },
+          {
+            id: "ampB",
+            chipLabel: "B Ampere",
+            title: "B-Phase Ampere दर्ज करें",
+            type: "text",
+            placeholder: "B Ampere",
+            value: ampB,
+            setter: setAmpB,
+            summaryVal: ampB,
+          }
+        );
+      }
+    }
+
+    // अंत में कार्य व बिलिंग तथा स्टेटस, फोटो व सिग्नेचर स्लाइड्स
+    slides.push(
+      {
+        id: "workBilling",
+        chipLabel: "कार्य व बिल",
+        title: "किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल",
+        type: "workBillingStep",
+        summaryVal:
+          workDone || grandTotalBill > 0
+            ? `${workDone ? workDone.slice(0, 12) + ".." : "कार्य"} (₹${grandTotalBill})`
+            : "",
+      },
+      {
+        id: "statusSign",
+        chipLabel: "स्टेटस व साइन",
+        title: "जॉब स्टेटस, फोटो और कस्टमर हस्ताक्षर (Final Step)",
+        type: "statusSignStep",
+        summaryVal: `${jobStatusType}${savedSignatureURL ? " + Sign" : ""}`,
+      }
+    );
+
+    return slides;
+  };
+
+  const allJobSlides = buildAllSlides();
+  const safeSlideIndex = Math.min(slideIndex, allJobSlides.length - 1);
+  const currentSlide = allJobSlides[safeSlideIndex];
+
+  const goNextSlide = () => {
+    if (currentSlide?.required) {
+      if (currentSlide.id === "custName" && !jobCustName.trim()) {
+        alert("कृपया कस्टमर का नाम लिखें!");
+        return;
+      }
+      if (currentSlide.id === "custPhone" && jobCustPhone.trim().length < 10) {
+        alert("कृपया सही 10 अंकों का मोबाइल नंबर लिखें!");
+        return;
+      }
+      if (currentSlide.id === "custAddress" && !jobCustAddress.trim()) {
+        alert("कृपया साइट का पता लिखें!");
+        return;
+      }
+    }
+    setSlideIndex((prev) => Math.min(allJobSlides.length - 1, prev + 1));
+  };
+
+  const goPrevSlide = () => {
+    setSlideIndex((prev) => Math.max(0, prev - 1));
   };
 
   if (activeTab === "printSheet") {
@@ -4156,9 +4944,9 @@ export default function App() {
               )}
 
               {/* ================================================================
-                  NEW SLIDE-BY-SLIDE JOB SHEET FORM + LIVE EDITABLE SUMMARY BAR
+                  100% SLIDE-BY-SLIDE (1 FIELD PER SLIDE FOR ALL UNITS)
                   ================================================================ */}
-              {staffSubTab === "newJobForm" && (
+              {staffSubTab === "newJobForm" && currentSlide && (
                 <div>
                   <div
                     style={{
@@ -4193,7 +4981,7 @@ export default function App() {
                         borderRadius: "12px",
                       }}
                     >
-                      स्लाइड {slideIndex + 1} / {jobSlidesList.length}
+                      स्लाइड {safeSlideIndex + 1} / {allJobSlides.length}
                     </span>
                   </div>
 
@@ -4203,8 +4991,10 @@ export default function App() {
                       background: "#eff6ff",
                       border: "1.5px solid #93c5fd",
                       borderRadius: "8px",
-                      padding: "10px",
+                      padding: "8px",
                       marginBottom: "12px",
+                      maxHeight: "125px",
+                      overflowY: "auto",
                     }}
                   >
                     <div
@@ -4212,7 +5002,7 @@ export default function App() {
                         fontSize: "11px",
                         fontWeight: "bold",
                         color: "#1e40af",
-                        marginBottom: "6px",
+                        marginBottom: "5px",
                       }}
                     >
                       ✔ भरा गया विवरण (बदलने या छूटने पर किसी भी नाम पर टच करें):
@@ -4221,22 +5011,22 @@ export default function App() {
                       style={{
                         display: "flex",
                         flexWrap: "wrap",
-                        gap: "6px",
+                        gap: "5px",
                       }}
                     >
-                      {jobSlidesList.map((sl, idx) => {
+                      {allJobSlides.map((sl, idx) => {
                         const isFilled = Boolean(
                           sl.summaryVal && String(sl.summaryVal).trim()
                         );
-                        const isCurrent = idx === slideIndex;
+                        const isCurrent = idx === safeSlideIndex;
                         return (
                           <button
                             key={sl.id}
                             type="button"
                             onClick={() => setSlideIndex(idx)}
                             style={{
-                              padding: "4px 8px",
-                              borderRadius: "6px",
+                              padding: "3px 7px",
+                              borderRadius: "5px",
                               border: isCurrent
                                 ? "2px solid #166534"
                                 : isFilled
@@ -4248,16 +5038,16 @@ export default function App() {
                                 ? "#ffffff"
                                 : "#f8fafc",
                               color: isFilled ? "#0f172a" : "#64748b",
-                              fontSize: "11px",
+                              fontSize: "10.5px",
                               cursor: "pointer",
                               fontWeight: isCurrent || isFilled ? "bold" : "normal",
                             }}
                           >
                             {isFilled ? "✓ " : "+ "}
-                            {sl.label}
+                            {sl.chipLabel}
                             {isFilled
-                              ? `: ${String(sl.summaryVal).slice(0, 14)}${
-                                  String(sl.summaryVal).length > 14 ? ".." : ""
+                              ? `: ${String(sl.summaryVal).slice(0, 12)}${
+                                  String(sl.summaryVal).length > 12 ? ".." : ""
                                 } ✎`
                               : ""}
                           </button>
@@ -4280,7 +5070,7 @@ export default function App() {
                     <div
                       style={{
                         width: `${Math.round(
-                          ((slideIndex + 1) / jobSlidesList.length) * 100
+                          ((safeSlideIndex + 1) / allJobSlides.length) * 100
                         )}%`,
                         height: "100%",
                         background: "#166534",
@@ -4289,97 +5079,64 @@ export default function App() {
                     />
                   </div>
 
-                  {/* सक्रिय स्लाइड कार्ड */}
+                  {/* सक्रिय सिंगल-फील्ड स्लाइड कार्ड */}
                   <div
                     style={{
                       background: "#ffffff",
-                      border: "1px solid #cbd5e1",
+                      border: "1.5px solid #cbd5e1",
                       borderRadius: "10px",
-                      padding: "16px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      padding: "18px 16px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                     }}
                   >
-                    {/* SLIDE 0: कस्टमर का नाम */}
-                    {slideIndex === 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          1. ग्राहक / संस्था का नाम लिखें (Customer Name):
-                        </h4>
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder="जैसे: Green Leaf Enterprises / रेलवे ऑफिस / ग्राहक का नाम"
-                          value={jobCustName}
-                          onChange={(e) => setJobCustName(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!jobCustName.trim()) {
-                              alert("कृपया कस्टमर का नाम लिखें!");
-                              return;
-                            }
-                            setSlideIndex(1);
-                          }}
-                          style={{
-                            padding: "12px",
-                            backgroundColor: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
-                          }}
-                        >
-                          आगे बढ़ें (Next) →
-                        </button>
-                      </div>
-                    )}
+                    <h4 style={{ margin: "0 0 12px 0", color: "#0f172a", fontSize: "16px" }}>
+                      {safeSlideIndex + 1}. {currentSlide.title}:
+                    </h4>
 
-                    {/* SLIDE 1: मोबाइल नंबर */}
-                    {slideIndex === 1 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          2. संपर्क एवं मोबाइल नंबर दर्ज करें (Mobile No.):
-                        </h4>
+                    {/* A. SINGLE TEXT / TEL INPUT SLIDE */}
+                    {(currentSlide.type === "text" || currentSlide.type === "tel") && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         <input
-                          type="tel"
+                          key={currentSlide.id}
+                          type={currentSlide.type}
                           autoFocus
-                          maxLength="10"
-                          placeholder="10 अंकों का मोबाइल नंबर"
-                          value={jobCustPhone}
-                          onChange={(e) => setJobCustPhone(e.target.value)}
+                          maxLength={currentSlide.maxLength || undefined}
+                          placeholder={currentSlide.placeholder}
+                          value={currentSlide.value}
+                          onChange={(e) => currentSlide.setter(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              goNextSlide();
+                            }
+                          }}
                           style={{ ...inputStyle, width: "100%" }}
                         />
                         <div style={{ display: "flex", gap: "10px" }}>
+                          {safeSlideIndex > 0 && (
+                            <button
+                              type="button"
+                              onClick={goPrevSlide}
+                              style={{
+                                flex: 1,
+                                padding: "12px",
+                                background: "#64748b",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "6px",
+                                fontWeight: "bold",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ← पीछे
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => setSlideIndex(0)}
-                            style={{
-                              flex: 1,
-                              padding: "11px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (jobCustPhone.trim().length < 10) {
-                                alert("कृपया सही 10 अंकों का मोबाइल नंबर लिखें!");
-                                return;
-                              }
-                              setSlideIndex(2);
-                            }}
+                            onClick={goNextSlide}
                             style={{
                               flex: 2,
-                              padding: "11px",
+                              padding: "12px",
                               background: "#166534",
                               color: "#fff",
                               border: "none",
@@ -4394,214 +5151,108 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* SLIDE 2: साइट का पूरा पता */}
-                    {slideIndex === 2 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          3. लोकेशन / साइट का पूरा पता लिखें (Address):
-                        </h4>
+                    {/* B. SINGLE TEXTAREA SLIDE */}
+                    {currentSlide.type === "textarea" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         <textarea
+                          key={currentSlide.id}
                           rows="3"
                           autoFocus
-                          placeholder="जैसे: नैनी / झूंसी / प्रयागराज..."
-                          value={jobCustAddress}
-                          onChange={(e) => setJobCustAddress(e.target.value)}
+                          placeholder={currentSlide.placeholder}
+                          value={currentSlide.value}
+                          onChange={(e) => currentSlide.setter(e.target.value)}
                           style={{ ...inputStyle, width: "100%" }}
                         />
                         <div style={{ display: "flex", gap: "10px" }}>
-                          <button
-                            type="button"
-                            onClick={() => setSlideIndex(1)}
-                            style={{
-                              flex: 1,
-                              padding: "11px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!jobCustAddress.trim()) {
-                                alert("कृपया साइट का पता लिखें!");
-                                return;
-                              }
-                              setSlideIndex(3);
-                            }}
-                            style={{
-                              flex: 2,
-                              padding: "11px",
-                              background: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SLIDE 3: बिल नं. और AMC दिनांक (वैकल्पिक) */}
-                    {slideIndex === 3 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          4. बिल नं. एवं AMC दिनांक (यदि लागू हो तो भरें):
-                        </h4>
-                        <input
-                          type="text"
-                          placeholder="बिल नं (Bill No. - वैकल्पिक)"
-                          value={billNo}
-                          onChange={(e) => setBillNo(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="AMC दिनांक (DD/MM/YYYY - वैकल्पिक)"
-                          value={amcDate}
-                          onChange={(e) => setAmcDate(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          <button
-                            type="button"
-                            onClick={() => setSlideIndex(2)}
-                            style={{
-                              flex: 1,
-                              padding: "11px",
-                              background: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSlideIndex(4)}
-                            style={{
-                              flex: 2,
-                              padding: "11px",
-                              background: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SLIDE 4: मुख्य श्रेणी (टच करते ही अगली स्लाइड खुलेगी) */}
-                    {slideIndex === 4 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          5. काम की मुख्य श्रेणी चुनें (Category):
-                        </h4>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
-                          {[
-                            { val: "HVAC & Refrigeration", lbl: "❄️ HVAC & Refrigeration (AC, Fridge, Chiller, Water Cooler)" },
-                            { val: "Electrical Work", lbl: "⚡ Electrical Work (Cooler, Wiring, Panel, Earthing)" },
-                            { val: "Plumbing Work", lbl: "🚰 Plumbing Work (Pipe, Tank, Pump)" },
-                            { val: "Civil Work", lbl: "🏗️ Civil Work (Flooring, Plaster, Waterproofing)" },
-                          ].map((cat) => (
+                          {safeSlideIndex > 0 && (
                             <button
-                              key={cat.val}
                               type="button"
-                              onClick={() => {
-                                selectCategoryValue(cat.val);
-                                setSlideIndex(5);
+                              onClick={goPrevSlide}
+                              style={{
+                                flex: 1,
+                                padding: "12px",
+                                background: "#64748b",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "6px",
+                                fontWeight: "bold",
+                                cursor: "pointer",
                               }}
-                              style={choiceBtnStyle(categoryType === cat.val)}
                             >
-                              {cat.lbl}
+                              ← पीछे
                             </button>
-                          ))}
+                          )}
+                          <button
+                            type="button"
+                            onClick={goNextSlide}
+                            style={{
+                              flex: 2,
+                              padding: "12px",
+                              background: "#166534",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "6px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                            }}
+                          >
+                            आगे बढ़ें →
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSlideIndex(3)}
-                          style={{
-                            marginTop: "6px",
-                            padding: "10px",
-                            background: "#64748b",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          ← पीछे
-                        </button>
                       </div>
                     )}
 
-                    {/* SLIDE 5: संबंधित कार्य / उपकरण (टच करते ही अगली स्लाइड खुलेगी) */}
-                    {slideIndex === 5 && (
+                    {/* C. SINGLE CHOICE BUTTONS SLIDE (टच करते ही अगली स्लाइड पर जाए) */}
+                    {currentSlide.type === "choice" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          6. {categoryType} का उपकरण चुनें:
-                        </h4>
                         <div
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
+                            gridTemplateColumns:
+                              currentSlide.options.length > 4 ? "1fr 1fr" : "1fr",
                             gap: "8px",
                           }}
                         >
-                          {(subOptionsByCategory[categoryType] || []).map((opt) => (
+                          {currentSlide.options.map((opt) => (
                             <button
                               key={opt.value}
                               type="button"
                               onClick={() => {
-                                selectProductValue(opt.value);
-                                setSlideIndex(6);
+                                currentSlide.onSelect(opt.value);
+                                setSlideIndex((prev) =>
+                                  Math.min(allJobSlides.length - 1, prev + 1)
+                                );
                               }}
-                              style={choiceBtnStyle(productType === opt.value)}
+                              style={choiceBtnStyle(currentSlide.value === opt.value)}
                             >
                               {opt.label}
                             </button>
                           ))}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSlideIndex(4)}
-                          style={{
-                            marginTop: "6px",
-                            padding: "10px",
-                            background: "#64748b",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          ← पीछे
-                        </button>
+                        {safeSlideIndex > 0 && (
+                          <button
+                            type="button"
+                            onClick={goPrevSlide}
+                            style={{
+                              marginTop: "6px",
+                              padding: "10px",
+                              background: "#64748b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "6px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ← पीछे
+                          </button>
+                        )}
                       </div>
                     )}
 
-                    {/* SLIDE 6: समस्या / फॉल्ट विवरण (+ कूलर कार्य प्रकार) */}
-                    {slideIndex === 6 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0, color: "#0f172a" }}>
-                          7. {productType} की समस्या / फॉल्ट विवरण लिखें:
-                        </h4>
-
+                    {/* D. FAULT DETAILS SLIDE (+ कूलर कार्य प्रकार) */}
+                    {currentSlide.type === "faultStep" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         {isAirCoolerSelected && (
                           <div
                             style={{
@@ -4675,14 +5326,15 @@ export default function App() {
                         <div style={{ display: "flex", gap: "10px" }}>
                           <button
                             type="button"
-                            onClick={() => setSlideIndex(5)}
+                            onClick={goPrevSlide}
                             style={{
                               flex: 1,
-                              padding: "11px",
+                              padding: "12px",
                               background: "#64748b",
                               color: "#fff",
                               border: "none",
                               borderRadius: "6px",
+                              fontWeight: "bold",
                               cursor: "pointer",
                             }}
                           >
@@ -4690,10 +5342,10 @@ export default function App() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setSlideIndex(7)}
+                            onClick={goNextSlide}
                             style={{
                               flex: 2,
-                              padding: "11px",
+                              padding: "12px",
                               background: "#166534",
                               color: "#fff",
                               border: "none",
@@ -4708,945 +5360,9 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* SLIDE 7: उपकरण के अनुसार तकनीकी रीडिंग व चेकलिस्ट */}
-                    {slideIndex === 7 && (
-                      <div>
-                        {isFridgeOrWCSelected && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            <h4 style={{ margin: 0 }}>
-                              {isWaterCoolerSelected
-                                ? "8. Water Cooler तकनीकी विवरण"
-                                : "8. Deep Freezer / Refrigerator तकनीकी विवरण"}
-                            </h4>
-
-                            <div
-                              style={{
-                                background: "#f8fafc",
-                                padding: "12px",
-                                borderRadius: "8px",
-                                border: "1px solid #cbd5e1",
-                                display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
-                                gap: "10px",
-                              }}
-                            >
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  1. यूनिट मॉडल नंबर:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="Unit Model No."
-                                  value={unitModel}
-                                  onChange={(e) => setUnitModel(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  2. यूनिट सीरियल नंबर:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="Unit Serial No."
-                                  value={unitSerial}
-                                  onChange={(e) => setUnitSerial(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  3. यूनिट कैपेसिटी (Litres):
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="जैसे: 300 Ltr / 500 Ltr"
-                                  value={unitCapacity}
-                                  onChange={(e) => setUnitCapacity(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  4. कंडेंसर In / Out:
-                                </label>
-                                <select
-                                  value={condenserInOut}
-                                  onChange={(e) => setCondenserInOut(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">OK</option>
-                                  <option value="In">In (इन)</option>
-                                  <option value="Out">Out (आउट)</option>
-                                  <option value="Clean / Serviced">Clean / Serviced</option>
-                                  <option value="Choked / Damaged">Choked / Damaged</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  5. कंप्रेसर मॉडल नंबर:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="Compressor Model No."
-                                  value={compressorModel}
-                                  onChange={(e) => setCompressorModel(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  6. कंप्रेसर सीरियल नंबर:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="Compressor Serial No."
-                                  value={compressorSerial}
-                                  onChange={(e) => setCompressorSerial(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  7. कंप्रेसर Ampere:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g. 2.4 A"
-                                  value={compressorAmpere}
-                                  onChange={(e) => setCompressorAmpere(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                  8. यूनिट Ampere:
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g. 2.8 A"
-                                  value={ampere}
-                                  onChange={(e) => setAmpere(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                />
-                              </div>
-
-                              {isWaterCoolerSelected && (
-                                <>
-                                  <div>
-                                    <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px", color: "#0369a1" }}>
-                                      9. टंकी साइज (Litres):
-                                    </label>
-                                    <select
-                                      value={wcTankSize}
-                                      onChange={(e) => setWcTankSize(e.target.value)}
-                                      style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                    >
-                                      <option value="20">20 Litres</option>
-                                      <option value="40">40 Litres</option>
-                                      <option value="60">60 Litres</option>
-                                      <option value="80">80 Litres</option>
-                                      <option value="120">120 Litres</option>
-                                      <option value="150">150 Litres</option>
-                                    </select>
-                                  </div>
-
-                                  <div>
-                                    <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px", color: "#0369a1" }}>
-                                      10. टोटी कितनी है:
-                                    </label>
-                                    <select
-                                      value={wcTapCount}
-                                      onChange={(e) => setWcTapCount(e.target.value)}
-                                      style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                    >
-                                      <option value="1">1 टोटी</option>
-                                      <option value="2">2 टोटी</option>
-                                      <option value="3">3 टोटी</option>
-                                    </select>
-                                  </div>
-
-                                  <div>
-                                    <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px", color: "#0369a1" }}>
-                                      11. Water Overflow सिस्टम:
-                                    </label>
-                                    <select
-                                      value={wcOverflowType}
-                                      onChange={(e) => setWcOverflowType(e.target.value)}
-                                      style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                    >
-                                      <option value="Switch">Switch (स्विच)</option>
-                                      <option value="Float Ball">Float Ball (फ्लोट बॉल)</option>
-                                      <option value="Electric Unit">Electric Unit (इलेक्ट्रिक यूनिट)</option>
-                                    </select>
-                                  </div>
-
-                                  <div>
-                                    <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px", color: "#0369a1" }}>
-                                      12. कंडेंसिंग कॉइल साइज:
-                                    </label>
-                                    <input
-                                      type="text"
-                                      placeholder="जैसे: 12×14×2 Row"
-                                      value={wcCondensingCoilSize}
-                                      onChange={(e) => setWcCondensingCoilSize(e.target.value)}
-                                      style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                    />
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {isAirCoolerSelected && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            <h4 style={{ margin: 0 }}>8. कूलर विवरण एवं निरीक्षण चेकलिस्ट</h4>
-
-                            <div
-                              style={{
-                                background: "#f8fafc",
-                                padding: "10px",
-                                borderRadius: "6px",
-                                border: "1px solid #cbd5e1",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "8px",
-                              }}
-                            >
-                              <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                                कूलर का विवरण (Cooler Specifications):
-                              </strong>
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <div style={{ flex: 1 }}>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>बॉडी टाइप:</label>
-                                  <select
-                                    value={coolerBodyMaterial}
-                                    onChange={(e) => setCoolerBodyMaterial(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="Fiber / Plastic">फाइबर / प्लास्टिक</option>
-                                    <option value="GI / Metal">जी. आई. / लोहा (Metal)</option>
-                                  </select>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>कूलर टाइप:</label>
-                                  <select
-                                    value={coolerSubType}
-                                    onChange={(e) => setCoolerSubType(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="Duct Cooler">डक्ट कूलर</option>
-                                    <option value="Desert Cooler">डेजर्ट कूलर</option>
-                                    <option value="Tower Cooler">टावर कूलर</option>
-                                    <option value="Room / Personal Cooler">रूम कूलर</option>
-                                  </select>
-                                </div>
-                              </div>
-
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <input
-                                  type="text"
-                                  placeholder="क्षमता / साइज़ (जैसे 70 Ltr)"
-                                  value={coolerCapacity}
-                                  onChange={(e) => setCoolerCapacity(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="ब्रांड / मॉडल"
-                                  value={coolerBrandModel}
-                                  onChange={(e) => setCoolerBrandModel(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                              </div>
-
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <input
-                                  type="text"
-                                  placeholder="सीरियल / टैग नं."
-                                  value={coolerSerialNo}
-                                  onChange={(e) => setCoolerSerialNo(e.target.value)}
-                                  style={{ ...inputStyle, flex: 2, fontSize: "12px" }}
-                                />
-                                <input
-                                  type="number"
-                                  min="1"
-                                  placeholder="कुल संख्या"
-                                  value={coolerTotalQty}
-                                  onChange={(e) => setCoolerTotalQty(e.target.value)}
-                                  style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                />
-                              </div>
-                            </div>
-
-                            <div
-                              style={{
-                                background: "#f8fafc",
-                                padding: "10px",
-                                borderRadius: "6px",
-                                border: "1px solid #cbd5e1",
-                                display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
-                                gap: "8px",
-                              }}
-                            >
-                              <div style={{ gridColumn: "1 / -1" }}>
-                                <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                                  निरीक्षण चेकलिस्ट (Inspection Checklist):
-                                </strong>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>फैन मोटर:</label>
-                                <select
-                                  value={coolerFanMotor}
-                                  onChange={(e) => setCoolerFanMotor(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">सही</option>
-                                  <option value="Jam / Bearing Bad">जाम / बेयरिंग खराब</option>
-                                  <option value="Winding Burnt">वाइंडिंग जली हुई</option>
-                                  <option value="Capacitor Bad">कैपेसिटर खराब</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>वाटर पंप:</label>
-                                <select
-                                  value={coolerWaterPump}
-                                  onChange={(e) => setCoolerWaterPump(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">सही</option>
-                                  <option value="Not Pumping">पानी नहीं उठा रहा</option>
-                                  <option value="Replace Required">बदलना आवश्यक</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>स्विंग मोटर एवं ब्लेड:</label>
-                                <select
-                                  value={coolerSwingBlade}
-                                  onChange={(e) => setCoolerSwingBlade(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">सही</option>
-                                  <option value="Swing Bad">स्विंग खराब</option>
-                                  <option value="Blade Broken">फैन ब्लेड टूटा</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>कूलिंग पैड प्रकार:</label>
-                                <select
-                                  value={coolerPadType}
-                                  onChange={(e) => setCoolerPadType(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="Honeycomb">हनीकॉम्ब</option>
-                                  <option value="Wood Wool">वुड वूल (घास)</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>कूलिंग पैड स्थिति:</label>
-                                <select
-                                  value={coolerPadStatus}
-                                  onChange={(e) => setCoolerPadStatus(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="Clean">साफ</option>
-                                  <option value="Replaceable">बदलने योग्य</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>वाटर टैंक व प्लंबिंग:</label>
-                                <select
-                                  value={coolerTankPlumbing}
-                                  onChange={(e) => setCoolerTankPlumbing(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">सही</option>
-                                  <option value="Leakage">लीकेज है</option>
-                                  <option value="Float Valve Bad">फ्लोट वाल्व खराब</option>
-                                  <option value="Drain / Pipe Jam">ड्रेन / पाइप जाम</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>इलेक्ट्रिकल व वायरिंग:</label>
-                                <select
-                                  value={coolerElectrical}
-                                  onChange={(e) => setCoolerElectrical(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">सही</option>
-                                  <option value="Rotary Switch Bad">रोटरी स्विच खराब</option>
-                                  <option value="Wiring Burnt">वायरिंग कटी / जली</option>
-                                  <option value="Plug / Earthing Checked">प्लग / अर्थिंग चेक</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: "11px", fontWeight: "bold" }}>बॉडी एवं पेंट:</label>
-                                <select
-                                  value={coolerBodyPaint}
-                                  onChange={(e) => setCoolerBodyPaint(e.target.value)}
-                                  style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                >
-                                  <option value="OK">सही</option>
-                                  <option value="Rusting">जंग (Rusting)</option>
-                                  <option value="Welding Required">वेल्डिंग जरूरत</option>
-                                  <option value="Painting Required">पेंटिंग आवश्यक</option>
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {!isAirCoolerSelected && !isFridgeOrWCSelected && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            <h4 style={{ margin: 0 }}>8. टेक्निकल पैरामीटर्स एवं चेकलिस्ट</h4>
-
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                background: "#f1f5f9",
-                                padding: "8px 10px",
-                                borderRadius: "6px",
-                              }}
-                            >
-                              <strong style={{ fontSize: "12px" }}>भाग {techSlide} / 4</strong>
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                {[1, 2, 3, 4].map((num) => (
-                                  <button
-                                    key={num}
-                                    type="button"
-                                    onClick={() => setTechSlide(num)}
-                                    style={{
-                                      padding: "4px 10px",
-                                      borderRadius: "4px",
-                                      border: "1px solid #1e3a8a",
-                                      background: techSlide === num ? "#1e3a8a" : "#ffffff",
-                                      color: techSlide === num ? "#ffffff" : "#1e3a8a",
-                                      fontWeight: "bold",
-                                      fontSize: "12px",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    {num}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {techSlide === 1 && (
-                              <div
-                                style={{
-                                  background: "#f8fafc",
-                                  padding: "10px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #cbd5e1",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "8px",
-                                }}
-                              >
-                                <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                                  1. यूनिट और कंप्रेसर विवरण
-                                </strong>
-                                <div style={{ display: "flex", gap: "5px" }}>
-                                  <input
-                                    type="text"
-                                    placeholder="Indoor Model"
-                                    value={indoorModel}
-                                    onChange={(e) => setIndoorModel(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="Indoor Serial"
-                                    value={indoorSerial}
-                                    onChange={(e) => setIndoorSerial(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div style={{ display: "flex", gap: "5px" }}>
-                                  <input
-                                    type="text"
-                                    placeholder="Outdoor Model"
-                                    value={outdoorModel}
-                                    onChange={(e) => setOutdoorModel(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="Outdoor Serial"
-                                    value={outdoorSerial}
-                                    onChange={(e) => setOutdoorSerial(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div style={{ display: "flex", gap: "5px" }}>
-                                  <input
-                                    type="text"
-                                    placeholder="Compressor Model"
-                                    value={compressorModel}
-                                    onChange={(e) => setCompressorModel(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="Compressor Serial"
-                                    value={compressorSerial}
-                                    onChange={(e) => setCompressorSerial(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div style={{ display: "flex", gap: "5px" }}>
-                                  <input
-                                    type="text"
-                                    placeholder="In-Door Motor Model"
-                                    value={indoorMotorModel}
-                                    onChange={(e) => setIndoorMotorModel(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="In-Door Motor Serial"
-                                    value={indoorMotorSerial}
-                                    onChange={(e) => setIndoorMotorSerial(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div style={{ display: "flex", gap: "5px" }}>
-                                  <input
-                                    type="text"
-                                    placeholder="Out-Door Motor Model"
-                                    value={outdoorMotorModel}
-                                    onChange={(e) => setOutdoorMotorModel(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="Out-Door Motor Serial"
-                                    value={outdoorMotorSerial}
-                                    onChange={(e) => setOutdoorMotorSerial(e.target.value)}
-                                    style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {techSlide === 2 && (
-                              <div
-                                style={{
-                                  background: "#f8fafc",
-                                  padding: "10px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #cbd5e1",
-                                  display: "grid",
-                                  gridTemplateColumns: "1fr 1fr",
-                                  gap: "8px",
-                                }}
-                              >
-                                <div style={{ gridColumn: "1 / -1" }}>
-                                  <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                                    2. सर्विस एवं फिजिकल चेकलिस्ट:
-                                  </strong>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>FILTER CLEAN:</label>
-                                  <select
-                                    value={filterClean}
-                                    onChange={(e) => setFilterClean(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="OK">OK (साफ किया)</option>
-                                    <option value="Not OK">Not OK / Damaged</option>
-                                    <option value="NA">N/A</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>STAND TYPE:</label>
-                                  <select
-                                    value={standType}
-                                    onChange={(e) => setStandType(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="Wall Stand">Wall Stand</option>
-                                    <option value="Floor Stand">Floor Stand</option>
-                                    <option value="Hanging / Ceiling">Hanging / Ceiling</option>
-                                    <option value="Not Required">Not Required</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>SWING / FLAPPER:</label>
-                                  <select
-                                    value={swingFlapper}
-                                    onChange={(e) => setSwingFlapper(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="OK">OK</option>
-                                    <option value="Not Working">Not Working</option>
-                                    <option value="Broken">Broken</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>STABILIZER:</label>
-                                  <select
-                                    value={stabilizer}
-                                    onChange={(e) => setStabilizer(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="OK">OK</option>
-                                    <option value="Faulty">Faulty</option>
-                                    <option value="Not Installed">Not Installed</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>REMOTE:</label>
-                                  <select
-                                    value={remoteStatus}
-                                    onChange={(e) => setRemoteStatus(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="OK">OK</option>
-                                    <option value="Not Working">Not Working</option>
-                                    <option value="Missing">Missing</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>OUTDOOR CLEAN:</label>
-                                  <select
-                                    value={outdoorClean}
-                                    onChange={(e) => setOutdoorClean(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="OK">OK (सर्विस की गई)</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="NA">N/A</option>
-                                  </select>
-                                </div>
-                              </div>
-                            )}
-
-                            {techSlide === 3 && (
-                              <div
-                                style={{
-                                  background: "#f8fafc",
-                                  padding: "10px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #cbd5e1",
-                                  display: "grid",
-                                  gridTemplateColumns: "1fr 1fr",
-                                  gap: "8px",
-                                }}
-                              >
-                                <div style={{ gridColumn: "1 / -1" }}>
-                                  <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                                    3. गैस, पाइपिंग एवं तापमान माप:
-                                  </strong>
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>ROOM TEMP (°C):</label>
-                                  <input
-                                    type="text"
-                                    placeholder="e.g. 24°C"
-                                    value={roomTemp}
-                                    onChange={(e) => setRoomTemp(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>SUCTION PRESSURE:</label>
-                                  <input
-                                    type="text"
-                                    placeholder="e.g. 120 PSI"
-                                    value={sectionPressure}
-                                    onChange={(e) => setSectionPressure(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>DRAIN WITH SIZE:</label>
-                                  <input
-                                    type="text"
-                                    placeholder="e.g. 1 inch PVC"
-                                    value={drainSize}
-                                    onChange={(e) => setDrainSize(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>COPPER PIPE SIZE:</label>
-                                  <input
-                                    type="text"
-                                    placeholder="e.g. 1/4 & 1/2"
-                                    value={copperPipeSize}
-                                    onChange={(e) => setCopperPipeSize(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>WIRE SIZE &amp; CORE:</label>
-                                  <input
-                                    type="text"
-                                    placeholder="e.g. 2.5 sqmm 3 Core"
-                                    value={wireSizeCore}
-                                    onChange={(e) => setWireSizeCore(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>INSULATION:</label>
-                                  <select
-                                    value={insulation}
-                                    onChange={(e) => setInsulation(e.target.value)}
-                                    style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                  >
-                                    <option value="OK">OK</option>
-                                    <option value="Damaged">Damaged</option>
-                                    <option value="Replaced">Replaced</option>
-                                  </select>
-                                </div>
-                              </div>
-                            )}
-
-                            {techSlide === 4 && (
-                              <div
-                                style={{
-                                  background: "#f8fafc",
-                                  padding: "10px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #cbd5e1",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "8px",
-                                }}
-                              >
-                                <strong style={{ fontSize: "12px", color: "#0f172a" }}>
-                                  {isSinglePhaseSelected
-                                    ? "4. वोल्टेज एवं एम्पीयर रीडिंग (Single Phase):"
-                                    : "4. वोल्टेज, एम्पीयर एवं 3-फ़ेज़ रीडिंग (R / Y / B):"}
-                                </strong>
-
-                                {isSinglePhaseSelected ? (
-                                  <div
-                                    style={{
-                                      display: "grid",
-                                      gridTemplateColumns: "1fr 1fr 1fr",
-                                      gap: "8px",
-                                    }}
-                                  >
-                                    <div>
-                                      <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                        वोल्टेज (Voltage):
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. 230V"
-                                        value={voltage}
-                                        onChange={(e) => setVoltage(e.target.value)}
-                                        style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                      />
-                                    </div>
-                                    <div>
-                                      <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                        कंप्रेसर Ampere:
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. 6.5 A"
-                                        value={compressorAmpere}
-                                        onChange={(e) => setCompressorAmpere(e.target.value)}
-                                        style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                      />
-                                    </div>
-                                    <div>
-                                      <label style={{ fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px" }}>
-                                        यूनिट Ampere:
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. 7.2 A"
-                                        value={ampere}
-                                        onChange={(e) => setAmpere(e.target.value)}
-                                        style={{ ...inputStyle, width: "100%", fontSize: "12px" }}
-                                      />
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div style={{ display: "flex", gap: "5px" }}>
-                                      <input
-                                        type="text"
-                                        placeholder="Voltage (415V / 230V)"
-                                        value={voltage}
-                                        onChange={(e) => setVoltage(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="Compressor Ampere"
-                                        value={compressorAmpere}
-                                        onChange={(e) => setCompressorAmpere(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="Unit Ampere"
-                                        value={ampere}
-                                        onChange={(e) => setAmpere(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                    </div>
-                                    <div style={{ display: "flex", gap: "5px" }}>
-                                      <input
-                                        type="text"
-                                        placeholder="R Voltage"
-                                        value={phaseR}
-                                        onChange={(e) => setPhaseR(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="Y Voltage"
-                                        value={phaseY}
-                                        onChange={(e) => setPhaseY(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="B Voltage"
-                                        value={phaseB}
-                                        onChange={(e) => setPhaseB(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                    </div>
-                                    <div style={{ display: "flex", gap: "5px" }}>
-                                      <input
-                                        type="text"
-                                        placeholder="R Ampere"
-                                        value={ampR}
-                                        onChange={(e) => setAmpR(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="Y Ampere"
-                                        value={ampY}
-                                        onChange={(e) => setAmpY(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="B Ampere"
-                                        value={ampB}
-                                        onChange={(e) => setAmpB(e.target.value)}
-                                        style={{ ...inputStyle, flex: 1, fontSize: "12px" }}
-                                      />
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            )}
-
-                            <div style={{ display: "flex", gap: "8px" }}>
-                              <button
-                                type="button"
-                                disabled={techSlide === 1}
-                                onClick={() => setTechSlide((prev) => Math.max(1, prev - 1))}
-                                style={{
-                                  flex: 1,
-                                  padding: "8px",
-                                  background: "#e2e8f0",
-                                  color: "#1e293b",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  fontWeight: "bold",
-                                  opacity: techSlide === 1 ? 0.5 : 1,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                ← पिछला भाग
-                              </button>
-                              <button
-                                type="button"
-                                disabled={techSlide === 4}
-                                onClick={() => setTechSlide((prev) => Math.min(4, prev + 1))}
-                                style={{
-                                  flex: 1,
-                                  padding: "8px",
-                                  background: "#1e3a8a",
-                                  color: "#fff",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  fontWeight: "bold",
-                                  opacity: techSlide === 4 ? 0.5 : 1,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                अगला भाग →
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                          <button
-                            type="button"
-                            onClick={() => setSlideIndex(6)}
-                            style={{
-                              flex: 1,
-                              padding: "11px",
-                              backgroundColor: "#64748b",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ← पीछे
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSlideIndex(8)}
-                            style={{
-                              flex: 2,
-                              padding: "11px",
-                              backgroundColor: "#166534",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            आगे बढ़ें →
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SLIDE 8: किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल */}
-                    {slideIndex === 8 && (
+                    {/* E. WORK DONE, SPARE PARTS & BILLING SLIDE */}
+                    {currentSlide.type === "workBillingStep" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        <h4 style={{ margin: "0", color: "#0f172a" }}>
-                          9. किया गया कार्य, स्पेयर पार्ट्स एवं टोटल बिल
-                        </h4>
-
                         <div
                           style={{
                             background: "#f8fafc",
@@ -5914,14 +5630,15 @@ export default function App() {
                         <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
                           <button
                             type="button"
-                            onClick={() => setSlideIndex(7)}
+                            onClick={goPrevSlide}
                             style={{
                               flex: 1,
-                              padding: "11px",
+                              padding: "12px",
                               backgroundColor: "#64748b",
                               color: "#fff",
                               border: "none",
                               borderRadius: "6px",
+                              fontWeight: "bold",
                               cursor: "pointer",
                             }}
                           >
@@ -5929,10 +5646,10 @@ export default function App() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setSlideIndex(9)}
+                            onClick={goNextSlide}
                             style={{
                               flex: 2,
-                              padding: "11px",
+                              padding: "12px",
                               backgroundColor: "#166534",
                               color: "#fff",
                               border: "none",
@@ -5947,13 +5664,9 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* SLIDE 9: स्टेटस, फोटो, कस्टमर हस्ताक्षर और फाइनल सबमिट */}
-                    {slideIndex === 9 && (
+                    {/* F. FINAL STATUS, PHOTOS & SIGNATURE SLIDE */}
+                    {currentSlide.type === "statusSignStep" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h4 style={{ margin: 0 }}>
-                          10. स्टेटस, फोटो और कस्टमर हस्ताक्षर (Final Step)
-                        </h4>
-
                         <label style={{ fontSize: "12px", fontWeight: "bold" }}>
                           जॉब स्टेटस:
                         </label>
@@ -6129,7 +5842,7 @@ export default function App() {
                         <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
                           <button
                             type="button"
-                            onClick={() => setSlideIndex(8)}
+                            onClick={goPrevSlide}
                             style={{
                               flex: 1,
                               padding: "12px",
@@ -6137,6 +5850,7 @@ export default function App() {
                               color: "#fff",
                               border: "none",
                               borderRadius: "6px",
+                              fontWeight: "bold",
                               cursor: "pointer",
                             }}
                           >
