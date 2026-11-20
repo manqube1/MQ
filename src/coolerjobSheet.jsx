@@ -1,4 +1,3 @@
-import CoolerJobSheet From './components/coolerJobSheet';
 import React, { useState } from 'react';
 
 export default function CoolerJobSheet({ onSave }) {
@@ -9,19 +8,18 @@ export default function CoolerJobSheet({ onSave }) {
     siteAddress: '',
     contactPerson: '',
     workTypes: [],
-    specs: [
-      { type: [], capacity: '', brand: '', serial: '', qty: '' },
-      { type: [], capacity: '', brand: '', serial: '', qty: '' },
-    ],
-    checklist: {
-      fanMotor: [],
-      waterPump: [],
-      swingBlade: [],
-      coolingPadType: [],
-      coolingPadStatus: [],
-      tankPlumbing: [],
-      electricalWiring: [],
-      bodyPaint: [],
+    coolerDetails: {
+      coolerType: [],
+      motorType: [],
+      motorSize: '',
+      fanBladeSize: '',
+      tankStatus: [],
+      tulluStatus: [],
+      plugTopStatus: [],
+      wireStatus: [],
+      tulluSwitchStatus: [],
+      padType: [],
+      padStatus: [],
     },
     parts: [
       { desc: 'कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई', qty: '', rate: '' },
@@ -34,22 +32,25 @@ export default function CoolerJobSheet({ onSave }) {
     technicianName: '',
   });
 
-  const toggleCheckbox = (group, value) => {
-    setFormData((prev) => {
-      const list = prev.checklist[group];
-      const updated = list.includes(value)
-        ? list.filter((item) => item !== value)
-        : [...list, value];
-      return { ...prev, checklist: { ...prev.checklist, [group]: updated } };
-    });
-  };
-
   const toggleWorkType = (value) => {
     setFormData((prev) => {
       const updated = prev.workTypes.includes(value)
         ? prev.workTypes.filter((item) => item !== value)
         : [...prev.workTypes, value];
       return { ...prev, workTypes: updated };
+    });
+  };
+
+  const toggleCoolerOption = (field, value) => {
+    setFormData((prev) => {
+      const list = prev.coolerDetails[field];
+      const updated = list.includes(value)
+        ? list.filter((item) => item !== value)
+        : [...list, value];
+      return {
+        ...prev,
+        coolerDetails: { ...prev.coolerDetails, [field]: updated },
+      };
     });
   };
 
@@ -149,117 +150,199 @@ export default function CoolerJobSheet({ onSave }) {
         </div>
       </div>
 
-      {/* 2. Cooler Specifications */}
+      {/* 2. Cooler Specifications & Status */}
       <div className="mb-3">
         <h2 className="font-bold bg-gray-100 px-2 py-1 border border-gray-400">
-          2. कूलर का विवरण (Cooler Specifications)
+          2. कूलर का विवरण एवं स्थिति (Cooler Specifications & Status)
         </h2>
-        <table className="w-full border-collapse border border-gray-400 text-left">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="border border-gray-400 p-1 w-10">क्र. सं.</th>
-              <th className="border border-gray-400 p-1">कूलर टाइप (Body Type)</th>
-              <th className="border border-gray-400 p-1">क्षमता / साइज़</th>
-              <th className="border border-gray-400 p-1">ब्रांड / मॉडल</th>
-              <th className="border border-gray-400 p-1">सीरियल / टैग नं.</th>
-              <th className="border border-gray-400 p-1 w-16">कुल संख्या</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { idx: 0, opts: ['फाइबर / प्लास्टिक', 'जी.आई. / लोहा (Metal)'] },
-              { idx: 1, opts: ['डक्ट कूलर', 'डेजर्ट कूलर', 'टावर कूलर'] },
-            ].map((row) => (
-              <tr key={row.idx}>
-                <td className="border border-gray-400 p-1 text-center">{row.idx + 1}.</td>
-                <td className="border border-gray-400 p-1">
-                  <div className="flex flex-wrap gap-2">
-                    {row.opts.map((opt) => (
-                      <label key={opt} className="flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          checked={formData.specs[row.idx].type.includes(opt)}
-                          onChange={() => {
-                            const updated = [...formData.specs];
-                            const t = updated[row.idx].type;
-                            updated[row.idx].type = t.includes(opt)
-                              ? t.filter((x) => x !== opt)
-                              : [...t, opt];
-                            setFormData({ ...formData, specs: updated });
-                          }}
-                        />
-                        <span>{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                </td>
-                {['capacity', 'brand', 'serial', 'qty'].map((field) => (
-                  <td key={field} className="border border-gray-400 p-1">
-                    <input
-                      type="text"
-                      className="w-full outline-none"
-                      value={formData.specs[row.idx][field]}
-                      onChange={(e) => {
-                        const updated = [...formData.specs];
-                        updated[row.idx][field] = e.target.value;
-                        setFormData({ ...formData, specs: updated });
-                      }}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 3. Inspection Checklist */}
-      <div className="mb-3">
-        <h2 className="font-bold bg-gray-100 px-2 py-1 border border-gray-400">
-          3. चेकलिस्ट एवं निरीक्षण (Inspection & Service Checklist)
-        </h2>
-        <div className="p-2 border border-t-0 border-gray-400 space-y-1.5">
-          {[
-            { label: 'फैन मोटर (Fan Motor):', key: 'fanMotor', opts: ['सही', 'जाम / बेयरिंग खराब', 'वाइंडिंग जली हुई', 'कैपेसिटर खराब'] },
-            { label: 'वाटर पंप (Submersible Pump):', key: 'waterPump', opts: ['सही', 'पानी नहीं उठा रहा', 'बदलना आवश्यक'] },
-            { label: 'स्विंग मोटर एवं ब्लेड:', key: 'swingBlade', opts: ['सही', 'स्विंग खराब', 'फैन ब्लेड टूटा / असंतुलित'] },
-            { label: 'वाटर टैंक एवं प्लंबिंग:', key: 'tankPlumbing', opts: ['लीकेज है', 'फ्लोट वाल्व खराब', 'ड्रेन प्लग जाम', 'वाटर डिस्ट्रीब्यूशन पाइप जाम'] },
-            { label: 'इलेक्ट्रिकल एवं वायरिंग:', key: 'electricalWiring', opts: ['रोटरी स्विच खराब', 'वायरिंग कटी / जली', 'प्लग टॉप खराब', 'अर्थिंग चेक की गई'] },
-            { label: 'बॉडी एवं पेंट (Body & Paint):', key: 'bodyPaint', opts: ['जंग (Rusting) लगी है', 'टैंक में छेद / वेल्डिंग की जरूरत', 'प्राइमर एवं पेंटिंग आवश्यक'] },
-          ].map((item) => (
-            <div key={item.key} className="flex flex-wrap gap-3 items-center">
-              <span className="font-semibold w-48">{item.label}</span>
-              {item.opts.map((opt) => (
-                <label key={opt} className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.checklist[item.key].includes(opt)}
-                    onChange={() => toggleCheckbox(item.key, opt)}
-                  />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          ))}
+        <div className="p-2 border border-t-0 border-gray-400 space-y-2">
+          {/* Cooler Type */}
           <div className="flex flex-wrap gap-3 items-center">
-            <span className="font-semibold w-48">कूलिंग पैड (Cooling Pads):</span>
-            {['हनीकॉम्ब', 'वुड वूल (घास)'].map((opt) => (
-              <label key={opt} className="flex items-center gap-1">
+            <span className="font-semibold w-44">कूलर टाइप:</span>
+            {['रूम कूलर', 'डेजर्ट कूलर', 'टावर कूलर', 'डक्ट कूलर'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={formData.checklist.coolingPadType.includes(opt)}
-                  onChange={() => toggleCheckbox('coolingPadType', opt)}
+                  checked={formData.coolerDetails.coolerType.includes(opt)}
+                  onChange={() => toggleCoolerOption('coolerType', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Fan Motor Type & Size */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">फैन मोटर टाइप (Motor Type):</span>
+            {['किट मोटर (Kit Motor)', 'एग्जॉस्ट मोटर (Exhaust Motor)'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.motorType.includes(opt)}
+                  onChange={() => toggleCoolerOption('motorType', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+            <span className="font-semibold ml-2">मोटर साइज:</span>
+            {['12"', '15"', '18"', '20"', '24"'].map((sz) => (
+              <label key={sz} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  name="motorSize"
+                  checked={formData.coolerDetails.motorSize === sz}
+                  onChange={() =>
+                    setFormData({
+                      ...formData,
+                      coolerDetails: { ...formData.coolerDetails, motorSize: sz },
+                    })
+                  }
+                />
+                <span>{sz}</span>
+              </label>
+            ))}
+            <input
+              type="text"
+              placeholder="अन्य साइज"
+              className="border-b border-gray-400 outline-none w-24 px-1"
+              value={formData.coolerDetails.motorSize}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  coolerDetails: { ...formData.coolerDetails, motorSize: e.target.value },
+                })
+              }
+            />
+          </div>
+
+          {/* Fan Blade Size */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">Fan ब्लेड साइज (Blade Size):</span>
+            {['12"', '15"', '18"', '20"', '24"'].map((sz) => (
+              <label key={sz} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  name="fanBladeSize"
+                  checked={formData.coolerDetails.fanBladeSize === sz}
+                  onChange={() =>
+                    setFormData({
+                      ...formData,
+                      coolerDetails: { ...formData.coolerDetails, fanBladeSize: sz },
+                    })
+                  }
+                />
+                <span>{sz}</span>
+              </label>
+            ))}
+            <input
+              type="text"
+              placeholder="अन्य ब्लेड साइज"
+              className="border-b border-gray-400 outline-none w-28 px-1"
+              value={formData.coolerDetails.fanBladeSize}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  coolerDetails: { ...formData.coolerDetails, fanBladeSize: e.target.value },
+                })
+              }
+            />
+          </div>
+
+          {/* Tank Status */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">टंकी Status:</span>
+            {['सही (OK)', 'लीकेज है', 'छेद / वेल्डिंग की जरूरत', 'साफ', 'गंदी'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.tankStatus.includes(opt)}
+                  onChange={() => toggleCoolerOption('tankStatus', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Tullu Status */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">Tullu (पंप):</span>
+            {['सही (OK)', 'पानी नहीं उठा रहा', 'जाम / आवाज', 'जली हुई', 'बदलना आवश्यक'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.tulluStatus.includes(opt)}
+                  onChange={() => toggleCoolerOption('tulluStatus', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Plug Top */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">प्लक टॉप (Plug Top):</span>
+            {['सही (OK)', 'खराब / जला हुआ', 'ढीला', 'बदलना आवश्यक'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.plugTopStatus.includes(opt)}
+                  onChange={() => toggleCoolerOption('plugTopStatus', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Wire Status */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">Wire Status:</span>
+            {['सही (OK)', 'कटी हुई', 'जली हुई', 'जोड़ लगा है', 'बदलनी आवश्यक'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.wireStatus.includes(opt)}
+                  onChange={() => toggleCoolerOption('wireStatus', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Tullu Switch */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">Tullu Switch:</span>
+            {['सही (OK)', 'खराब', 'बदलना आवश्यक'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.tulluSwitchStatus.includes(opt)}
+                  onChange={() => toggleCoolerOption('tulluSwitchStatus', opt)}
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Grass / Honey Pad Status */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="font-semibold w-44">घास या हनी पैड:</span>
+            {['घास (Wood Wool)', 'हनीकॉम्ब (Honeycomb)'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.coolerDetails.padType.includes(opt)}
+                  onChange={() => toggleCoolerOption('padType', opt)}
                 />
                 <span>{opt}</span>
               </label>
             ))}
             <span className="font-semibold ml-2">स्थिति:</span>
-            {['साफ', 'बदलने योग्य'].map((opt) => (
-              <label key={opt} className="flex items-center gap-1">
+            {['साफ', 'गंदा', 'बदलने योग्य'].map((opt) => (
+              <label key={opt} className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={formData.checklist.coolingPadStatus.includes(opt)}
-                  onChange={() => toggleCheckbox('coolingPadStatus', opt)}
+                  checked={formData.coolerDetails.padStatus.includes(opt)}
+                  onChange={() => toggleCoolerOption('padStatus', opt)}
                 />
                 <span>{opt}</span>
               </label>
@@ -268,10 +351,10 @@ export default function CoolerJobSheet({ onSave }) {
         </div>
       </div>
 
-      {/* 4. Work Done & Spare Parts Used */}
+      {/* 3. Work Done & Spare Parts Used */}
       <div className="mb-3">
         <h2 className="font-bold bg-gray-100 px-2 py-1 border border-gray-400">
-          4. किए गए कार्य एवं बदले गए पार्ट्स (Work Done & Spare Parts Used)
+          3. किए गए कार्य एवं बदले गए पार्ट्स (Work Done & Spare Parts Used)
         </h2>
         <table className="w-full border-collapse border border-gray-400 text-left">
           <thead>
@@ -331,7 +414,7 @@ export default function CoolerJobSheet({ onSave }) {
         </table>
       </div>
 
-      {/* 5. Sign-Off & Footer */}
+      {/* 4. Sign-Off & Footer */}
       <div className="border border-gray-400 p-2">
         <div className="flex gap-2 mb-4">
           <span className="font-semibold">ग्राहक की टिप्पणी (Remarks):</span>
