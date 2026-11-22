@@ -1708,7 +1708,6 @@ export default function App() {
   const [staffSubTab, setStaffSubTab] = useState("menu");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  // Slide-by-Slide Job Sheet Wizard + 3 Checkpoint Summaries State
   const [slideIndex, setSlideIndex] = useState(0);
   const [checkpointStage, setCheckpointStage] = useState(null);
 
@@ -1719,12 +1718,13 @@ export default function App() {
   const [adminJobSubTab, setAdminJobSubTab] = useState("completed");
   const [adminSpareSubTab, setAdminSpareSubTab] = useState("stock");
   const [selectedStaffFolder, setSelectedStaffFolder] = useState(null);
+  const [expandedJobNo, setExpandedJobNo] = useState(null);
 
   const [attSelectedYear, setAttSelectedYear] = useState(null);
   const [attSelectedMonth, setAttSelectedMonth] = useState(null);
   const [attSelectedStaffPhone, setAttSelectedStaffPhone] = useState(null);
 
-  // Admin Manual Staff IN / OUT States
+  // Admin Staff IN / OUT States
   const [manualInPhone, setManualInPhone] = useState("");
   const [manualInName, setManualInName] = useState("");
 
@@ -1824,7 +1824,6 @@ export default function App() {
   const fullCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // क्या इस समय जॉब शीट भरी जा रही है? (यदि हाँ, तो ऊपर का सब कुछ छिप जाएगा)
   const isFillingJobSheet =
     activeTab === "staff" && staffLoggedIn && staffSubTab === "newJobForm";
 
@@ -2167,823 +2166,8 @@ export default function App() {
     }
   }, [isSignatureModalOpen]);
 
-  const toggleCoolerWorkType = (type) => {
-    setCoolerWorkTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
-
-  const addPartRow = () => {
-    setUsedParts((prev) => [...prev, createEmptyPart()]);
-  };
-
-  const updatePartRow = (index, field, value) => {
-    setUsedParts((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
-    );
-  };
-
-  const removePartRow = (index) => {
-    setUsedParts((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : [createEmptyPart()]
-    );
-  };
-
-  const isUsedPartSelected = String(sparePartOption || "").includes("Used Part");
-
-  const usedPartsTotal = isUsedPartSelected
-    ? usedParts.reduce((sum, item) => {
-        const q = parseFloat(item.qty) || 0;
-        const amt = parseFloat(item.amount) || 0;
-        return sum + q * amt;
-      }, 0)
-    : 0;
-
-  const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
-  const grandTotalBill = usedPartsTotal + serviceChargeVal;
-
-  const handleSitePhotosChange = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
-    const previews = files.map((file) => ({
-      name: file.name,
-      previewUrl: URL.createObjectURL(file),
-      file,
-      uploadedUrl: "",
-    }));
-    setSitePhotos((prev) => [...prev, ...previews]);
-
-    try {
-      setUploadingPhotos(true);
-      for (const item of previews) {
-        const compressedBlob = await compressImage(item.file);
-        const storageRef = ref(
-          storage,
-          `job_photos/${Date.now()}_${item.name}`
-        );
-        await uploadBytesResumable(storageRef, compressedBlob);
-        const downloadUrl = await getDownloadURL(storageRef);
-
-        setSitePhotos((prev) =>
-          prev.map((p) =>
-            p.previewUrl === item.previewUrl
-              ? { ...p, uploadedUrl: downloadUrl }
-              : p
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-    } finally {
-      setUploadingPhotos(false);
-    }
-  };
-
-  const removeSitePhoto = (index) => {
-    setSitePhotos((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const recordUserLogin = (identifier, userRole, displayName) => {
-    const cleanId = identifier.trim();
-    if (!cleanId) return;
-
-    setLoginLogs((prev) => {
-      const existingIndex = prev.findIndex(
-        (item) => item.phone === cleanId && item.role === userRole
-      );
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          loginCount: (updated[existingIndex].loginCount || 1) + 1,
-          lastLoginText: new Date().toLocaleString(),
-        };
-        return updated;
-      } else {
-        return [
-          {
-            phone: cleanId,
-            role: userRole,
-            name: displayName,
-            loginCount: 1,
-            lastLoginText: new Date().toLocaleString(),
-          },
-          ...prev,
-        ];
-      }
-    });
-
-    const docId = userRole + "_" + cleanId.replace(/[^a-zA-Z0-9]/g, "_");
-    const userRef = doc(db, "login_logs", docId);
-    getDoc(userRef)
-      .then((docSnap) => {
-        if (docSnap.exists()) {
-          updateDoc(userRef, {
-            loginCount: increment(1),
-            lastLogin: serverTimestamp(),
-            lastLoginText: new Date().toLocaleString(),
-          });
-        } else {
-          setDoc(userRef, {
-            phone: cleanId,
-            role: userRole,
-            name: displayName,
-            loginCount: 1,
-            lastLogin: serverTimestamp(),
-            lastLoginText: new Date().toLocaleString(),
-          });
-        }
-      })
-      .catch((err) => console.error(err));
-  };
-
-  const getCoordinates = (e, canvas) => {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
-    };
-  };
-
-  const startFullDrawing = (e) => {
-    const canvas = fullCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const { x, y } = getCoordinates(e, canvas);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const drawFull = (e) => {
-    if (!isDrawing) return;
-    const canvas = fullCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const { x, y } = getCoordinates(e, canvas);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-
-  const stopFullDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearFullSignature = () => {
-    const canvas = fullCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const saveFullSignature = () => {
-    const canvas = fullCanvasRef.current;
-    if (canvas) {
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = 300;
-      tempCanvas.height = 110;
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
-      setSavedSignatureURL(tempCanvas.toDataURL("image/png"));
-    }
-    setIsSignatureModalOpen(false);
-  };
-
-  const handleCustomerLogin = (e) => {
-    e.preventDefault();
-    if (custPhone.length < 10) {
-      alert("कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें!");
-      return;
-    }
-    setCustLoggedIn(true);
-    recordUserLogin(custPhone, "customer", "Customer (" + custPhone + ")");
-  };
-
-  const selectCategoryValue = (cat) => {
-    setCategoryType(cat);
-    if (cat === "HVAC & Refrigeration") setProductType("Split / Window AC");
-    else if (cat === "Electrical Work") {
-      setProductType("Cooler");
-      if (!workDone) setWorkDone("कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई");
-    } else if (cat === "Plumbing Work")
-      setProductType("Pipe Fitting & Leakage Repair");
-    else if (cat === "Civil Work") setProductType("Flooring & Tiling");
-  };
-
-  const handleCategoryChange = (e) => {
-    selectCategoryValue(e.target.value);
-  };
-
-  const selectProductValue = (prod) => {
-    setProductType(prod);
-    if (prod === "Cooler" && !workDone) {
-      setWorkDone("कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई");
-    }
-  };
-
-  const handleNewComplaint = (e) => {
-    e.preventDefault();
-    if (!custNameInput.trim() || !custAddressInput.trim()) {
-      alert("कृपया कस्टमर का पूरा नाम और पता दर्ज करें!");
-      return;
-    }
-
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, "0");
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-
-    const jobSheetNo = "COMP" + custPhone + day + month + hours + minutes;
-
-    const newEntry = {
-      jobSheetNo,
-      customerName: custNameInput,
-      customerPhone: custPhone,
-      customerAddress: custAddressInput,
-      product: "[" + categoryType + "] " + productType,
-      faultDetails: problemDesc,
-      desc: problemDesc,
-      status: "Pending",
-      pendingSubOption: "-",
-      date:
-        day + "/" + month + "/" + now.getFullYear() + " " + hours + ":" + minutes,
-      staffName: "Not Assigned Yet",
-      staffPhone: "-",
-      location: "Online Booking",
-      photoURL: "",
-      sitePhotoUrls: [],
-      signatureURL: "",
-      categoryType,
-      productType,
-      usedParts: [],
-      sparePartOption: "-",
-      sparePartName: "-",
-      sparePartModel: "-",
-    };
-
-    setJobSheets([newEntry, ...jobSheets]);
-    setDoc(doc(db, "jobs", jobSheetNo), newEntry).catch((err) =>
-      console.error(err)
-    );
-
-    setProblemDesc("");
-    setCustNameInput("");
-    setCustAddressInput("");
-    alert(
-      "शिकायत सफलतापूर्वक दर्ज हो गई!\nआपका कंप्लेंट नंबर है:\n" + jobSheetNo
-    );
-  };
-
-  const handleSendOtp = (e) => {
-    e.preventDefault();
-    if (staffPhoneInput.length < 10) {
-      alert("कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें!");
-      return;
-    }
-
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(otp);
-    setOtpStep(2);
-    alert(
-      "आपके मोबाइल नंबर " + staffPhoneInput + " के लिए OTP है: " + otp
-    );
-  };
-
-  const handleVerifyOtp = (e) => {
-    e.preventDefault();
-    if (enteredOtp === generatedOtp) {
-      const staffLabel = "Staff (" + staffPhoneInput + ")";
-      setCurrentStaffName(staffLabel);
-      setStaffLoggedIn(true);
-      setStaffSubTab("menu");
-      setOtpStep(1);
-      setEnteredOtp("");
-
-      localStorage.setItem(
-        "mq_active_staff_session",
-        JSON.stringify({
-          phone: staffPhoneInput,
-          name: staffLabel,
-          loginTime: Date.now(),
-        })
-      );
-
-      recordUserLogin(staffPhoneInput, "staff", staffLabel);
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            setStaffGpsLocation(
-              `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (GPS Active)`
-            );
-            logStaffAttendancePoint(
-              staffPhoneInput,
-              staffLabel,
-              { lat, lng },
-              "IN"
-            );
-          },
-          () => {
-            setStaffGpsLocation("Prayagraj (GPS Default)");
-            logStaffAttendancePoint(staffPhoneInput, staffLabel, null, "IN");
-          }
-        );
-      } else {
-        setStaffGpsLocation("Prayagraj (No GPS Support)");
-        logStaffAttendancePoint(staffPhoneInput, staffLabel, null, "IN");
-      }
-    } else {
-      alert("गलत OTP! कृपया सही OTP दर्ज करें।");
-    }
-  };
-
-  const handleStaffLogout = () => {
-    const phone = staffPhoneInput;
-    const name = currentStaffName || `Staff (${phone})`;
-
-    const finalizeLogout = (coords) => {
-      logStaffAttendancePoint(phone, name, coords, "OUT");
-      localStorage.removeItem("mq_active_staff_session");
-      setStaffLoggedIn(false);
-      alert(
-        "आप सफलतापूर्वक लॉग आउट हो गए हैं। आपका OUT समय और आज का रूट सेव हो गया है।"
-      );
-    };
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          finalizeLogout({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          }),
-        () => finalizeLogout(null),
-        { timeout: 4000 }
-      );
-    } else {
-      finalizeLogout(null);
-    }
-  };
-
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    if (adminUser.toUpperCase() === "ADMIN" && adminPass === "123456789") {
-      setAdminLoggedIn(true);
-      recordUserLogin(
-        adminUser.toUpperCase(),
-        "office",
-        "Office Admin (" + adminUser.toUpperCase() + ")"
-      );
-      alert("एडमिन / ऑफिस लॉगिन सफल!");
-    } else {
-      alert("गलत यूजरनेम या पासवर्ड!");
-    }
-  };
-
-  const resetJobForm = () => {
-    setSelectedComplaint(null);
-    setJobCustName("");
-    setJobCustPhone("");
-    setJobCustAddress("");
-    setBillNo("");
-    setAmcDate("");
-    setFaultDetails("");
-
-    setUnitModel("");
-    setUnitSerial("");
-    setUnitCapacity("");
-    setCondenserInOut("OK");
-    setWcTankSize("40");
-    setWcTapCount("2");
-    setWcOverflowType("Float Ball");
-    setWcCondensingCoilSize("");
-
-    setIndoorModel("");
-    setIndoorSerial("");
-    setOutdoorModel("");
-    setOutdoorSerial("");
-    setCompressorModel("");
-    setCompressorSerial("");
-    setIndoorMotorModel("");
-    setIndoorMotorSerial("");
-    setOutdoorMotorModel("");
-    setOutdoorMotorSerial("");
-    setFilterClean("OK");
-    setStandType("Wall Stand");
-    setSwingFlapper("OK");
-    setStabilizer("OK");
-    setRemoteStatus("OK");
-    setOutdoorClean("OK");
-    setSectionPressure("");
-    setRoomTemp("");
-    setVoltage("230V");
-    setAmpere("");
-    setCompressorAmpere("");
-    setDrainSize("");
-    setCopperPipeSize("");
-    setWireSizeCore("");
-    setInsulation("OK");
-    setPhaseR("");
-    setPhaseY("");
-    setPhaseB("");
-    setAmpR("");
-    setAmpY("");
-    setAmpB("");
-
-    setCoolerWorkTypes(["Breakdown / Repair"]);
-    setCoolerBodyMaterial("GI / Metal");
-    setCoolerSubType("Desert Cooler");
-    setCoolerCapacity("");
-    setCoolerBrandModel("");
-    setCoolerSerialNo("");
-    setCoolerTotalQty("1");
-    setCoolerFanMotor("OK");
-    setCoolerWaterPump("OK");
-    setCoolerSwingBlade("OK");
-    setCoolerPadType("Honeycomb");
-    setCoolerPadStatus("Clean");
-    setCoolerTankPlumbing("OK");
-    setCoolerElectrical("OK");
-    setCoolerBodyPaint("OK");
-
-    setWorkDone("");
-    setSparePartOption("Used Part");
-    setSparePartName("");
-    setSparePartModel("");
-    setUsedParts([createEmptyPart()]);
-    setServiceChargeInput("");
-    setJobNote("");
-    setCustomerFeedback("");
-    setSavedSignatureURL("");
-    setImageFile(null);
-    setSitePhotos([]);
-    setCategoryType("HVAC & Refrigeration");
-    setProductType("Split / Window AC");
-    setJobStatusType("Completed");
-    setPendingSubOption("Part Pending");
-    setSlideIndex(0);
-    setCheckpointStage(null);
-  };
-
-  const handleOpenBlankNewJob = () => {
-    resetJobForm();
-    setStaffSubTab("newJobForm");
-  };
-
-  const handleFillComplaintToNewJob = (comp) => {
-    resetJobForm();
-    setSelectedComplaint(comp);
-    setJobCustName(comp.customerName || "Customer");
-    setJobCustPhone(comp.customerPhone || "");
-    setJobCustAddress(comp.customerAddress || "");
-    setCategoryType(comp.categoryType || "HVAC & Refrigeration");
-    setProductType(comp.productType || "Split / Window AC");
-    setFaultDetails(comp.faultDetails || comp.desc || "");
-    setWorkDone(
-      comp.productType === "Cooler"
-        ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
-        : comp.desc || ""
-    );
-    setSparePartOption(
-      comp.sparePartOption && comp.sparePartOption !== "-"
-        ? comp.sparePartOption
-        : "Used Part"
-    );
-    setSparePartName(
-      comp.sparePartName && comp.sparePartName !== "-"
-        ? comp.sparePartName
-        : ""
-    );
-    setSparePartModel(
-      comp.sparePartModel && comp.sparePartModel !== "-"
-        ? comp.sparePartModel
-        : ""
-    );
-    setSlideIndex(0);
-    setCheckpointStage(null);
-    setStaffSubTab("newJobForm");
-  };
-
-  const handleFileChange = async (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
-
-    const compressedBlob = await compressImage(selectedFile);
-    const compressedFile = new File([compressedBlob], selectedFile.name, {
-      type: "image/jpeg",
-    });
-
-    setImageFile(compressedFile);
-  };
-
-  const handleJobSubmit = () => {
-    if (!jobCustName || !jobCustPhone) {
-      alert("कृपया कस्टमर का नाम और मोबाइल नंबर भरें!");
-      setCheckpointStage(null);
-      setSlideIndex(0);
-      return;
-    }
-
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, "0");
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-
-    const jobSheetNo = selectedComplaint
-      ? selectedComplaint.jobSheetNo
-      : "JS" + jobCustPhone.slice(-4) + day + month + hours + minutes;
-
-    const activeUsedParts = isUsedPartSelected
-      ? usedParts.filter(
-          (p) => p.partName.trim() || (parseFloat(p.amount) || 0) > 0
-        )
-      : [];
-
-    const uploadedPhotoUrls = sitePhotos
-      .map((p) => p.uploadedUrl)
-      .filter(Boolean);
-
-    const finalStatus =
-      jobStatusType === "Completed"
-        ? "Completed"
-        : pendingSubOption === "Part Pending"
-        ? "Part Pending"
-        : "Pending";
-
-    const firstPartName =
-      activeUsedParts.length > 0
-        ? activeUsedParts[0].partName || "Used Part"
-        : sparePartName || "-";
-
-    const updatedRecord = {
-      jobSheetNo,
-      billNo: billNo || "-",
-      amcDate: amcDate || "-",
-      customerName: jobCustName,
-      customerPhone: jobCustPhone,
-      customerAddress: jobCustAddress,
-      categoryType,
-      productType,
-      product: "[" + categoryType + "] " + productType,
-      faultDetails: faultDetails || workDone || "-",
-      desc:
-        workDone ||
-        (isAirCoolerSelected
-          ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
-          : "General Service / Repair"),
-      status: finalStatus,
-      pendingSubOption: jobStatusType === "Pending" ? pendingSubOption : "-",
-      date:
-        day + "/" + month + "/" + now.getFullYear() + " " + hours + ":" + minutes,
-      staffName: currentStaffName || "Staff (Unknown)",
-      staffPhone: staffPhoneInput || "0000000000",
-      location: staffGpsLocation,
-      photoURL: uploadedPhotoUrls[0] || "",
-      sitePhotoUrls: uploadedPhotoUrls,
-      signatureURL: savedSignatureURL,
-
-      unitModel: isFridgeOrWCSelected ? unitModel || "-" : "-",
-      unitSerial: isFridgeOrWCSelected ? unitSerial || "-" : "-",
-      unitCapacity: isFridgeOrWCSelected ? unitCapacity || "-" : "-",
-      condenserInOut: isFridgeOrWCSelected ? condenserInOut || "-" : "-",
-
-      wcTankSize: isWaterCoolerSelected ? `${wcTankSize} Ltr` : "-",
-      wcTapCount: isWaterCoolerSelected ? `${wcTapCount} Tap` : "-",
-      wcOverflowType: isWaterCoolerSelected ? wcOverflowType || "-" : "-",
-      wcCondensingCoilSize: isWaterCoolerSelected
-        ? wcCondensingCoilSize || "-"
-        : "-",
-
-      indoorModel: !isFridgeOrWCSelected ? indoorModel || "-" : "-",
-      indoorSerial: !isFridgeOrWCSelected ? indoorSerial || "-" : "-",
-      outdoorModel: !isFridgeOrWCSelected ? outdoorModel || "-" : "-",
-      outdoorSerial: !isFridgeOrWCSelected ? outdoorSerial || "-" : "-",
-      compressorModel: compressorModel || "-",
-      compressorSerial: compressorSerial || "-",
-      indoorMotorModel: !isFridgeOrWCSelected ? indoorMotorModel || "-" : "-",
-      indoorMotorSerial: !isFridgeOrWCSelected ? indoorMotorSerial || "-" : "-",
-      outdoorMotorModel: !isFridgeOrWCSelected
-        ? outdoorMotorModel || "-"
-        : "-",
-      outdoorMotorSerial: !isFridgeOrWCSelected
-        ? outdoorMotorSerial || "-"
-        : "-",
-      filterClean:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? filterClean
-          : "-",
-      standType:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? standType
-          : "-",
-      swingFlapper:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? swingFlapper
-          : "-",
-      stabilizer:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? stabilizer
-          : "-",
-      remoteStatus:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? remoteStatus
-          : "-",
-      outdoorClean:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? outdoorClean
-          : "-",
-      sectionPressure:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? sectionPressure || "-"
-          : "-",
-      roomTemp:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? roomTemp || "-"
-          : "-",
-      voltage:
-        categoryType !== "Civil Work" && !isFridgeOrWCSelected
-          ? voltage || "-"
-          : "-",
-      ampere: categoryType !== "Civil Work" ? ampere || "-" : "-",
-      compressorAmpere:
-        categoryType === "HVAC & Refrigeration" ? compressorAmpere || "-" : "-",
-      drainSize:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? drainSize || "-"
-          : "-",
-      copperPipeSize:
-        categoryType === "HVAC & Refrigeration" && !isFridgeOrWCSelected
-          ? copperPipeSize || "-"
-          : "-",
-      wireSizeCore:
-        categoryType !== "Civil Work" && !isFridgeOrWCSelected
-          ? wireSizeCore || "-"
-          : "-",
-      insulation:
-        categoryType !== "Civil Work" && !isFridgeOrWCSelected
-          ? insulation
-          : "-",
-      phaseR: !isSinglePhaseSelected && phaseR ? phaseR : "-",
-      phaseY: !isSinglePhaseSelected && phaseY ? phaseY : "-",
-      phaseB: !isSinglePhaseSelected && phaseB ? phaseB : "-",
-      ampR: !isSinglePhaseSelected && ampR ? ampR : "-",
-      ampY: !isSinglePhaseSelected && ampY ? ampY : "-",
-      ampB: !isSinglePhaseSelected && ampB ? ampB : "-",
-      coolerSpec: isAirCoolerSelected
-        ? {
-            workTypes: coolerWorkTypes,
-            bodyMaterial: coolerBodyMaterial,
-            coolerSubType: coolerSubType,
-            capacity: coolerCapacity,
-            brandModel: coolerBrandModel,
-            serialNo: coolerSerialNo,
-            totalQty: coolerTotalQty,
-          }
-        : null,
-      coolerChecklist: isAirCoolerSelected
-        ? {
-            fanMotor: coolerFanMotor,
-            waterPump: coolerWaterPump,
-            swingBlade: coolerSwingBlade,
-            padType: coolerPadType,
-            padStatus: coolerPadStatus,
-            tankPlumbing: coolerTankPlumbing,
-            electrical: coolerElectrical,
-            bodyPaint: coolerBodyPaint,
-          }
-        : null,
-      usedParts: activeUsedParts,
-      partsTotal: usedPartsTotal,
-      serviceCharge: serviceChargeVal,
-      totalAmount: grandTotalBill,
-      sparePartOption: sparePartOption,
-      sparePartName: firstPartName,
-      sparePartModel: sparePartModel || "-",
-      note: jobNote || "-",
-      feedback: customerFeedback || "OK",
-    };
-
-    const fileToUpload = imageFile;
-
-    const filteredList = jobSheets.filter((j) => j.jobSheetNo !== jobSheetNo);
-    setJobSheets([updatedRecord, ...filteredList]);
-    setLastSubmittedJob(updatedRecord);
-    resetJobForm();
-    setStaffSubTab("menu");
-
-    const statusBadge =
-      finalStatus === "Completed"
-        ? "✅ COMPLETED"
-        : `⏳ ${finalStatus.toUpperCase()}`;
-
-    const partsText =
-      activeUsedParts.length > 0
-        ? `\n<b>इस्तेमाल हुए पार्ट्स:</b> ${activeUsedParts
-            .map((p) => {
-              const q = parseFloat(p.qty) || 0;
-              const a = parseFloat(p.amount) || 0;
-              return `${p.partName || "Part"} (${q} × ₹${a} = ₹${(
-                q * a
-              ).toFixed(2)})`;
-            })
-            .join(", ")}`
-        : sparePartName && sparePartName !== "-"
-        ? `\n<b>पार्ट (${sparePartOption}):</b> ${sparePartName} (${
-            sparePartModel || "-"
-          })`
-        : "";
-
-    const telegramMsg =
-      `🛠️ <b>STAFF JOB UPDATE</b>\n` +
-      `<b>स्टेटस:</b> ${statusBadge}\n` +
-      `<b>जॉब / कंप्लेंट नं.:</b> <code>${updatedRecord.jobSheetNo}</code>\n` +
-      `<b>कस्टमर:</b> ${updatedRecord.customerName} (${updatedRecord.customerPhone})\n` +
-      `<b>पता:</b> ${updatedRecord.customerAddress || "-"}\n` +
-      `<b>उत्पाद:</b> ${updatedRecord.product}\n` +
-      `<b>किया गया कार्य:</b> ${updatedRecord.desc}${partsText}\n` +
-      `<b>सर्विस चार्ज:</b> ₹${serviceChargeVal.toFixed(2)}\n` +
-      `<b>कुल बिल:</b> ₹${grandTotalBill.toFixed(2)}\n` +
-      `<b>रिमार्क:</b> ${updatedRecord.feedback}\n` +
-      `<b>स्टाफ:</b> ${updatedRecord.staffName}\n` +
-      `<b>लोकेशन:</b> ${updatedRecord.location}\n` +
-      `<b>समय:</b> ${updatedRecord.date}`;
-
-    if (navigator.onLine) {
-      sendStaffTelegramAlert(telegramMsg);
-    }
-
-    if (!navigator.onLine) {
-      enqueueOfflinePayload({
-        type: "JOB_SAVE",
-        jobSheetNo,
-        record: updatedRecord,
-      });
-      return;
-    }
-
-    setDoc(doc(db, "jobs", jobSheetNo), updatedRecord)
-      .then(() => {
-        addDoc(collection(db, "jobSheets"), {
-          ...updatedRecord,
-          createdAt: serverTimestamp(),
-        }).catch((err) => console.error("jobSheets archive error:", err));
-
-        if (fileToUpload) {
-          const storageRef = ref(
-            storage,
-            "job_photos/" + Date.now() + "_" + fileToUpload.name
-          );
-          const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
-          uploadTask.on(
-            "state_changed",
-            null,
-            (err) => console.error("Photo upload bg error:", err),
-            () => {
-              getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-                updateDoc(doc(db, "jobs", jobSheetNo), { photoURL: url });
-              });
-            }
-          );
-        }
-      })
-      .catch(() => {
-        enqueueOfflinePayload({
-          type: "JOB_SAVE",
-          jobSheetNo,
-          record: updatedRecord,
-        });
-      });
-  };
-
-  const handleAddStockItem = (e) => {
-    e.preventDefault();
-    if (!newStockName.trim() || !newStockQty.trim() || !newStockRate.trim()) {
-      alert("कृपया पार्ट का नाम, मात्रा और रेट भरें!");
-      return;
-    }
-    const newItem = {
-      name: newStockName,
-      qty: newStockQty,
-      desc: newStockDesc || "-",
-      rate: newStockRate,
-    };
-    setSpareStock([newItem, ...spareStock]);
-    setNewStockName("");
-    setNewStockQty("");
-    setNewStockDesc("");
-    setNewStockRate("");
-    alert("स्पेयर पार्ट स्टॉक में सफलतापूर्वक जोड़ दिया गया!");
-  };
-
   // =========================================================
-  // ADMIN MANUAL STAFF IN / OUT HANDLERS
+  // ADMIN STAFF IN / OUT HANDLERS
   // =========================================================
   const pendingLogoutRecords = attendanceRecords
     .filter((r) => r.inTime && !r.outTime)
@@ -3055,6 +2239,20 @@ export default function App() {
       ];
     });
 
+    const payload = {
+      type: "ATTENDANCE_UPSERT",
+      docId,
+      staffPhone: cleanPhone,
+      staffName: staffLabel,
+      dateKey,
+      year,
+      month,
+      day,
+      inTime: ts,
+      outTime: null,
+      point: inPoint,
+    };
+
     if (navigator.onLine) {
       try {
         const attRef = doc(db, "staff_attendance", docId);
@@ -3081,8 +2279,10 @@ export default function App() {
           });
         }
       } catch (err) {
-        console.error("Admin IN save error:", err);
+        enqueueOfflinePayload(payload);
       }
+    } else {
+      enqueueOfflinePayload(payload);
     }
 
     setManualInPhone("");
@@ -3116,6 +2316,20 @@ export default function App() {
       )
     );
 
+    const payload = {
+      type: "ATTENDANCE_UPSERT",
+      docId: rec.docId,
+      staffPhone: rec.staffPhone,
+      staffName: rec.staffName,
+      dateKey: rec.dateKey,
+      year: rec.year,
+      month: rec.month,
+      day: rec.day,
+      inTime: rec.inTime || null,
+      outTime: ts,
+      point: outPoint,
+    };
+
     if (navigator.onLine) {
       try {
         const attRef = doc(db, "staff_attendance", rec.docId);
@@ -3124,8 +2338,10 @@ export default function App() {
           routePoints: arrayUnion(outPoint),
         });
       } catch (err) {
-        console.error("Admin OUT save error:", err);
+        enqueueOfflinePayload(payload);
       }
+    } else {
+      enqueueOfflinePayload(payload);
     }
 
     alert(
@@ -3134,2189 +2350,6 @@ export default function App() {
       )}) सेव हो गया!`
     );
   };
-
-  const onlineComplaintsList = jobSheets.filter(
-    (j) => j.status === "Pending" && j.location === "Online Booking"
-  );
-  const pendingJobsList = jobSheets.filter(
-    (j) => j.status === "Pending" || j.status === "Part Pending"
-  );
-  const completedJobsList = jobSheets.filter((j) => j.status === "Completed");
-  const partPendingJobsList = jobSheets.filter(
-    (j) =>
-      j.status === "Part Pending" ||
-      j.sparePartOption === "Pending Part" ||
-      j.sparePartOption === "Pending"
-  );
-
-  const completedByStaff = completedJobsList.reduce((acc, job) => {
-    const sName = job.staffName || "Unknown Staff";
-    if (!acc[sName]) acc[sName] = [];
-    acc[sName].push(job);
-    return acc;
-  }, {});
-
-  const pendingByStaff = pendingJobsList.reduce((acc, job) => {
-    const sName = job.staffName || "Unknown Staff";
-    if (!acc[sName]) acc[sName] = [];
-    acc[sName].push(job);
-    return acc;
-  }, {});
-
-  const partsPendingByName = partPendingJobsList.reduce((acc, job) => {
-    const pName =
-      job.sparePartName
-import React, { useState, useRef, useEffect } from "react";
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  addDoc,
-  updateDoc,
-  increment,
-  serverTimestamp,
-  onSnapshot,
-  arrayUnion,
-} from "firebase/firestore";
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
-import JobSheet from "./JobSheet";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUUnfmXZSLOS2FrUAnr2eSFYAWnwURRfC",
-  authDomain: "mq-fsm-45ee9.firebaseapp.com",
-  projectId: "mq-fsm-45ee9",
-  storageBucket: "mq-fsm-45ee9.firebasestorage.app",
-  messagingSenderId: "527381468184",
-  appId: "1:527381468184:web:326741c5e9759c7799a36d",
-  measurementId: "G-VTMP9DR7D9",
-};
-
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-
-const TELEGRAM_BOT_TOKEN = "8692296744:AAEsSO0K5x0yv_gnjljcAYvNCaIauNvCSac";
-const TELEGRAM_CHAT_ID = "5603316430";
-
-const HINDI_MONTHS = [
-  "जनवरी (January)",
-  "फ़रवरी (February)",
-  "मार्च (March)",
-  "अप्रैल (April)",
-  "मई (May)",
-  "जून (June)",
-  "जुलाई (July)",
-  "अगस्त (August)",
-  "सितंबर (September)",
-  "अक्टूबर (October)",
-  "नवंबर (November)",
-  "दिसंबर (December)",
-];
-
-const sendStaffTelegramAlert = async (messageText) => {
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: messageText,
-        parse_mode: "HTML",
-      }),
-    });
-  } catch (err) {
-    console.error("Telegram alert error:", err);
-  }
-};
-
-export const compressImage = (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const maxWidth = 600;
-        const scaleSize = maxWidth / img.width;
-        canvas.width = maxWidth;
-        canvas.height = img.height * scaleSize;
-
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob(
-          (blob) => {
-            resolve(blob);
-          },
-          "image/jpeg",
-          0.6
-        );
-      };
-    };
-  });
-};
-
-const createEmptyPart = () => ({ partName: "", qty: 1, amount: "" });
-
-const inputStyle = {
-  padding: "12px 14px",
-  borderRadius: "8px",
-  border: "1.5px solid #cbd5e1",
-  backgroundColor: "#ffffff",
-  color: "#0f172a",
-  fontSize: "15px",
-  boxSizing: "border-box",
-};
-
-const choiceBtnStyle = (selected) => ({
-  padding: "13px 12px",
-  borderRadius: "8px",
-  border: selected ? "2px solid #166534" : "1.5px solid #cbd5e1",
-  backgroundColor: selected ? "#dcfce7" : "#ffffff",
-  color: selected ? "#166534" : "#0f172a",
-  fontWeight: "bold",
-  fontSize: "14px",
-  cursor: "pointer",
-  textAlign: "left",
-});
-
-const chkBox = (checked) => (checked ? "☑" : "☐");
-
-const formatTime12 = (ts) => {
-  if (!ts) return "-";
-  const d = new Date(ts);
-  return d.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-
-const calcWorkDuration = (inTs, outTs) => {
-  if (!inTs) return "-";
-  const endTs = outTs || Date.now();
-  const diffMs = Math.max(0, endTs - inTs);
-  const hrs = Math.floor(diffMs / 3600000);
-  const mins = Math.floor((diffMs % 3600000) / 60000);
-  return `${hrs} घंटे ${mins} मिनट${!outTs ? " (Active)" : ""}`;
-};
-
-const getTodayKey = (dateObj = new Date()) => {
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const d = String(dateObj.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-};
-
-const fetchReadableAddress = async (lat, lng) => {
-  try {
-    if (!navigator.onLine) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`
-    );
-    const data = await res.json();
-    if (data && data.address) {
-      const a = data.address;
-      const parts = [
-        a.road || a.neighbourhood || a.suburb,
-        a.city_district || a.town || a.city || a.county,
-      ].filter(Boolean);
-      if (parts.length > 0) return parts.join(", ");
-    }
-    if (data && data.display_name) {
-      return data.display_name.split(",").slice(0, 3).join(",");
-    }
-  } catch (e) {
-    // Fallback
-  }
-  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-};
-
-const checkIsWaterCooler = (prodType = "", prodFull = "") => {
-  const combined = `${prodType} ${prodFull}`.toLowerCase();
-  return combined.includes("water cooler");
-};
-
-const checkIsFridgeOrWaterCooler = (prodType = "", prodFull = "") => {
-  const combined = `${prodType} ${prodFull}`.toLowerCase();
-  return (
-    combined.includes("refrigerator") ||
-    combined.includes("deep freezer") ||
-    combined.includes("water cooler")
-  );
-};
-
-const checkIsSinglePhase = (prodType = "", prodFull = "") => {
-  const combined = `${prodType} ${prodFull}`.toLowerCase();
-  return (
-    combined.includes("split / window ac") ||
-    combined.includes("refrigerator") ||
-    combined.includes("deep freezer") ||
-    combined.includes("water cooler")
-  );
-};
-
-// ==========================================
-// 1. AIR COOLER PRINTABLE JOB SHEET (1-PAGE A4)
-// ==========================================
-const CoolerPrintableJobSheet = ({ job }) => {
-  const cSpec = job.coolerSpec || {};
-  const cChk = job.coolerChecklist || {};
-  const workTypes = Array.isArray(cSpec.workTypes) ? cSpec.workTypes : [];
-
-  const rows = [];
-  if (job.desc) {
-    rows.push({
-      desc: job.desc,
-      qty: 1,
-      rate: parseFloat(job.serviceCharge || 0),
-    });
-  }
-  if (Array.isArray(job.usedParts)) {
-    job.usedParts.forEach((p) => {
-      rows.push({
-        desc: p.partName || "Spare Part",
-        qty: parseFloat(p.qty) || 1,
-        rate: parseFloat(p.amount) || 0,
-      });
-    });
-  }
-  while (rows.length < 5) {
-    rows.push({ desc: "", qty: "", rate: "" });
-  }
-
-  const totalBillVal =
-    typeof job.totalAmount === "number"
-      ? job.totalAmount
-      : rows.reduce(
-          (sum, r) => sum + (parseFloat(r.qty) || 0) * (parseFloat(r.rate) || 0),
-          0
-        );
-
-  return (
-    <div id="printable-job-card" className="print-sheet-wrapper">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1.5px solid #000",
-          paddingBottom: "6px",
-          marginBottom: "6px",
-        }}
-      >
-        <img
-          src="/1000384854.jpg"
-          alt="Logo"
-          style={{ height: "54px", width: "auto", objectFit: "contain" }}
-        />
-        <div style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              letterSpacing: "0.5px",
-            }}
-          >
-            कूलर सर्विस एवं रिपेयर जॉब शीट
-          </div>
-          <div style={{ fontSize: "11px", marginTop: "3px" }}>
-            <strong>जॉब नं.:</strong> {job.jobSheetNo} &nbsp;|&nbsp;{" "}
-            <strong>दिनांक:</strong> {job.date}
-          </div>
-        </div>
-      </div>
-
-      <div className="js-sec-hdr-left">
-        1. ग्राहक एवं साइट का विवरण (Customer &amp; Site Details)
-      </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
-        <tbody>
-          <tr>
-            <td style={{ width: "55%" }}>
-              <strong>ग्राहक / संस्था का नाम:</strong> {job.customerName}
-            </td>
-            <td style={{ width: "45%" }}>
-              <strong>संपर्क एवं मोबाइल नं.:</strong> {job.customerPhone}
-            </td>
-          </tr>
-          <tr>
-            <td colSpan="2">
-              <strong>लोकेशन / साइट का पता:</strong> {job.customerAddress}
-            </td>
-          </tr>
-          <tr>
-            <td colSpan="2">
-              <strong>समस्या / फॉल्ट विवरण (Fault Details):</strong>{" "}
-              {job.faultDetails || job.desc || ""}
-            </td>
-          </tr>
-          <tr>
-            <td colSpan="2">
-              <strong>कार्य का प्रकार:</strong>{" "}
-              {chkBox(workTypes.includes("AMC"))} AMC &nbsp;&nbsp;
-              {chkBox(workTypes.includes("Breakdown / Repair"))} ब्रेकडाउन / रिपेयर &nbsp;&nbsp;
-              {chkBox(workTypes.includes("Installation"))} Installation &nbsp;&nbsp;
-              {chkBox(workTypes.includes("Un-installation"))} Un-installation &nbsp;&nbsp;
-              {chkBox(workTypes.includes("Body Repair & Painting"))} बॉडी रिपेयर एवं पेंटिंग
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div className="js-sec-hdr-left">
-        2. कूलर का विवरण (Cooler Specifications)
-      </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
-        <thead>
-          <tr style={{ background: "#f8fafc", textAlign: "center" }}>
-            <th style={{ width: "6%" }}>क्र.</th>
-            <th style={{ width: "36%" }}>कूलर टाइप (Body Type)</th>
-            <th style={{ width: "16%" }}>क्षमता / साइज़</th>
-            <th style={{ width: "18%" }}>ब्रांड / मॉडल</th>
-            <th style={{ width: "16%" }}>सीरियल / टैग नं.</th>
-            <th style={{ width: "8%" }}>संख्या</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={{ textAlign: "center" }}>1.</td>
-            <td>
-              {chkBox(cSpec.bodyMaterial === "Fiber / Plastic")} फाइबर / प्लास्टिक &nbsp;
-              {chkBox(cSpec.bodyMaterial === "GI / Metal")} जी. आई. / लोहा
-            </td>
-            <td>{cSpec.capacity || ""}</td>
-            <td>{cSpec.brandModel || ""}</td>
-            <td>{cSpec.serialNo || ""}</td>
-            <td style={{ textAlign: "center" }}>{cSpec.totalQty || "1"}</td>
-          </tr>
-          <tr>
-            <td style={{ textAlign: "center" }}>2.</td>
-            <td colSpan="5">
-              {chkBox(cSpec.coolerSubType === "Duct Cooler")} डक्ट कूलर &nbsp;&nbsp;&nbsp;
-              {chkBox(cSpec.coolerSubType === "Desert Cooler")} डेजर्ट कूलर &nbsp;&nbsp;&nbsp;
-              {chkBox(cSpec.coolerSubType === "Tower Cooler")} टावर कूलर &nbsp;&nbsp;&nbsp;
-              {chkBox(cSpec.coolerSubType === "Room / Personal Cooler")} रूम कूलर
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div className="js-sec-hdr-left">
-        3. चेकलिस्ट एवं निरीक्षण (Inspection &amp; Service Checklist)
-      </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
-        <tbody>
-          <tr>
-            <td style={{ width: "26%", fontWeight: "bold" }}>फैन मोटर (Fan Motor):</td>
-            <td>
-              {chkBox(cChk.fanMotor === "OK")} सही &nbsp;
-              {chkBox(cChk.fanMotor === "Jam / Bearing Bad")} जाम / बेयरिंग खराब &nbsp;
-              {chkBox(cChk.fanMotor === "Winding Burnt")} वाइंडिंग जली हुई &nbsp;
-              {chkBox(cChk.fanMotor === "Capacitor Bad")} कैपेसिटर खराब
-            </td>
-          </tr>
-          <tr>
-            <td style={{ fontWeight: "bold" }}>वाटर पंप (Submersible Pump):</td>
-            <td>
-              {chkBox(cChk.waterPump === "OK")} सही &nbsp;
-              {chkBox(cChk.waterPump === "Not Pumping")} पानी नहीं उठा रहा &nbsp;
-              {chkBox(cChk.waterPump === "Replace Required")} बदलना आवश्यक
-            </td>
-          </tr>
-          <tr>
-            <td style={{ fontWeight: "bold" }}>स्विंग मोटर एवं ब्लेड:</td>
-            <td>
-              {chkBox(cChk.swingBlade === "OK")} सही &nbsp;
-              {chkBox(cChk.swingBlade === "Swing Bad")} स्विंग खराब &nbsp;
-              {chkBox(cChk.swingBlade === "Blade Broken")} फैन ब्लेड टूटा / असंतुलित
-            </td>
-          </tr>
-          <tr>
-            <td style={{ fontWeight: "bold" }}>कूलिंग पैड (Cooling Pads):</td>
-            <td>
-              {chkBox(cChk.padType === "Honeycomb")} हनीकॉम्ब &nbsp;
-              {chkBox(cChk.padType === "Wood Wool")} वुड वूल (घास) &nbsp;|&nbsp;
-              <strong>स्थिति:</strong> {chkBox(cChk.padStatus === "Clean")} साफ &nbsp;
-              {chkBox(cChk.padStatus === "Replaceable")} बदलने योग्य
-            </td>
-          </tr>
-          <tr>
-            <td style={{ fontWeight: "bold" }}>वाटर टैंक एवं प्लंबिंग:</td>
-            <td>
-              {chkBox(cChk.tankPlumbing === "OK")} सही &nbsp;
-              {chkBox(cChk.tankPlumbing === "Leakage")} लीकेज है &nbsp;
-              {chkBox(cChk.tankPlumbing === "Float Valve Bad")} फ्लोट वाल्व खराब &nbsp;
-              {chkBox(cChk.tankPlumbing === "Drain / Pipe Jam")} ड्रेन / पाइप जाम
-            </td>
-          </tr>
-          <tr>
-            <td style={{ fontWeight: "bold" }}>इलेक्ट्रिकल एवं वायरिंग:</td>
-            <td>
-              {chkBox(cChk.electrical === "OK")} सही &nbsp;
-              {chkBox(cChk.electrical === "Rotary Switch Bad")} रोटरी स्विच खराब &nbsp;
-              {chkBox(cChk.electrical === "Wiring Burnt")} वायरिंग कटी / जली &nbsp;
-              {chkBox(cChk.electrical === "Plug / Earthing Checked")} प्लग / अर्थिंग चेक
-            </td>
-          </tr>
-          <tr>
-            <td style={{ fontWeight: "bold" }}>बॉडी एवं पेंट (Body &amp; Paint):</td>
-            <td>
-              {chkBox(cChk.bodyPaint === "OK")} सही &nbsp;
-              {chkBox(cChk.bodyPaint === "Rusting")} जंग (Rusting) &nbsp;
-              {chkBox(cChk.bodyPaint === "Welding Required")} टैंक में छेद / वेल्डिंग जरूरत &nbsp;
-              {chkBox(cChk.bodyPaint === "Painting Required")} प्राइमर एवं पेंटिंग आवश्यक
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div className="js-sec-hdr-left">
-        4. किए गए कार्य एवं बदले गए पार्ट्स (Work Done &amp; Spare Parts Used)
-      </div>
-      <table className="js-table" style={{ borderTop: "none", marginBottom: "5px" }}>
-        <thead>
-          <tr style={{ background: "#f8fafc", textAlign: "center" }}>
-            <th style={{ width: "8%" }}>क्र. सं.</th>
-            <th style={{ width: "54%" }}>पार्ट / कार्य का विवरण (Description)</th>
-            <th style={{ width: "10%" }}>मात्रा (Qty)</th>
-            <th style={{ width: "14%" }}>दर (Rate ₹)</th>
-            <th style={{ width: "14%" }}>कुल राशि (Amount)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const amt =
-              r.qty !== "" && r.rate !== ""
-                ? (parseFloat(r.qty) || 0) * (parseFloat(r.rate) || 0)
-                : null;
-            return (
-              <tr key={i}>
-                <td style={{ textAlign: "center" }}>{i + 1}.</td>
-                <td>{r.desc}</td>
-                <td style={{ textAlign: "center" }}>{r.qty !== "" ? r.qty : ""}</td>
-                <td style={{ textAlign: "right" }}>
-                  {r.rate !== "" ? `₹${Number(r.rate).toFixed(2)}` : ""}
-                </td>
-                <td style={{ textAlign: "right" }}>
-                  {amt !== null ? `₹${amt.toFixed(2)}` : ""}
-                </td>
-              </tr>
-            );
-          })}
-          <tr>
-            <td colSpan="4" style={{ textAlign: "right", fontWeight: "bold" }}>
-              कुल राशि (Total Amount):
-            </td>
-            <td style={{ textAlign: "right", fontWeight: "bold" }}>
-              ₹{totalBillVal.toFixed(2)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div className="js-sec-hdr-left">
-        5. टेक्नीशियन एवं ग्राहक हस्ताक्षर (Sign-Off)
-      </div>
-      <table className="js-table" style={{ borderTop: "none" }}>
-        <tbody>
-          <tr>
-            <td colSpan="2">
-              <strong>ग्राहक की टिप्पणी (Remarks):</strong> {job.feedback || ""} |{" "}
-              <strong>स्टेटस:</strong> {job.status}
-            </td>
-          </tr>
-          <tr>
-            <td style={{ width: "50%", height: "62px", verticalAlign: "bottom" }}>
-              <div>
-                <strong>टेक्नीशियन:</strong> {job.staffName || ""}
-              </div>
-              <div style={{ marginTop: "18px", fontWeight: "bold" }}>
-                टेक्नीशियन का नाम एवं हस्ताक्षर
-              </div>
-            </td>
-            <td style={{ width: "50%", height: "62px", verticalAlign: "bottom" }}>
-              {job.signatureURL && (
-                <img
-                  src={job.signatureURL}
-                  alt="Sign"
-                  style={{ maxHeight: "42px", display: "block", marginBottom: "4px" }}
-                />
-              )}
-              <div style={{ fontWeight: "bold" }}>
-                ग्राहक / साइट इंचार्ज के हस्ताक्षर एवं मुहर
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-// ==========================================
-// 2. PRINTABLE JOB SHEET WRAPPER (1-PAGE A4 FIT)
-// ==========================================
-const PrintableJobSheet = ({ job, onClose }) => {
-  if (!job) return null;
-
-  const isWaterCoolerJob = checkIsWaterCooler(job.productType, job.product);
-  const isAirCoolerJob =
-    !isWaterCoolerJob &&
-    (job.productType === "Cooler" ||
-      String(job.product || "").toLowerCase().includes("cooler"));
-
-  const isFridgeOrWCJob = checkIsFridgeOrWaterCooler(
-    job.productType,
-    job.product
-  );
-  const isSinglePhaseJob = checkIsSinglePhase(job.productType, job.product);
-
-  const calculatedPartsTotal = Array.isArray(job.usedParts)
-    ? job.usedParts.reduce(
-        (sum, p) => sum + (parseFloat(p.qty) || 0) * (parseFloat(p.amount) || 0),
-        0
-      )
-    : 0;
-
-  const serviceChargeVal = parseFloat(job.serviceCharge || job.rate) || 0;
-  const totalBillVal =
-    typeof job.totalAmount === "number"
-      ? job.totalAmount
-      : calculatedPartsTotal + serviceChargeVal;
-
-  return (
-    <div
-      style={{
-        background: "#fff",
-        padding: "12px",
-        borderRadius: "8px",
-        border: "1px solid #cbd5e1",
-        marginBottom: "15px",
-      }}
-    >
-      <style>{`
-        @page {
-          size: A4 portrait;
-          margin: 6mm;
-        }
-        @media print {
-          html, body {
-            width: 210mm;
-            height: 297mm;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          body * {
-            visibility: hidden;
-          }
-          #printable-job-card, #printable-job-card * {
-            visibility: visible;
-          }
-          #printable-job-card {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-            margin: 0 !important;
-            padding: 6mm !important;
-            border: 1.5px solid #000 !important;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            page-break-after: avoid;
-            page-break-inside: avoid;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-        .print-sheet-wrapper {
-          border: 1.5px solid #000;
-          background: #fff;
-          padding: 10px;
-          color: #000;
-          box-sizing: border-box;
-          width: 100%;
-        }
-        .js-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-          line-height: 1.3;
-          color: #000;
-        }
-        .js-table td, .js-table th {
-          border: 1px solid #000;
-          padding: 5px 7px;
-          vertical-align: top;
-        }
-        .js-bold {
-          font-weight: bold;
-        }
-        .js-sec-hdr {
-          background: #f1f5f9;
-          font-weight: bold;
-          text-align: center;
-          letter-spacing: 0.3px;
-        }
-        .js-sec-hdr-left {
-          background: #f1f5f9;
-          border: 1px solid #000;
-          padding: 4px 7px;
-          font-weight: bold;
-          font-size: 11px;
-        }
-        .faint-label {
-          font-size: 9px;
-          color: #64748b;
-          font-weight: normal;
-          margin-right: 4px;
-        }
-      `}</style>
-
-      <div
-        className="no-print"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "10px",
-          flexWrap: "wrap",
-          gap: "6px",
-        }}
-      >
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "6px 12px",
-              background: "#64748b",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            ← वापस जाएं
-          </button>
-        )}
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            style={{
-              padding: "6px 12px",
-              background: "#0284c7",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            🖨️ Print Job Sheet
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const msg = `नमस्ते ${job.customerName}, आपकी जॉब शीट (${job.jobSheetNo}) तैयार है। उत्पाद: ${job.productType || job.product}, कार्य: ${job.desc}, कुल बिल: ₹${totalBillVal.toFixed(2)}, स्टेटस: ${job.status}, दिनांक: ${job.date}`;
-              window.open(
-                `https://wa.me/91${job.customerPhone}?text=${encodeURIComponent(msg)}`,
-                "_blank"
-              );
-            }}
-            style={{
-              padding: "6px 12px",
-              background: "#166534",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            💬 WhatsApp करें
-          </button>
-        </div>
-      </div>
-
-      {isAirCoolerJob ? (
-        <CoolerPrintableJobSheet job={job} />
-      ) : (
-        <div id="printable-job-card" className="print-sheet-wrapper">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingBottom: "8px",
-              borderBottom: "1.5px solid #000",
-            }}
-          >
-            <img
-              src="/1000384854.jpg"
-              alt="Logo"
-              style={{ height: "58px", width: "auto", objectFit: "contain" }}
-            />
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: "bold",
-                letterSpacing: "1px",
-                border: "1px solid #000",
-                padding: "4px 10px",
-                background: "#f8fafc",
-              }}
-            >
-              SERVICE JOB SHEET
-            </div>
-          </div>
-
-          <table className="js-table" style={{ borderTop: "none" }}>
-            <tbody>
-              <tr>
-                <td rowSpan="6" style={{ width: "55%", borderTop: "none" }}>
-                  <div className="js-bold">CUSTOMER NAME :-</div>
-                  <div style={{ marginBottom: "6px", minHeight: "15px" }}>
-                    {job.customerName}
-                  </div>
-                  <div className="js-bold">MOBILE :-</div>
-                  <div style={{ marginBottom: "6px", minHeight: "15px" }}>
-                    {job.customerPhone}
-                  </div>
-                  <div className="js-bold">ADDRESS :-</div>
-                  <div style={{ minHeight: "22px" }}>{job.customerAddress}</div>
-                </td>
-                <td style={{ width: "18%", borderTop: "none" }} className="js-bold">
-                  JOB NO.
-                </td>
-                <td
-                  style={{ width: "27%", fontWeight: "bold", borderTop: "none" }}
-                >
-                  {job.jobSheetNo}
-                </td>
-              </tr>
-              <tr>
-                <td className="js-bold">BILL NO.</td>
-                <td>{job.billNo && job.billNo !== "-" ? job.billNo : ""}</td>
-              </tr>
-              <tr>
-                <td className="js-bold">AMC DATE</td>
-                <td>{job.amcDate && job.amcDate !== "-" ? job.amcDate : ""}</td>
-              </tr>
-              <tr>
-                <td className="js-bold">DATE IN</td>
-                <td>{job.date || ""}</td>
-              </tr>
-              <tr>
-                <td className="js-bold">DATE OUT</td>
-                <td>{job.status === "Completed" ? job.date : ""}</td>
-              </tr>
-              <tr>
-                <td className="js-bold">PRODUCT</td>
-                <td>{job.productType || job.product}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {isFridgeOrWCJob ? (
-            <>
-              <table className="js-table" style={{ borderTop: "none" }}>
-                <tbody>
-                  <tr>
-                    <td colSpan="4" style={{ borderTop: "none", background: "#fafafa" }}>
-                      <span className="js-bold">FAULT / PROBLEM DETAILS :- </span>
-                      <span>{job.faultDetails || job.desc || ""}</span>
-                    </td>
-                  </tr>
-                  <tr className="js-sec-hdr">
-                    <td colSpan="4">
-                      {isWaterCoolerJob
-                        ? "WATER COOLER TECHNICAL DETAILS"
-                        : "DEEP FREEZER / REFRIGERATOR TECHNICAL DETAILS"}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ width: "25%" }} className="js-bold">
-                      UNIT MODEL NO.
-                    </td>
-                    <td style={{ width: "25%" }}>
-                      {job.unitModel && job.unitModel !== "-"
-                        ? job.unitModel
-                        : ""}
-                    </td>
-                    <td style={{ width: "25%" }} className="js-bold">
-                      UNIT SERIAL NO.
-                    </td>
-                    <td style={{ width: "25%" }}>
-                      {job.unitSerial && job.unitSerial !== "-"
-                        ? job.unitSerial
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">UNIT CAPACITY (IN LITRES)</td>
-                    <td>
-                      {job.unitCapacity && job.unitCapacity !== "-"
-                        ? job.unitCapacity
-                        : ""}
-                    </td>
-                    <td className="js-bold">CONDENSER IN / OUT</td>
-                    <td>
-                      {job.condenserInOut && job.condenserInOut !== "-"
-                        ? job.condenserInOut
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">COMPRESSOR MODEL NO.</td>
-                    <td>
-                      {job.compressorModel && job.compressorModel !== "-"
-                        ? job.compressorModel
-                        : ""}
-                    </td>
-                    <td className="js-bold">COMPRESSOR SERIAL NO.</td>
-                    <td>
-                      {job.compressorSerial && job.compressorSerial !== "-"
-                        ? job.compressorSerial
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">COMPRESSOR AMPERE</td>
-                    <td>
-                      {job.compressorAmpere && job.compressorAmpere !== "-"
-                        ? job.compressorAmpere
-                        : ""}
-                    </td>
-                    <td className="js-bold">UNIT AMPERE</td>
-                    <td>
-                      {job.ampere && job.ampere !== "-" ? job.ampere : ""}
-                    </td>
-                  </tr>
-
-                  {isWaterCoolerJob && (
-                    <>
-                      <tr>
-                        <td className="js-bold">TANK SIZE (LITRES)</td>
-                        <td>
-                          {job.wcTankSize && job.wcTankSize !== "-"
-                            ? job.wcTankSize
-                            : ""}
-                        </td>
-                        <td className="js-bold">NUMBER OF TAPS (टोटी)</td>
-                        <td>
-                          {job.wcTapCount && job.wcTapCount !== "-"
-                            ? job.wcTapCount
-                            : ""}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">WATER OVERFLOW SYSTEM</td>
-                        <td>
-                          {job.wcOverflowType && job.wcOverflowType !== "-"
-                            ? job.wcOverflowType
-                            : ""}
-                        </td>
-                        <td className="js-bold">CONDENSING COIL SIZE</td>
-                        <td>
-                          {job.wcCondensingCoilSize &&
-                          job.wcCondensingCoilSize !== "-"
-                            ? job.wcCondensingCoilSize
-                            : ""}
-                        </td>
-                      </tr>
-                    </>
-                  )}
-                </tbody>
-              </table>
-
-              <table
-                className="js-table"
-                style={{ borderTop: "none", flex: 1 }}
-              >
-                <tbody>
-                  <tr className="js-sec-hdr">
-                    <td style={{ width: "82%", borderTop: "none" }}>
-                      WORK / ACTION TAKEN AND USE PART
-                    </td>
-                    <td style={{ width: "18%", borderTop: "none" }}>RATE</td>
-                  </tr>
-                  <tr>
-                    <td style={{ height: "110px" }}>
-                      <div>1. {job.desc || ""}</div>
-                      {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                        job.usedParts.map((p, i) => {
-                          const q = parseFloat(p.qty) || 0;
-                          const a = parseFloat(p.amount) || 0;
-                          return (
-                            <div key={i} style={{ marginTop: "4px" }}>
-                              {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
-                            </div>
-                          );
-                        })
-                      ) : (
-                        job.sparePartName &&
-                        job.sparePartName !== "-" && (
-                          <div style={{ marginTop: "4px" }}>
-                            2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
-                            {job.sparePartModel && job.sparePartModel !== "-"
-                              ? `(${job.sparePartModel})`
-                              : ""}
-                          </div>
-                        )
-                      )}
-                      {serviceChargeVal > 0 && (
-                        <div style={{ marginTop: "4px" }}>
-                          <strong>Service Charge:</strong> ₹
-                          {serviceChargeVal.toFixed(2)}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {Array.isArray(job.usedParts) &&
-                        job.usedParts.length > 0 &&
-                        job.usedParts.map((p, i) => {
-                          const rowAmt =
-                            (parseFloat(p.qty) || 0) *
-                            (parseFloat(p.amount) || 0);
-                          return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                        })}
-                      {totalBillVal > 0 && (
-                        <div
-                          style={{
-                            marginTop: "6px",
-                            borderTop: "1px solid #000",
-                            paddingTop: "3px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          Total: ₹{totalBillVal.toFixed(2)}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <table className="js-table" style={{ borderTop: "none" }}>
-                <tbody>
-                  <tr>
-                    <td style={{ width: "50%", borderTop: "none" }}>
-                      <div style={{ marginBottom: "8px" }}>
-                        <strong>TECHNICIAN:</strong> {job.staffName || ""}
-                      </div>
-                      <div style={{ marginBottom: "8px" }}>
-                        <strong>STATUS:</strong> {job.status}
-                      </div>
-                      <div>
-                        <strong>REMARK:</strong>{" "}
-                        {job.feedback && job.feedback !== "-"
-                          ? job.feedback
-                          : ""}
-                      </div>
-                    </td>
-                    <td style={{ width: "50%", borderTop: "none" }}>
-                      <div className="js-bold">CUSTOMER SIGNATURE</div>
-                      {job.signatureURL ? (
-                        <div style={{ margin: "6px 0" }}>
-                          <img
-                            src={job.signatureURL}
-                            alt="Customer Signature"
-                            style={{
-                              maxHeight: "65px",
-                              maxWidth: "100%",
-                              objectFit: "contain",
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            height: "55px",
-                            borderBottom: "1px dashed #cbd5e1",
-                            margin: "6px 0",
-                          }}
-                        ></div>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </>
-          ) : (
-            <>
-              <table className="js-table" style={{ borderTop: "none" }}>
-                <tbody>
-                  <tr>
-                    <td
-                      rowSpan="3"
-                      style={{
-                        width: "45%",
-                        borderTop: "none",
-                        verticalAlign: "top",
-                        background: "#fafafa",
-                      }}
-                    >
-                      <div
-                        className="js-bold"
-                        style={{
-                          borderBottom: "1px solid #cbd5e1",
-                          paddingBottom: "3px",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        FAULT / PROBLEM DETAILS :-
-                      </div>
-                      <div style={{ fontSize: "11px", lineHeight: "1.35" }}>
-                        {job.faultDetails || job.desc || ""}
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        width: "18%",
-                        verticalAlign: "middle",
-                        textAlign: "center",
-                        borderTop: "none",
-                      }}
-                      className="js-bold"
-                    >
-                      INDOOR
-                    </td>
-                    <td style={{ width: "37%", padding: 0, borderTop: "none" }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          padding: "4px 6px",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span className="faint-label">Model:</span>
-                        <span>
-                          {job.indoorModel && job.indoorModel !== "-"
-                            ? job.indoorModel
-                            : ""}
-                        </span>
-                      </div>
-                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
-                        <span className="faint-label">Serial:</span>
-                        <span>
-                          {job.indoorSerial && job.indoorSerial !== "-"
-                            ? job.indoorSerial
-                            : ""}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td
-                      style={{ verticalAlign: "middle", textAlign: "center" }}
-                      className="js-bold"
-                    >
-                      OUT DOOR
-                    </td>
-                    <td style={{ padding: 0 }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          padding: "4px 6px",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span className="faint-label">Model:</span>
-                        <span>
-                          {job.outdoorModel && job.outdoorModel !== "-"
-                            ? job.outdoorModel
-                            : ""}
-                        </span>
-                      </div>
-                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
-                        <span className="faint-label">Serial:</span>
-                        <span>
-                          {job.outdoorSerial && job.outdoorSerial !== "-"
-                            ? job.outdoorSerial
-                            : ""}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td
-                      style={{ verticalAlign: "middle", textAlign: "center" }}
-                      className="js-bold"
-                    >
-                      COMPRESSOR
-                    </td>
-                    <td style={{ padding: 0 }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          padding: "4px 6px",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span className="faint-label">Model:</span>
-                        <span>
-                          {job.compressorModel && job.compressorModel !== "-"
-                            ? job.compressorModel
-                            : ""}
-                        </span>
-                      </div>
-                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
-                        <span className="faint-label">Serial:</span>
-                        <span>
-                          {job.compressorSerial && job.compressorSerial !== "-"
-                            ? job.compressorSerial
-                            : ""}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <table
-                className="js-table"
-                style={{ borderTop: "none", flex: 1 }}
-              >
-                <tbody>
-                  <tr className="js-sec-hdr">
-                    <td style={{ width: "82%", borderTop: "none" }}>
-                      WORK / ACTION TAKEN AND USE PART
-                    </td>
-                    <td style={{ width: "18%", borderTop: "none" }}>RATE</td>
-                  </tr>
-                  <tr>
-                    <td style={{ height: "75px" }}>
-                      <div>1. {job.desc || ""}</div>
-                      {Array.isArray(job.usedParts) && job.usedParts.length > 0 ? (
-                        job.usedParts.map((p, i) => {
-                          const q = parseFloat(p.qty) || 0;
-                          const a = parseFloat(p.amount) || 0;
-                          return (
-                            <div key={i} style={{ marginTop: "3px" }}>
-                              {i + 2}. {p.partName || "Part"} (Qty: {q} × ₹{a})
-                            </div>
-                          );
-                        })
-                      ) : (
-                        job.sparePartName &&
-                        job.sparePartName !== "-" && (
-                          <div style={{ marginTop: "4px" }}>
-                            2. Part ({job.sparePartOption}): {job.sparePartName}{" "}
-                            {job.sparePartModel && job.sparePartModel !== "-"
-                              ? `(${job.sparePartModel})`
-                              : ""}
-                          </div>
-                        )
-                      )}
-                      {serviceChargeVal > 0 && (
-                        <div style={{ marginTop: "3px" }}>
-                          <strong>Service Charge:</strong> ₹
-                          {serviceChargeVal.toFixed(2)}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {Array.isArray(job.usedParts) &&
-                        job.usedParts.length > 0 &&
-                        job.usedParts.map((p, i) => {
-                          const rowAmt =
-                            (parseFloat(p.qty) || 0) *
-                            (parseFloat(p.amount) || 0);
-                          return <div key={i}>₹{rowAmt.toFixed(2)}</div>;
-                        })}
-                      {totalBillVal > 0 && (
-                        <div
-                          style={{
-                            marginTop: "6px",
-                            borderTop: "1px solid #000",
-                            paddingTop: "2px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          Total: ₹{totalBillVal.toFixed(2)}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <table className="js-table" style={{ borderTop: "none" }}>
-                <tbody>
-                  <tr>
-                    <td
-                      style={{ width: "30%", borderTop: "none" }}
-                      className="js-bold"
-                    >
-                      FILTER CLEAN
-                    </td>
-                    <td style={{ width: "15%", borderTop: "none" }}>
-                      {job.filterClean && job.filterClean !== "-"
-                        ? job.filterClean
-                        : ""}
-                    </td>
-                    <td
-                      rowSpan="2"
-                      style={{
-                        width: "18%",
-                        verticalAlign: "middle",
-                        textAlign: "center",
-                        borderTop: "none",
-                      }}
-                      className="js-bold"
-                    >
-                      IN-DOOR
-                      <br />
-                      MOTOR
-                    </td>
-                    <td
-                      style={{ width: "37%", padding: 0, borderTop: "none" }}
-                      rowSpan="2"
-                    >
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          padding: "4px 6px",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span className="faint-label">Model:</span>
-                        <span>
-                          {job.indoorMotorModel && job.indoorMotorModel !== "-"
-                            ? job.indoorMotorModel
-                            : ""}
-                        </span>
-                      </div>
-                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
-                        <span className="faint-label">Serial:</span>
-                        <span>
-                          {job.indoorMotorSerial &&
-                          job.indoorMotorSerial !== "-"
-                            ? job.indoorMotorSerial
-                            : ""}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">STAND TYPE</td>
-                    <td>
-                      {job.standType && job.standType !== "-"
-                        ? job.standType
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">SWING / FLAPPER</td>
-                    <td>
-                      {job.swingFlapper && job.swingFlapper !== "-"
-                        ? job.swingFlapper
-                        : ""}
-                    </td>
-                    <td
-                      rowSpan="2"
-                      style={{ verticalAlign: "middle", textAlign: "center" }}
-                      className="js-bold"
-                    >
-                      OUT-DOOR
-                      <br />
-                      MOTOR
-                    </td>
-                    <td rowSpan="2" style={{ padding: 0 }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          padding: "4px 6px",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span className="faint-label">Model:</span>
-                        <span>
-                          {job.outdoorMotorModel &&
-                          job.outdoorMotorModel !== "-"
-                            ? job.outdoorMotorModel
-                            : ""}
-                        </span>
-                      </div>
-                      <div style={{ padding: "4px 6px", textAlign: "left" }}>
-                        <span className="faint-label">Serial:</span>
-                        <span>
-                          {job.outdoorMotorSerial &&
-                          job.outdoorMotorSerial !== "-"
-                            ? job.outdoorMotorSerial
-                            : ""}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">STABILIZER</td>
-                    <td>
-                      {job.stabilizer && job.stabilizer !== "-"
-                        ? job.stabilizer
-                        : ""}
-                    </td>
-                  </tr>
-
-                  {isSinglePhaseJob ? (
-                    <>
-                      <tr>
-                        <td className="js-bold">REMOTE</td>
-                        <td>
-                          {job.remoteStatus && job.remoteStatus !== "-"
-                            ? job.remoteStatus
-                            : ""}
-                        </td>
-                        <td colSpan="2" style={{ padding: "4px 6px" }}>
-                          <strong>POWER SUPPLY:</strong> Single Phase (1-Phase)
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">ROOM TEMP.</td>
-                        <td>
-                          {job.roomTemp && job.roomTemp !== "-"
-                            ? job.roomTemp
-                            : ""}
-                        </td>
-                        <td colSpan="2" style={{ padding: "4px 6px" }}>
-                          <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
-                          <strong>STATUS:</strong> {job.status}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">VOLTAGE</td>
-                        <td>
-                          {job.voltage && job.voltage !== "-" ? job.voltage : ""}
-                        </td>
-                        <td colSpan="2" rowSpan="9" style={{ padding: "6px" }}>
-                          <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
-                          {job.signatureURL ? (
-                            <div
-                              style={{
-                                margin: "6px 0",
-                                borderBottom: "1px dashed #94a3b8",
-                                paddingBottom: "4px",
-                              }}
-                            >
-                              <img
-                                src={job.signatureURL}
-                                alt="Customer Signature"
-                                style={{
-                                  maxHeight: "65px",
-                                  maxWidth: "100%",
-                                  objectFit: "contain",
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                height: "45px",
-                                borderBottom: "1px dashed #cbd5e1",
-                                margin: "6px 0",
-                              }}
-                            ></div>
-                          )}
-                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                            <strong>REMARK:</strong>{" "}
-                            {job.feedback && job.feedback !== "-"
-                              ? job.feedback
-                              : ""}
-                          </div>
-                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                            <strong>MOBILE:</strong> {job.customerPhone}
-                          </div>
-                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                            <strong>DATE:</strong> {job.date}
-                          </div>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">UNIT AMPERE</td>
-                        <td>
-                          {job.ampere && job.ampere !== "-" ? job.ampere : ""}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">COMPRESSOR AMPERE</td>
-                        <td>
-                          {job.compressorAmpere && job.compressorAmpere !== "-"
-                            ? job.compressorAmpere
-                            : ""}
-                        </td>
-                      </tr>
-                    </>
-                  ) : (
-                    <>
-                      <tr>
-                        <td className="js-bold">REMOTE</td>
-                        <td>
-                          {job.remoteStatus && job.remoteStatus !== "-"
-                            ? job.remoteStatus
-                            : ""}
-                        </td>
-                        <td colSpan="2" style={{ padding: 0 }}>
-                          <div style={{ display: "flex" }}>
-                            <div
-                              style={{
-                                flex: 1,
-                                borderRight: "1px solid #000",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              <strong>R:</strong>{" "}
-                              {job.phaseR && job.phaseR !== "-"
-                                ? job.phaseR
-                                : ""}
-                            </div>
-                            <div
-                              style={{
-                                flex: 1,
-                                borderRight: "1px solid #000",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              <strong>Y:</strong>{" "}
-                              {job.phaseY && job.phaseY !== "-"
-                                ? job.phaseY
-                                : ""}
-                            </div>
-                            <div style={{ flex: 1, padding: "4px 6px" }}>
-                              <strong>B:</strong>{" "}
-                              {job.phaseB && job.phaseB !== "-"
-                                ? job.phaseB
-                                : ""}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">ROOM TEMP.</td>
-                        <td>
-                          {job.roomTemp && job.roomTemp !== "-"
-                            ? job.roomTemp
-                            : ""}
-                        </td>
-                        <td colSpan="2" style={{ padding: 0 }}>
-                          <div style={{ display: "flex" }}>
-                            <div
-                              style={{
-                                flex: 1,
-                                borderRight: "1px solid #000",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              <strong>R:</strong>{" "}
-                              {job.ampR && job.ampR !== "-" ? job.ampR : ""}
-                            </div>
-                            <div
-                              style={{
-                                flex: 1,
-                                borderRight: "1px solid #000",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              <strong>Y:</strong>{" "}
-                              {job.ampY && job.ampY !== "-" ? job.ampY : ""}
-                            </div>
-                            <div style={{ flex: 1, padding: "4px 6px" }}>
-                              <strong>B:</strong>{" "}
-                              {job.ampB && job.ampB !== "-" ? job.ampB : ""}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">VOLTAGE</td>
-                        <td>
-                          {job.voltage && job.voltage !== "-" ? job.voltage : ""}
-                        </td>
-                        <td colSpan="2" style={{ padding: "4px 6px" }}>
-                          <strong>TECHNICIAN:</strong> {job.staffName || ""} |{" "}
-                          <strong>STATUS:</strong> {job.status}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">UNIT AMPERE</td>
-                        <td>
-                          {job.ampere && job.ampere !== "-" ? job.ampere : ""}
-                        </td>
-                        <td colSpan="2" rowSpan="8" style={{ padding: "6px" }}>
-                          <div className="js-bold">CUSTOMER SIGN &amp; REMARK</div>
-                          {job.signatureURL ? (
-                            <div
-                              style={{
-                                margin: "6px 0",
-                                borderBottom: "1px dashed #94a3b8",
-                                paddingBottom: "4px",
-                              }}
-                            >
-                              <img
-                                src={job.signatureURL}
-                                alt="Customer Signature"
-                                style={{
-                                  maxHeight: "65px",
-                                  maxWidth: "100%",
-                                  objectFit: "contain",
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                height: "45px",
-                                borderBottom: "1px dashed #cbd5e1",
-                                margin: "6px 0",
-                              }}
-                            ></div>
-                          )}
-                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                            <strong>REMARK:</strong>{" "}
-                            {job.feedback && job.feedback !== "-"
-                              ? job.feedback
-                              : ""}
-                          </div>
-                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                            <strong>MOBILE:</strong> {job.customerPhone}
-                          </div>
-                          <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                            <strong>DATE:</strong> {job.date}
-                          </div>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="js-bold">COMPRESSOR AMPERE</td>
-                        <td>
-                          {job.compressorAmpere && job.compressorAmpere !== "-"
-                            ? job.compressorAmpere
-                            : ""}
-                        </td>
-                      </tr>
-                    </>
-                  )}
-
-                  <tr>
-                    <td className="js-bold">DRAIN WITH SIZE</td>
-                    <td>
-                      {job.drainSize && job.drainSize !== "-"
-                        ? job.drainSize
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">COPPER PIPE SIZE</td>
-                    <td>
-                      {job.copperPipeSize && job.copperPipeSize !== "-"
-                        ? job.copperPipeSize
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">OUTDOOR CLEAN</td>
-                    <td>
-                      {job.outdoorClean && job.outdoorClean !== "-"
-                        ? job.outdoorClean
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">SUCTION PRESSURE</td>
-                    <td>
-                      {job.sectionPressure && job.sectionPressure !== "-"
-                        ? job.sectionPressure
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">WIRE SIZE &amp; CORE</td>
-                    <td>
-                      {job.wireSizeCore && job.wireSizeCore !== "-"
-                        ? job.wireSizeCore
-                        : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="js-bold">INSULATION</td>
-                    <td>
-                      {job.insulation && job.insulation !== "-"
-                        ? job.insulation
-                        : ""}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </>
-          )}
-        </div>
-      )}
-
-      {Array.isArray(job.sitePhotoUrls) && job.sitePhotoUrls.length > 0 && (
-        <div
-          className="no-print"
-          style={{
-            padding: "8px",
-            border: "1px solid #cbd5e1",
-            borderTop: "none",
-            background: "#fff",
-          }}
-        >
-          <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px" }}>
-            SITE &amp; PART PHOTOS:
-          </div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {job.sitePhotoUrls.map((url, idx) => (
-              <img
-                key={idx}
-                src={url}
-                alt={`Site ${idx + 1}`}
-                style={{
-                  width: "80px",
-                  height: "80px",
-                  objectFit: "cover",
-                  border: "1px solid #334155",
-                  borderRadius: "4px",
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==========================================
-// 3. MAIN APPLICATION COMPONENT
-// ==========================================
-export default function App() {
-  const [activeTab, setActiveTab] = useState("home");
-  const [jobSheets, setJobSheets] = useState([]);
-  const [loginLogs, setLoginLogs] = useState([]);
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [pendingSyncCount, setPendingSyncCount] = useState(0);
-
-  const [spareStock, setSpareStock] = useState([
-    {
-      name: "Compressor 1.5 Ton",
-      qty: "5",
-      desc: "Rotary Compressor",
-      rate: "6500",
-    },
-    {
-      name: "AC Capacitor 36 MFD",
-      qty: "12",
-      desc: "Dual Run Capacitor",
-      rate: "450",
-    },
-  ]);
-
-  const [custPhone, setCustPhone] = useState("");
-  const [custLoggedIn, setCustLoggedIn] = useState(false);
-  const [custNameInput, setCustNameInput] = useState("");
-  const [custAddressInput, setCustAddressInput] = useState("");
-  const [categoryType, setCategoryType] = useState("HVAC & Refrigeration");
-  const [productType, setProductType] = useState("Split / Window AC");
-  const [problemDesc, setProblemDesc] = useState("");
-
-  const savedStaffSession = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("mq_active_staff_session") || "null");
-    } catch {
-      return null;
-    }
-  })();
-
-  const [staffPhoneInput, setStaffPhoneInput] = useState(
-    savedStaffSession?.phone || ""
-  );
-  const [otpStep, setOtpStep] = useState(1);
-  const [enteredOtp, setEnteredOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [staffLoggedIn, setStaffLoggedIn] = useState(Boolean(savedStaffSession));
-  const [currentStaffName, setCurrentStaffName] = useState(
-    savedStaffSession?.name || ""
-  );
-  const [staffGpsLocation, setStaffGpsLocation] = useState("Fetching GPS...");
-  const [staffSubTab, setStaffSubTab] = useState("menu");
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
-
-  // Slide-by-Slide Job Sheet Wizard State (हर फील्ड अलग स्लाइड में)
-  const [slideIndex, setSlideIndex] = useState(0);
-
-  const [adminUser, setAdminUser] = useState("");
-  const [adminPass, setAdminPass] = useState("");
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminMainTab, setAdminMainTab] = useState("jobs");
-  const [adminJobSubTab, setAdminJobSubTab] = useState("completed");
-  const [adminSpareSubTab, setAdminSpareSubTab] = useState("stock");
-  const [selectedStaffFolder, setSelectedStaffFolder] = useState(null);
-
-  const [attSelectedYear, setAttSelectedYear] = useState(null);
-  const [attSelectedMonth, setAttSelectedMonth] = useState(null);
-  const [attSelectedStaffPhone, setAttSelectedStaffPhone] = useState(null);
-
-  const [newStockName, setNewStockName] = useState("");
-  const [newStockQty, setNewStockQty] = useState("");
-  const [newStockDesc, setNewStockDesc] = useState("");
-  const [newStockRate, setNewStockRate] = useState("");
-
-  const [inspectedJob, setInspectedJob] = useState(null);
-  const [lastSubmittedJob, setLastSubmittedJob] = useState(null);
-
-  const [jobCustName, setJobCustName] = useState("");
-  const [jobCustAddress, setJobCustAddress] = useState("");
-  const [jobCustPhone, setJobCustPhone] = useState("");
-  const [billNo, setBillNo] = useState("");
-  const [amcDate, setAmcDate] = useState("");
-  const [faultDetails, setFaultDetails] = useState("");
-
-  const [unitModel, setUnitModel] = useState("");
-  const [unitSerial, setUnitSerial] = useState("");
-  const [unitCapacity, setUnitCapacity] = useState("");
-  const [condenserInOut, setCondenserInOut] = useState("OK");
-
-  const [wcTankSize, setWcTankSize] = useState("40");
-  const [wcTapCount, setWcTapCount] = useState("2");
-  const [wcOverflowType, setWcOverflowType] = useState("Float Ball");
-  const [wcCondensingCoilSize, setWcCondensingCoilSize] = useState("");
-
-  const [indoorModel, setIndoorModel] = useState("");
-  const [indoorSerial, setIndoorSerial] = useState("");
-  const [outdoorModel, setOutdoorModel] = useState("");
-  const [outdoorSerial, setOutdoorSerial] = useState("");
-  const [compressorModel, setCompressorModel] = useState("");
-  const [compressorSerial, setCompressorSerial] = useState("");
-  const [indoorMotorModel, setIndoorMotorModel] = useState("");
-  const [indoorMotorSerial, setIndoorMotorSerial] = useState("");
-  const [outdoorMotorModel, setOutdoorMotorModel] = useState("");
-  const [outdoorMotorSerial, setOutdoorMotorSerial] = useState("");
-
-  const [filterClean, setFilterClean] = useState("OK");
-  const [standType, setStandType] = useState("Wall Stand");
-  const [swingFlapper, setSwingFlapper] = useState("OK");
-  const [stabilizer, setStabilizer] = useState("OK");
-  const [remoteStatus, setRemoteStatus] = useState("OK");
-  const [outdoorClean, setOutdoorClean] = useState("OK");
-
-  const [sectionPressure, setSectionPressure] = useState("");
-  const [roomTemp, setRoomTemp] = useState("");
-  const [voltage, setVoltage] = useState("230V");
-  const [ampere, setAmpere] = useState("");
-  const [compressorAmpere, setCompressorAmpere] = useState("");
-  const [drainSize, setDrainSize] = useState("");
-  const [copperPipeSize, setCopperPipeSize] = useState("");
-  const [wireSizeCore, setWireSizeCore] = useState("");
-  const [insulation, setInsulation] = useState("OK");
-  const [phaseR, setPhaseR] = useState("");
-  const [phaseY, setPhaseY] = useState("");
-  const [phaseB, setPhaseB] = useState("");
-  const [ampR, setAmpR] = useState("");
-  const [ampY, setAmpY] = useState("");
-  const [ampB, setAmpB] = useState("");
-
-  const [coolerWorkTypes, setCoolerWorkTypes] = useState(["Breakdown / Repair"]);
-  const [coolerBodyMaterial, setCoolerBodyMaterial] = useState("GI / Metal");
-  const [coolerSubType, setCoolerSubType] = useState("Desert Cooler");
-  const [coolerCapacity, setCoolerCapacity] = useState("");
-  const [coolerBrandModel, setCoolerBrandModel] = useState("");
-  const [coolerSerialNo, setCoolerSerialNo] = useState("");
-  const [coolerTotalQty, setCoolerTotalQty] = useState("1");
-
-  const [coolerFanMotor, setCoolerFanMotor] = useState("OK");
-  const [coolerWaterPump, setCoolerWaterPump] = useState("OK");
-  const [coolerSwingBlade, setCoolerSwingBlade] = useState("OK");
-  const [coolerPadType, setCoolerPadType] = useState("Honeycomb");
-  const [coolerPadStatus, setCoolerPadStatus] = useState("Clean");
-  const [coolerTankPlumbing, setCoolerTankPlumbing] = useState("OK");
-  const [coolerElectrical, setCoolerElectrical] = useState("OK");
-  const [coolerBodyPaint, setCoolerBodyPaint] = useState("OK");
-
-  const [workDone, setWorkDone] = useState("");
-  const [sparePartOption, setSparePartOption] = useState("Used Part");
-  const [sparePartName, setSparePartName] = useState("");
-  const [sparePartModel, setSparePartModel] = useState("");
-  const [usedParts, setUsedParts] = useState([createEmptyPart()]);
-  const [serviceChargeInput, setServiceChargeInput] = useState("");
-
-  const [jobStatusType, setJobStatusType] = useState("Completed");
-  const [pendingSubOption, setPendingSubOption] = useState("Part Pending");
-  const [jobNote, setJobNote] = useState("");
-  const [customerFeedback, setCustomerFeedback] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [sitePhotos, setSitePhotos] = useState([]);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
-
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [savedSignatureURL, setSavedSignatureURL] = useState("");
-  const fullCanvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-
-  // क्या इस समय जॉब शीट भरी जा रही है? (यदि हाँ, तो ऊपर का सब कुछ छिप जाएगा)
-  const isFillingJobSheet =
-    activeTab === "staff" && staffLoggedIn && staffSubTab === "newJobForm";
-
-  const isWaterCoolerSelected = checkIsWaterCooler(productType);
-  const isAirCoolerSelected = productType === "Cooler";
-  const isFridgeOrWCSelected = checkIsFridgeOrWaterCooler(productType);
-  const isSinglePhaseSelected = checkIsSinglePhase(productType);
-
-  // =========================================================
-  // OFFLINE QUEUE & SERVER SYNC ENGINE
-  // =========================================================
-  const enqueueOfflinePayload = (payload) => {
-    try {
-      const q = JSON.parse(localStorage.getItem("mq_offline_sync_queue") || "[]");
-      q.push(payload);
-      localStorage.setItem("mq_offline_sync_queue", JSON.stringify(q));
-      setPendingSyncCount(q.length);
-    } catch (e) {
-      console.error("Queue write error:", e);
-    }
-  };
-
-  const flushOfflineQueueToServer = async () => {
-    if (!navigator.onLine) return;
-    let q = [];
-    try {
-      q = JSON.parse(localStorage.getItem("mq_offline_sync_queue") || "[]");
-    } catch {
-      q = [];
-    }
-    if (q.length === 0) {
-      setPendingSyncCount(0);
-      return;
-    }
-
-    const remaining = [];
-    for (const item of q) {
-      try {
-        if (item.type === "ATTENDANCE_UPSERT") {
-          const attRef = doc(db, "staff_attendance", item.docId);
-          const snap = await getDoc(attRef);
-          if (snap.exists()) {
-            const existing = snap.data();
-            const updates = {};
-            if (!existing.inTime && item.inTime) updates.inTime = item.inTime;
-            if (item.outTime) updates.outTime = item.outTime;
-            if (item.point) updates.routePoints = arrayUnion(item.point);
-            await updateDoc(attRef, updates);
-          } else {
-            await setDoc(attRef, {
-              docId: item.docId,
-              staffPhone: item.staffPhone,
-              staffName: item.staffName,
-              dateKey: item.dateKey,
-              year: item.year,
-              month: item.month,
-              day: item.day,
-              inTime: item.inTime || Date.now(),
-              outTime: item.outTime || null,
-              routePoints: item.point ? [item.point] : [],
-            });
-          }
-        } else if (item.type === "JOB_SAVE") {
-          await setDoc(doc(db, "jobs", item.jobSheetNo), item.record);
-        }
-      } catch (err) {
-        remaining.push(item);
-      }
-    }
-    localStorage.setItem("mq_offline_sync_queue", JSON.stringify(remaining));
-    setPendingSyncCount(remaining.length);
-  };
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      flushOfflineQueueToServer();
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    flushOfflineQueueToServer();
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
-  // =========================================================
-  // STAFF AUTO IN / OUT & CONTINUOUS GPS ROUTE TRACKING
-  // =========================================================
-  const logStaffAttendancePoint = async (
-    phone,
-    name,
-    coords,
-    eventType = "ROUTE"
-  ) => {
-    if (!phone) return;
-    const now = new Date();
-    const dateKey = getTodayKey(now);
-    const year = String(now.getFullYear());
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const docId = `${phone}_${dateKey}`;
-    const ts = now.getTime();
-
-    const addressText = coords
-      ? await fetchReadableAddress(coords.lat, coords.lng)
-      : "Location Unavailable";
-
-    const point = coords
-      ? {
-          lat: coords.lat,
-          lng: coords.lng,
-          address: addressText,
-          timeText: formatTime12(ts),
-          timestamp: ts,
-          event: eventType,
-        }
-      : null;
-
-    setAttendanceRecords((prev) => {
-      const idx = prev.findIndex((r) => r.docId === docId);
-      if (idx > -1) {
-        const updated = [...prev];
-        const cur = updated[idx];
-        updated[idx] = {
-          ...cur,
-          inTime: cur.inTime || ts,
-          outTime: eventType === "OUT" ? ts : cur.outTime,
-          routePoints: point
-            ? [...(cur.routePoints || []), point]
-            : cur.routePoints || [],
-        };
-        return updated;
-      } else {
-        return [
-          {
-            docId,
-            staffPhone: phone,
-            staffName: name,
-            dateKey,
-            year,
-            month,
-            day,
-            inTime: ts,
-            outTime: eventType === "OUT" ? ts : null,
-            routePoints: point ? [point] : [],
-          },
-          ...prev,
-        ];
-      }
-    });
-
-    const payload = {
-      type: "ATTENDANCE_UPSERT",
-      docId,
-      staffPhone: phone,
-      staffName: name,
-      dateKey,
-      year,
-      month,
-      day,
-      inTime: eventType === "IN" ? ts : null,
-      outTime: eventType === "OUT" ? ts : null,
-      point,
-    };
-
-    if (navigator.onLine) {
-      try {
-        const attRef = doc(db, "staff_attendance", docId);
-        const snap = await getDoc(attRef);
-        if (snap.exists()) {
-          const updates = {};
-          if (!snap.data().inTime) updates.inTime = ts;
-          if (eventType === "OUT") updates.outTime = ts;
-          if (point) updates.routePoints = arrayUnion(point);
-          await updateDoc(attRef, updates);
-        } else {
-          await setDoc(attRef, {
-            docId,
-            staffPhone: phone,
-            staffName: name,
-            dateKey,
-            year,
-            month,
-            day,
-            inTime: ts,
-            outTime: eventType === "OUT" ? ts : null,
-            routePoints: point ? [point] : [],
-          });
-        }
-      } catch (e) {
-        enqueueOfflinePayload(payload);
-      }
-    } else {
-      enqueueOfflinePayload(payload);
-    }
-  };
-
-  useEffect(() => {
-    let watchId = null;
-    let intervalId = null;
-    let lastSavedCoords = null;
-
-    const captureCurrentPos = (evType = "ROUTE") => {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setStaffGpsLocation(
-            `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (${
-              navigator.onLine ? "GPS Live" : "Offline Saved"
-            })`
-          );
-
-          if (staffLoggedIn && staffPhoneInput) {
-            const movedEnough =
-              !lastSavedCoords ||
-              Math.abs(lastSavedCoords.lat - lat) > 0.0008 ||
-              Math.abs(lastSavedCoords.lng - lng) > 0.0008 ||
-              evType === "IN";
-
-            if (movedEnough) {
-              lastSavedCoords = { lat, lng };
-              logStaffAttendancePoint(
-                staffPhoneInput,
-                currentStaffName || `Staff (${staffPhoneInput})`,
-                { lat, lng },
-                evType
-              );
-            }
-          }
-        },
-        () => {
-          setStaffGpsLocation("Prayagraj (GPS Active)");
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    };
-
-    captureCurrentPos(staffLoggedIn ? "IN" : "PING");
-
-    if (staffLoggedIn && staffPhoneInput) {
-      if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            setStaffGpsLocation(
-              `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (${
-                navigator.onLine ? "GPS Live" : "Offline Saved"
-              })`
-            );
-            const moved =
-              !lastSavedCoords ||
-              Math.abs(lastSavedCoords.lat - lat) > 0.001 ||
-              Math.abs(lastSavedCoords.lng - lng) > 0.001;
-            if (moved) {
-              lastSavedCoords = { lat, lng };
-              logStaffAttendancePoint(
-                staffPhoneInput,
-                currentStaffName || `Staff (${staffPhoneInput})`,
-                { lat, lng },
-                "ROUTE"
-              );
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 30000 }
-        );
-      }
-      intervalId = setInterval(() => captureCurrentPos("ROUTE"), 180000);
-    }
-
-    return () => {
-      if (watchId !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-      if (intervalId !== null) clearInterval(intervalId);
-    };
-  }, [staffLoggedIn, staffPhoneInput]);
-
-  useEffect(() => {
-    const unsubJobs = onSnapshot(
-      collection(db, "jobs"),
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach((d) => {
-          list.push({ id: d.id, ...d.data() });
-        });
-        setJobSheets(list);
-      },
-      (err) => console.log("Jobs sync info:", err.message)
-    );
-
-    const unsubLogs = onSnapshot(
-      collection(db, "login_logs"),
-      (snapshot) => {
-        const logs = [];
-        snapshot.forEach((d) => {
-          logs.push(d.data());
-        });
-        setLoginLogs(logs);
-      },
-      (err) => console.log("Logs sync info:", err.message)
-    );
-
-    const unsubAttendance = onSnapshot(
-      collection(db, "staff_attendance"),
-      (snapshot) => {
-        const att = [];
-        snapshot.forEach((d) => {
-          att.push({ id: d.id, ...d.data() });
-        });
-        setAttendanceRecords(att);
-      },
-      (err) => console.log("Attendance sync info:", err.message)
-    );
-
-    return () => {
-      unsubJobs();
-      unsubLogs();
-      unsubAttendance();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isSignatureModalOpen && fullCanvasRef.current) {
-      const canvas = fullCanvasRef.current;
-      canvas.width = window.innerWidth - 30;
-      canvas.height = window.innerHeight - 160;
-      const ctx = canvas.getContext("2d");
-      ctx.lineWidth = 3.5;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#0f172a";
-    }
-  }, [isSignatureModalOpen]);
 
   const toggleCoolerWorkType = (type) => {
     setCoolerWorkTypes((prev) =>
@@ -5777,6 +2810,7 @@ export default function App() {
     setJobStatusType("Completed");
     setPendingSubOption("Part Pending");
     setSlideIndex(0);
+    setCheckpointStage(null);
   };
 
   const handleOpenBlankNewJob = () => {
@@ -5814,6 +2848,7 @@ export default function App() {
         : ""
     );
     setSlideIndex(0);
+    setCheckpointStage(null);
     setStaffSubTab("newJobForm");
   };
 
@@ -5832,6 +2867,7 @@ export default function App() {
   const handleJobSubmit = () => {
     if (!jobCustName || !jobCustPhone) {
       alert("कृपया कस्टमर का नाम और मोबाइल नंबर भरें!");
+      setCheckpointStage(null);
       setSlideIndex(0);
       return;
     }
@@ -6208,7 +3244,7 @@ export default function App() {
   };
 
   // =========================================================
-  // हर यूनिट के लिए 100% SLIDE-BY-SLIDE (1-FIELD PER SLIDE) ARRAY
+  // SLIDE-BY-SLIDE WIZARD ARRAY
   // =========================================================
   const buildAllSlides = () => {
     const slides = [
@@ -6885,6 +3921,52 @@ export default function App() {
   const safeSlideIndex = Math.min(slideIndex, allJobSlides.length - 1);
   const currentSlide = allJobSlides[safeSlideIndex];
 
+  const getSlideDisplayValue = (slide) => {
+    if (!slide) return "-";
+    if (slide.type === "faultStep") {
+      const wt =
+        isAirCoolerSelected && coolerWorkTypes.length > 0
+          ? `[${coolerWorkTypes.join(", ")}] `
+          : "";
+      return `${wt}${faultDetails || "-"}`;
+    }
+    if (slide.type === "workBillingStep") {
+      const partsSummary = isUsedPartSelected
+        ? usedParts
+            .filter((p) => p.partName.trim())
+            .map((p) => `${p.partName} (${p.qty}×₹${p.amount || 0})`)
+            .join(", ")
+        : sparePartOption === "Pending Part"
+        ? `Pending: ${sparePartName || "-"}`
+        : "No Part Used";
+      return `${workDone || "General Service"} | ${
+        partsSummary || "No Parts"
+      } | कुल बिल: ₹${grandTotalBill.toFixed(2)}`;
+    }
+    if (slide.type === "choice") {
+      const found = (slide.options || []).find((o) => o.value === slide.value);
+      return found ? found.label : slide.value || "-";
+    }
+    return slide.value && String(slide.value).trim() !== ""
+      ? String(slide.value)
+      : "-";
+  };
+
+  const advanceAfterIndex = (idx) => {
+    const workBillingIdx = allJobSlides.findIndex(
+      (s) => s.id === "workBilling"
+    );
+    if (idx === 4) {
+      setCheckpointStage(1);
+    } else if (idx === 14) {
+      setCheckpointStage(2);
+    } else if (idx === workBillingIdx) {
+      setCheckpointStage(3);
+    } else {
+      setSlideIndex(Math.min(allJobSlides.length - 1, idx + 1));
+    }
+  };
+
   const goNextSlide = () => {
     if (currentSlide?.required) {
       if (currentSlide.id === "custName" && !jobCustName.trim()) {
@@ -6900,11 +3982,45 @@ export default function App() {
         return;
       }
     }
-    setSlideIndex((prev) => Math.min(allJobSlides.length - 1, prev + 1));
+    advanceAfterIndex(safeSlideIndex);
   };
 
   const goPrevSlide = () => {
+    if (safeSlideIndex === 5) {
+      setCheckpointStage(1);
+      return;
+    }
+    if (safeSlideIndex === 15) {
+      setCheckpointStage(2);
+      return;
+    }
+    if (currentSlide?.id === "statusSign") {
+      setCheckpointStage(3);
+      return;
+    }
     setSlideIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleEditFromSummary = () => {
+    const stage = checkpointStage;
+    setCheckpointStage(null);
+    if (stage === 1) setSlideIndex(0);
+    else if (stage === 2) setSlideIndex(5);
+    else if (stage === 3) {
+      const wbIdx = allJobSlides.findIndex((s) => s.id === "workBilling");
+      setSlideIndex(wbIdx >= 0 ? wbIdx : 15);
+    }
+  };
+
+  const handleContinueFromSummary = () => {
+    const stage = checkpointStage;
+    setCheckpointStage(null);
+    if (stage === 1) setSlideIndex(5);
+    else if (stage === 2) setSlideIndex(15);
+    else if (stage === 3) {
+      const finalIdx = allJobSlides.findIndex((s) => s.id === "statusSign");
+      setSlideIndex(finalIdx >= 0 ? finalIdx : allJobSlides.length - 1);
+    }
   };
 
   if (activeTab === "printSheet") {
@@ -7063,7 +4179,6 @@ export default function App() {
         </div>
       )}
 
-      {/* जॉब शीट भरते समय ऊपर का हेडर, नेविगेशन और GPS पट्टी पूरी तरह छिपी रहेगी */}
       {!isFillingJobSheet && (
         <>
           <div
@@ -7132,6 +4247,7 @@ export default function App() {
                   setInspectedJob(null);
                   setLastSubmittedJob(null);
                   setSelectedStaffFolder(null);
+                  setExpandedJobNo(null);
                 }}
                 style={{
                   padding: "8px 14px",
@@ -7246,7 +4362,7 @@ export default function App() {
               📊 एडमिन &amp; ऑफिस स्टाफ पैनल (Office Login)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
-              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक, अटेंडेंस (रूट व मैप) देखें
+              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक, Staff IN/OUT, अटेंडेंस (रूट व मैप) देखें
             </p>
           </div>
         </div>
@@ -7649,12 +4765,13 @@ export default function App() {
                       handleOpenBlankNewJob();
                     }}
                     style={{
-                      padding: "12px",
+                      padding: "14px",
                       backgroundColor: "#166534",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "6px",
+                      borderRadius: "8px",
                       fontWeight: "bold",
+                      fontSize: "15px",
                       textAlign: "left",
                       cursor: "pointer",
                     }}
@@ -7665,12 +4782,13 @@ export default function App() {
                     type="button"
                     onClick={() => setStaffSubTab("onlineComplaints")}
                     style={{
-                      padding: "12px",
+                      padding: "14px",
                       backgroundColor: "#3b82f6",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "6px",
+                      borderRadius: "8px",
                       fontWeight: "bold",
+                      fontSize: "15px",
                       textAlign: "left",
                       cursor: "pointer",
                     }}
@@ -7681,12 +4799,13 @@ export default function App() {
                     type="button"
                     onClick={() => setStaffSubTab("pending")}
                     style={{
-                      padding: "12px",
+                      padding: "14px",
                       backgroundColor: "#f59e0b",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "6px",
+                      borderRadius: "8px",
                       fontWeight: "bold",
+                      fontSize: "15px",
                       textAlign: "left",
                       cursor: "pointer",
                     }}
@@ -7697,12 +4816,13 @@ export default function App() {
                     type="button"
                     onClick={() => setStaffSubTab("completed")}
                     style={{
-                      padding: "12px",
+                      padding: "14px",
                       backgroundColor: "#0ea5e9",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "6px",
+                      borderRadius: "8px",
                       fontWeight: "bold",
+                      fontSize: "15px",
                       textAlign: "left",
                       cursor: "pointer",
                     }}
@@ -7713,12 +4833,13 @@ export default function App() {
                     type="button"
                     onClick={() => setStaffSubTab("partPending")}
                     style={{
-                      padding: "12px",
+                      padding: "14px",
                       backgroundColor: "#8b5cf6",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "6px",
+                      borderRadius: "8px",
                       fontWeight: "bold",
+                      fontSize: "15px",
                       textAlign: "left",
                       cursor: "pointer",
                     }}
@@ -8010,875 +5131,1169 @@ export default function App() {
                 </div>
               )}
 
-              {/* ================================================================
-                  FOCUS MODE SLIDE-BY-SLIDE WIZARD
-                  (जब तक जॉब शीट सेव न हो, ऊपर कुछ भी नहीं दिखेगा—सिर्फ़ ← और →)
-                  ================================================================ */}
-              {staffSubTab === "newJobForm" && currentSlide && (
+              {/* FOCUS MODE LARGE SLIDE-BY-SLIDE WIZARD + 3 CHECKPOINT SUMMARIES */}
+              {staffSubTab === "newJobForm" && (
                 <div>
-                  {/* सबसे ऊपर केवल ← (Back) और → (Forward) तीर का नेविगेशन बार */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      background: "#ffffff",
-                      border: "1.5px solid #cbd5e1",
-                      borderRadius: "8px",
-                      padding: "8px 10px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (safeSlideIndex === 0) {
-                          setStaffSubTab("menu");
-                        } else {
-                          goPrevSlide();
-                        }
-                      }}
-                      title={safeSlideIndex === 0 ? "मेनू पर जाएं" : "पिछली स्लाइड"}
+                  {checkpointStage !== null ? (
+                    <div
                       style={{
-                        width: "46px",
-                        height: "40px",
-                        background: "#475569",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "20px",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        background: "#ffffff",
+                        border: "2px solid #166534",
+                        borderRadius: "14px",
+                        padding: "20px 16px",
+                        boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
                       }}
                     >
-                      ←
-                    </button>
-
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        color: "#1e3a8a",
-                      }}
-                    >
-                      {safeSlideIndex + 1} / {allJobSlides.length}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={goNextSlide}
-                      disabled={safeSlideIndex === allJobSlides.length - 1}
-                      title="अगली स्लाइड"
-                      style={{
-                        width: "46px",
-                        height: "40px",
-                        background:
-                          safeSlideIndex === allJobSlides.length - 1
-                            ? "#cbd5e1"
-                            : "#166534",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "20px",
-                        fontWeight: "bold",
-                        cursor:
-                          safeSlideIndex === allJobSlides.length - 1
-                            ? "not-allowed"
-                            : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      →
-                    </button>
-                  </div>
-
-                  {/* सक्रिय सिंगल-फील्ड स्लाइड कार्ड */}
-                  <div
-                    style={{
-                      background: "#ffffff",
-                      border: "1.5px solid #cbd5e1",
-                      borderRadius: "10px",
-                      padding: "18px 16px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        margin: "0 0 12px 0",
-                        color: "#0f172a",
-                        fontSize: "16px",
-                      }}
-                    >
-                      {safeSlideIndex + 1}. {currentSlide.title}:
-                    </h4>
-
-                    {/* A. SINGLE TEXT / TEL INPUT SLIDE */}
-                    {(currentSlide.type === "text" ||
-                      currentSlide.type === "tel") && (
                       <div
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "12px",
-                        }}
-                      >
-                        <input
-                          key={currentSlide.id}
-                          type={currentSlide.type}
-                          autoFocus
-                          maxLength={currentSlide.maxLength || undefined}
-                          placeholder={currentSlide.placeholder}
-                          value={currentSlide.value}
-                          onChange={(e) => currentSlide.setter(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              goNextSlide();
-                            }
-                          }}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={goNextSlide}
-                          style={{
-                            padding: "12px",
-                            background: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
-                          }}
-                        >
-                          आगे बढ़ें →
-                        </button>
-                      </div>
-                    )}
-
-                    {/* B. SINGLE TEXTAREA SLIDE */}
-                    {currentSlide.type === "textarea" && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "12px",
-                        }}
-                      >
-                        <textarea
-                          key={currentSlide.id}
-                          rows="3"
-                          autoFocus
-                          placeholder={currentSlide.placeholder}
-                          value={currentSlide.value}
-                          onChange={(e) => currentSlide.setter(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={goNextSlide}
-                          style={{
-                            padding: "12px",
-                            background: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
-                          }}
-                        >
-                          आगे बढ़ें →
-                        </button>
-                      </div>
-                    )}
-
-                    {/* C. SINGLE CHOICE BUTTONS SLIDE (टच करते ही अगली स्लाइड पर जाए) */}
-                    {currentSlide.type === "choice" && (
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            currentSlide.options.length > 4 ? "1fr 1fr" : "1fr",
-                          gap: "8px",
-                        }}
-                      >
-                        {currentSlide.options.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => {
-                              currentSlide.onSelect(opt.value);
-                              setSlideIndex((prev) =>
-                                Math.min(allJobSlides.length - 1, prev + 1)
-                              );
-                            }}
-                            style={choiceBtnStyle(
-                              currentSlide.value === opt.value
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* D. FAULT DETAILS SLIDE (+ कूलर कार्य प्रकार) */}
-                    {currentSlide.type === "faultStep" && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "12px",
-                        }}
-                      >
-                        {isAirCoolerSelected && (
-                          <div
-                            style={{
-                              background: "#f0f9ff",
-                              padding: "10px",
-                              borderRadius: "6px",
-                              border: "1px solid #bae6fd",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "12px",
-                                fontWeight: "bold",
-                                marginBottom: "6px",
-                                color: "#0369a1",
-                              }}
-                            >
-                              कार्य का प्रकार (Cooler Work Type):
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "10px",
-                                fontSize: "12px",
-                              }}
-                            >
-                              {[
-                                { id: "AMC", label: "AMC (वार्षिक रखरखाव)" },
-                                {
-                                  id: "Breakdown / Repair",
-                                  label: "ब्रेकडाउन / रिपेयर",
-                                },
-                                { id: "Installation", label: "Installation" },
-                                {
-                                  id: "Un-installation",
-                                  label: "Un-installation",
-                                },
-                                {
-                                  id: "Body Repair & Painting",
-                                  label: "बॉडी रिपेयर एवं पेंटिंग",
-                                },
-                              ].map((opt) => (
-                                <label
-                                  key={opt.id}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={coolerWorkTypes.includes(opt.id)}
-                                    onChange={() =>
-                                      toggleCoolerWorkType(opt.id)
-                                    }
-                                  />
-                                  {opt.label}
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <textarea
-                          rows="3"
-                          autoFocus
-                          placeholder={
-                            isAirCoolerSelected
-                              ? "जैसे: Motor Jam, Pump Not Working, General Service..."
-                              : isFridgeOrWCSelected
-                              ? "जैसे: Cooling Not Proper, Gas Leakage, Overflow / Tap Fault..."
-                              : "जैसे: No Cooling, Water Leakage, General Service..."
-                          }
-                          value={faultDetails}
-                          onChange={(e) => setFaultDetails(e.target.value)}
-                          style={{ ...inputStyle, width: "100%" }}
-                        />
-
-                        <button
-                          type="button"
-                          onClick={goNextSlide}
-                          style={{
-                            padding: "12px",
-                            background: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
-                          }}
-                        >
-                          आगे बढ़ें →
-                        </button>
-                      </div>
-                    )}
-
-                    {/* E. WORK DONE, SPARE PARTS & BILLING SLIDE */}
-                    {currentSlide.type === "workBillingStep" && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "12px",
+                          background: "#dcfce7",
+                          color: "#14532d",
+                          padding: "12px 14px",
+                          borderRadius: "10px",
+                          marginBottom: "16px",
                         }}
                       >
                         <div
                           style={{
-                            background: "#f8fafc",
-                            padding: "10px",
-                            borderRadius: "8px",
-                            border: "1px solid #cbd5e1",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px",
-                          }}
-                        >
-                          <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                            किया गया कार्य (Work Done):
-                          </label>
-                          <textarea
-                            rows="2"
-                            placeholder={
-                              isAirCoolerSelected
-                                ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
-                                : "किया गया कार्य लिखें..."
-                            }
-                            value={workDone}
-                            onChange={(e) => setWorkDone(e.target.value)}
-                            style={{ ...inputStyle, width: "100%" }}
-                          />
-                        </div>
-
-                        <div
-                          style={{
-                            background: "#f8fafc",
-                            padding: "10px",
-                            borderRadius: "8px",
-                            border: "1px solid #cbd5e1",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                          }}
-                        >
-                          <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                            स्पेयर पार्ट विकल्प:
-                          </label>
-                          <select
-                            value={sparePartOption}
-                            onChange={(e) => setSparePartOption(e.target.value)}
-                            style={{ ...inputStyle, width: "100%" }}
-                          >
-                            <option value="Used Part">
-                              Used Part (इस्तेमाल किया गया)
-                            </option>
-                            <option value="Pending Part">
-                              Pending Part (पार्ट मंगवाना है)
-                            </option>
-                            <option value="No Part Used">
-                              No Part Used (कोई पार्ट नहीं लगा)
-                            </option>
-                          </select>
-
-                          {isUsedPartSelected ? (
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: "bold",
-                                  marginBottom: "6px",
-                                  color: "#334155",
-                                }}
-                              >
-                                स्पेयर पार्ट का नाम, क्वांटिटी और अमाउंट:
-                              </div>
-                              {usedParts.map((item, idx) => {
-                                const rowTotal =
-                                  (parseFloat(item.qty) || 0) *
-                                  (parseFloat(item.amount) || 0);
-                                return (
-                                  <div
-                                    key={idx}
-                                    style={{
-                                      marginBottom: "8px",
-                                      paddingBottom: "6px",
-                                      borderBottom: "1px dashed #cbd5e1",
-                                    }}
-                                  >
-                                    <div style={{ display: "flex", gap: "6px" }}>
-                                      <input
-                                        type="text"
-                                        placeholder={
-                                          isAirCoolerSelected
-                                            ? "जैसे: Water Pump, Cooling Pad, Fan Motor..."
-                                            : isFridgeOrWCSelected
-                                            ? "जैसे: Tap, Float Valve, Relay, OLP, Gas..."
-                                            : "स्पेयर पार्ट का नाम"
-                                        }
-                                        value={item.partName}
-                                        onChange={(e) =>
-                                          updatePartRow(
-                                            idx,
-                                            "partName",
-                                            e.target.value
-                                          )
-                                        }
-                                        style={{
-                                          ...inputStyle,
-                                          flex: 2,
-                                          minWidth: 0,
-                                        }}
-                                      />
-                                      <input
-                                        type="number"
-                                        min="1"
-                                        placeholder="Qty"
-                                        value={item.qty}
-                                        onChange={(e) =>
-                                          updatePartRow(
-                                            idx,
-                                            "qty",
-                                            e.target.value
-                                          )
-                                        }
-                                        style={{
-                                          ...inputStyle,
-                                          flex: 0.7,
-                                          minWidth: 0,
-                                        }}
-                                      />
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="Rate ₹"
-                                        value={item.amount}
-                                        onChange={(e) =>
-                                          updatePartRow(
-                                            idx,
-                                            "amount",
-                                            e.target.value
-                                          )
-                                        }
-                                        style={{
-                                          ...inputStyle,
-                                          flex: 1,
-                                          minWidth: 0,
-                                        }}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => removePartRow(idx)}
-                                        style={{
-                                          padding: "6px 10px",
-                                          background: "#dc2626",
-                                          color: "#fff",
-                                          border: "none",
-                                          borderRadius: "4px",
-                                          fontWeight: "bold",
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        ✕
-                                      </button>
-                                    </div>
-                                    <div
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#475569",
-                                        textAlign: "right",
-                                        marginTop: "3px",
-                                      }}
-                                    >
-                                      योग: ₹{rowTotal.toFixed(2)}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={addPartRow}
-                                  style={{
-                                    padding: "6px 12px",
-                                    background: "#1e3a8a",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    fontSize: "12px",
-                                    fontWeight: "bold",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  + पार्ट जोड़ें
-                                </button>
-                                <strong style={{ fontSize: "13px" }}>
-                                  पार्ट्स कुल: ₹{usedPartsTotal.toFixed(2)}
-                                </strong>
-                              </div>
-                            </div>
-                          ) : (
-                            sparePartOption === "Pending Part" && (
-                              <div style={{ display: "flex", gap: "5px" }}>
-                                <input
-                                  type="text"
-                                  placeholder="Part Name"
-                                  value={sparePartName}
-                                  onChange={(e) =>
-                                    setSparePartName(e.target.value)
-                                  }
-                                  style={{ ...inputStyle, flex: 1 }}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Model / No."
-                                  value={sparePartModel}
-                                  onChange={(e) =>
-                                    setSparePartModel(e.target.value)
-                                  }
-                                  style={{ ...inputStyle, flex: 1 }}
-                                />
-                              </div>
-                            )
-                          )}
-                        </div>
-
-                        <div
-                          style={{
-                            background: "#f0fdf4",
-                            padding: "12px",
-                            borderRadius: "8px",
-                            border: "1px solid #86efac",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                          }}
-                        >
-                          <label
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: "bold",
-                              color: "#166534",
-                            }}
-                          >
-                            सर्विस / अन्य चार्ज (₹):
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="0.00"
-                            value={serviceChargeInput}
-                            onChange={(e) =>
-                              setServiceChargeInput(e.target.value)
-                            }
-                            style={{
-                              ...inputStyle,
-                              width: "100%",
-                              fontWeight: "bold",
-                            }}
-                          />
-
-                          <div
-                            style={{
-                              padding: "10px",
-                              borderRadius: "6px",
-                              background: "#ffffff",
-                              border: "1px solid #cbd5e1",
-                              fontSize: "13px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                marginBottom: "4px",
-                              }}
-                            >
-                              <span>स्पेयर पार्ट्स कुल:</span>
-                              <strong>₹{usedPartsTotal.toFixed(2)}</strong>
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                marginBottom: "4px",
-                              }}
-                            >
-                              <span>सर्विस / अन्य चार्ज:</span>
-                              <strong>₹{serviceChargeVal.toFixed(2)}</strong>
-                            </div>
-                            <hr style={{ margin: "6px 0" }} />
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontSize: "15px",
-                                color: "#166534",
-                              }}
-                            >
-                              <strong>टोटल बिल (Total Amount):</strong>
-                              <strong>₹{grandTotalBill.toFixed(2)}</strong>
-                            </div>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={goNextSlide}
-                          style={{
-                            padding: "12px",
-                            backgroundColor: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
+                            fontSize: "13px",
                             fontWeight: "bold",
-                            cursor: "pointer",
+                            textTransform: "uppercase",
                           }}
                         >
-                          आगे बढ़ें →
-                        </button>
-                      </div>
-                    )}
-
-                    {/* F. FINAL STATUS, PHOTOS & SIGNATURE SLIDE */}
-                    {currentSlide.type === "statusSignStep" && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "10px",
-                        }}
-                      >
-                        <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                          जॉब स्टेटस:
-                        </label>
-                        <select
-                          value={jobStatusType}
-                          onChange={(e) => setJobStatusType(e.target.value)}
-                          style={inputStyle}
-                        >
-                          <option value="Completed">Completed (पूर्ण)</option>
-                          <option value="Pending">Pending (लंबित)</option>
-                        </select>
-
-                        {jobStatusType === "Pending" && (
-                          <>
-                            <label
-                              style={{ fontSize: "12px", fontWeight: "bold" }}
-                            >
-                              पेंडिंग का कारण:
-                            </label>
-                            <select
-                              value={pendingSubOption}
-                              onChange={(e) =>
-                                setPendingSubOption(e.target.value)
-                              }
-                              style={inputStyle}
-                            >
-                              <option value="Part Pending">
-                                Part Pending (पार्ट प्रतीक्षित)
-                              </option>
-                              <option value="Repeat Complaint">
-                                Repeat Complaint
-                              </option>
-                              <option value="Customer Busy">
-                                Customer Busy
-                              </option>
-                            </select>
-                          </>
-                        )}
-
-                        <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                          ग्राहक की टिप्पणी / फीडबैक (Customer Remark):
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="जैसे: Working Fine / Good Service"
-                          value={customerFeedback}
-                          onChange={(e) => setCustomerFeedback(e.target.value)}
-                          style={inputStyle}
-                        />
-
-                        <label style={{ fontSize: "12px", fontWeight: "bold" }}>
-                          साइट फोटो अपलोड करें (Single / Multiple):
-                        </label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          multiple
-                          onChange={(e) => {
-                            handleFileChange(e);
-                            handleSitePhotosChange(e);
-                          }}
-                          style={{ padding: "6px" }}
-                        />
-
-                        {uploadingPhotos && (
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              color: "#0f766e",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            फोटो अपलोड हो रही है...
-                          </div>
-                        )}
-
-                        {sitePhotos.length > 0 && (
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {sitePhotos.map((p, idx) => (
-                              <div key={idx} style={{ position: "relative" }}>
-                                <img
-                                  src={p.previewUrl}
-                                  alt={`फोटो ${idx + 1}`}
-                                  style={{
-                                    width: "76px",
-                                    height: "76px",
-                                    objectFit: "cover",
-                                    borderRadius: "6px",
-                                    border: "1px solid #cbd5e1",
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removeSitePhoto(idx)}
-                                  style={{
-                                    position: "absolute",
-                                    top: "-6px",
-                                    right: "-6px",
-                                    width: "20px",
-                                    height: "20px",
-                                    borderRadius: "50%",
-                                    border: "none",
-                                    background: "#dc2626",
-                                    color: "#fff",
-                                    fontSize: "11px",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <label
+                          {checkpointStage === 1 &&
+                            "✅ चरण 1 पूर्ण • पॉइंट 1 से 5 तक की समरी"}
+                          {checkpointStage === 2 &&
+                            "✅ चरण 2 पूर्ण • पॉइंट 1 से 15 तक की पूरी समरी"}
+                          {checkpointStage === 3 &&
+                            "✅ चरण 3 पूर्ण • पॉइंट 1 से स्पेयर पार्ट्स तक की पूरी समरी"}
+                        </div>
+                        <div
                           style={{
-                            fontSize: "12px",
+                            fontSize: "19px",
                             fontWeight: "bold",
                             marginTop: "4px",
                           }}
                         >
-                          ग्राहक / साइट इंचार्ज के हस्ताक्षर (Customer Signature):
-                        </label>
+                          भरी गई जानकारी की जाँच करें (Summary Preview)
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          border: "1.5px solid #cbd5e1",
+                          borderRadius: "10px",
+                          overflow: "hidden",
+                          marginBottom: "18px",
+                        }}
+                      >
+                        {(() => {
+                          const endSliceIndex =
+                            checkpointStage === 1
+                              ? 5
+                              : checkpointStage === 2
+                              ? 15
+                              : allJobSlides.findIndex(
+                                  (s) => s.id === "workBilling"
+                                ) + 1;
+
+                          return allJobSlides
+                            .slice(0, endSliceIndex)
+                            .map((s, idx) => (
+                              <div
+                                key={s.id}
+                                onClick={() => {
+                                  setCheckpointStage(null);
+                                  setSlideIndex(idx);
+                                }}
+                                style={{
+                                  padding: "12px 14px",
+                                  borderBottom:
+                                    idx < endSliceIndex - 1
+                                      ? "1px solid #e2e8f0"
+                                      : "none",
+                                  background:
+                                    idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "flex-start",
+                                  gap: "12px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: "14px",
+                                    color: "#475569",
+                                    fontWeight: "bold",
+                                    flex: 1,
+                                  }}
+                                >
+                                  {idx + 1}. {s.title}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: "15px",
+                                    color: "#0f172a",
+                                    fontWeight: "bold",
+                                    textAlign: "right",
+                                    flex: 1,
+                                  }}
+                                >
+                                  {getSlideDisplayValue(s)}
+                                </div>
+                              </div>
+                            ));
+                        })()}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "12px",
+                          flexWrap: "wrap",
+                        }}
+                      >
                         <button
                           type="button"
-                          onClick={() => setIsSignatureModalOpen(true)}
+                          onClick={handleEditFromSummary}
                           style={{
-                            padding: "14px",
-                            backgroundColor: savedSignatureURL
-                              ? "#0284c7"
-                              : "#2563eb",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "8px",
+                            flex: 1,
+                            minWidth: "140px",
+                            padding: "16px",
+                            background: "#f1f5f9",
+                            color: "#0f172a",
+                            border: "2px solid #94a3b8",
+                            borderRadius: "10px",
+                            fontSize: "17px",
                             fontWeight: "bold",
-                            fontSize: "14px",
                             cursor: "pointer",
                           }}
                         >
-                          {savedSignatureURL
-                            ? "✍️ हस्ताक्षर बदलें (Edit Full-Screen Signature)"
-                            : "✍️ कस्टमर हस्ताक्षर करें (Open Full Screen)"}
+                          ✏️ सुधार करें (Edit)
                         </button>
 
-                        {savedSignatureURL && (
-                          <div
+                        <button
+                          type="button"
+                          onClick={handleContinueFromSummary}
+                          style={{
+                            flex: 2,
+                            minWidth: "200px",
+                            padding: "16px",
+                            background: "#166534",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "10px",
+                            fontSize: "18px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                            boxShadow: "0 4px 12px rgba(22,101,52,0.25)",
+                          }}
+                        >
+                          {checkpointStage === 1 && "आगे बढ़ें (पॉइंट 6 से) →"}
+                          {checkpointStage === 2 && "आगे बढ़ें (पॉइंट 16 से) →"}
+                          {checkpointStage === 3 &&
+                            "आगे बढ़ें (फोटो व हस्ताक्षर) →"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    currentSlide && (
+                      <div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            background: "#ffffff",
+                            border: "2px solid #cbd5e1",
+                            borderRadius: "12px",
+                            padding: "10px 14px",
+                            marginBottom: "14px",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (safeSlideIndex === 0) {
+                                setStaffSubTab("menu");
+                              } else {
+                                goPrevSlide();
+                              }
+                            }}
+                            title={
+                              safeSlideIndex === 0
+                                ? "मेनू पर जाएं"
+                                : "पिछली स्लाइड"
+                            }
                             style={{
-                              border: "1px solid #cbd5e1",
-                              background: "#f8fafc",
-                              padding: "8px",
-                              borderRadius: "6px",
-                              textAlign: "center",
+                              width: "56px",
+                              height: "48px",
+                              background: "#475569",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "10px",
+                              fontSize: "24px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
                           >
+                            ←
+                          </button>
+
+                          <div style={{ textAlign: "center" }}>
                             <div
                               style={{
-                                fontSize: "11px",
-                                color: "#166534",
-                                marginBottom: "4px",
+                                fontSize: "18px",
+                                fontWeight: "bold",
+                                color: "#1e3a8a",
+                              }}
+                            >
+                              पॉइंट {safeSlideIndex + 1} / {allJobSlides.length}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#64748b",
                                 fontWeight: "bold",
                               }}
                             >
-                              ✅ कस्टमर का हस्ताक्षर सेव हो चुका है:
+                              {safeSlideIndex < 5
+                                ? "चरण 1 (1–5)"
+                                : safeSlideIndex < 15
+                                ? "चरण 2 (6–15)"
+                                : "चरण 3 (16 से स्पेयर पार्ट्स तक)"}
                             </div>
-                            <img
-                              src={savedSignatureURL}
-                              alt="Saved Signature Preview"
-                              style={{
-                                maxHeight: "80px",
-                                border: "1px solid #e2e8f0",
-                                background: "#fff",
-                              }}
-                            />
                           </div>
-                        )}
 
-                        <button
-                          type="button"
-                          onClick={handleJobSubmit}
+                          <button
+                            type="button"
+                            onClick={goNextSlide}
+                            disabled={
+                              safeSlideIndex === allJobSlides.length - 1
+                            }
+                            title="अगली स्लाइड"
+                            style={{
+                              width: "56px",
+                              height: "48px",
+                              background:
+                                safeSlideIndex === allJobSlides.length - 1
+                                  ? "#cbd5e1"
+                                  : "#166534",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "10px",
+                              fontSize: "24px",
+                              fontWeight: "bold",
+                              cursor:
+                                safeSlideIndex === allJobSlides.length - 1
+                                  ? "not-allowed"
+                                  : "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            →
+                          </button>
+                        </div>
+
+                        <div
                           style={{
-                            marginTop: "10px",
-                            padding: "13px",
-                            backgroundColor: "#166534",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontWeight: "bold",
-                            fontSize: "14px",
-                            cursor: "pointer",
+                            background: "#ffffff",
+                            border: "2px solid #cbd5e1",
+                            borderRadius: "14px",
+                            padding: "26px 20px",
+                            minHeight: "320px",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
                           }}
                         >
-                          ✅ जॉब शीट फाइनल सेव करें
-                        </button>
+                          <div>
+                            <div
+                              style={{
+                                display: "inline-block",
+                                background: "#e0f2fe",
+                                color: "#0369a1",
+                                padding: "5px 12px",
+                                borderRadius: "20px",
+                                fontSize: "13px",
+                                fontWeight: "bold",
+                                marginBottom: "10px",
+                              }}
+                            >
+                              पॉइंट {safeSlideIndex + 1}
+                            </div>
+
+                            <h3
+                              style={{
+                                margin: "0 0 18px 0",
+                                color: "#0f172a",
+                                fontSize: "22px",
+                                lineHeight: "1.35",
+                              }}
+                            >
+                              {currentSlide.title}
+                            </h3>
+
+                            {(currentSlide.type === "text" ||
+                              currentSlide.type === "tel") && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "18px",
+                                }}
+                              >
+                                <input
+                                  key={currentSlide.id}
+                                  type={currentSlide.type}
+                                  autoFocus
+                                  maxLength={currentSlide.maxLength || undefined}
+                                  placeholder={currentSlide.placeholder}
+                                  value={currentSlide.value}
+                                  onChange={(e) =>
+                                    currentSlide.setter(e.target.value)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      goNextSlide();
+                                    }
+                                  }}
+                                  style={largeSlideInputStyle}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={goNextSlide}
+                                  style={{
+                                    padding: "16px",
+                                    background: "#166534",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontSize: "18px",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {safeSlideIndex === 4
+                                    ? "1 से 5 की पूरी समरी देखें →"
+                                    : safeSlideIndex === 14
+                                    ? "1 से 15 की पूरी समरी देखें →"
+                                    : "आगे बढ़ें →"}
+                                </button>
+                              </div>
+                            )}
+
+                            {currentSlide.type === "textarea" && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "18px",
+                                }}
+                              >
+                                <textarea
+                                  key={currentSlide.id}
+                                  rows="4"
+                                  autoFocus
+                                  placeholder={currentSlide.placeholder}
+                                  value={currentSlide.value}
+                                  onChange={(e) =>
+                                    currentSlide.setter(e.target.value)
+                                  }
+                                  style={largeSlideInputStyle}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={goNextSlide}
+                                  style={{
+                                    padding: "16px",
+                                    background: "#166534",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontSize: "18px",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {safeSlideIndex === 4
+                                    ? "1 से 5 की पूरी समरी देखें →"
+                                    : safeSlideIndex === 14
+                                    ? "1 से 15 की पूरी समरी देखें →"
+                                    : "आगे बढ़ें →"}
+                                </button>
+                              </div>
+                            )}
+
+                            {currentSlide.type === "choice" && (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    currentSlide.options.length > 4
+                                      ? "1fr 1fr"
+                                      : "1fr",
+                                  gap: "12px",
+                                }}
+                              >
+                                {currentSlide.options.map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => {
+                                      currentSlide.onSelect(opt.value);
+                                      advanceAfterIndex(safeSlideIndex);
+                                    }}
+                                    style={choiceBtnStyle(
+                                      currentSlide.value === opt.value
+                                    )}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            {currentSlide.type === "faultStep" && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "16px",
+                                }}
+                              >
+                                {isAirCoolerSelected && (
+                                  <div
+                                    style={{
+                                      background: "#f0f9ff",
+                                      padding: "14px",
+                                      borderRadius: "10px",
+                                      border: "1.5px solid #bae6fd",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: "15px",
+                                        fontWeight: "bold",
+                                        marginBottom: "8px",
+                                        color: "#0369a1",
+                                      }}
+                                    >
+                                      कार्य का प्रकार (Cooler Work Type):
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: "12px",
+                                        fontSize: "15px",
+                                      }}
+                                    >
+                                      {[
+                                        {
+                                          id: "AMC",
+                                          label: "AMC (वार्षिक रखरखाव)",
+                                        },
+                                        {
+                                          id: "Breakdown / Repair",
+                                          label: "ब्रेकडाउन / रिपेयर",
+                                        },
+                                        {
+                                          id: "Installation",
+                                          label: "Installation",
+                                        },
+                                        {
+                                          id: "Un-installation",
+                                          label: "Un-installation",
+                                        },
+                                        {
+                                          id: "Body Repair & Painting",
+                                          label: "बॉडी रिपेयर एवं पेंटिंग",
+                                        },
+                                      ].map((opt) => (
+                                        <label
+                                          key={opt.id}
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            cursor: "pointer",
+                                          }}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            style={{
+                                              width: "18px",
+                                              height: "18px",
+                                            }}
+                                            checked={coolerWorkTypes.includes(
+                                              opt.id
+                                            )}
+                                            onChange={() =>
+                                              toggleCoolerWorkType(opt.id)
+                                            }
+                                          />
+                                          {opt.label}
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <textarea
+                                  rows="4"
+                                  autoFocus
+                                  placeholder={
+                                    isAirCoolerSelected
+                                      ? "जैसे: Motor Jam, Pump Not Working, General Service..."
+                                      : isFridgeOrWCSelected
+                                      ? "जैसे: Cooling Not Proper, Gas Leakage, Overflow / Tap Fault..."
+                                      : "जैसे: No Cooling, Water Leakage, General Service..."
+                                  }
+                                  value={faultDetails}
+                                  onChange={(e) =>
+                                    setFaultDetails(e.target.value)
+                                  }
+                                  style={largeSlideInputStyle}
+                                />
+
+                                <button
+                                  type="button"
+                                  onClick={goNextSlide}
+                                  style={{
+                                    padding: "16px",
+                                    background: "#166534",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontSize: "18px",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  आगे बढ़ें →
+                                </button>
+                              </div>
+                            )}
+
+                            {currentSlide.type === "workBillingStep" && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "14px",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    background: "#f8fafc",
+                                    padding: "12px",
+                                    borderRadius: "10px",
+                                    border: "1.5px solid #cbd5e1",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <label
+                                    style={{
+                                      fontSize: "15px",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    किया गया कार्य (Work Done):
+                                  </label>
+                                  <textarea
+                                    rows="2"
+                                    placeholder={
+                                      isAirCoolerSelected
+                                        ? "कूलर जनरल सर्विस एवं केमिकल/पानी से सफाई"
+                                        : "किया गया कार्य लिखें..."
+                                    }
+                                    value={workDone}
+                                    onChange={(e) =>
+                                      setWorkDone(e.target.value)
+                                    }
+                                    style={inputStyle}
+                                  />
+                                </div>
+
+                                <div
+                                  style={{
+                                    background: "#f8fafc",
+                                    padding: "12px",
+                                    borderRadius: "10px",
+                                    border: "1.5px solid #cbd5e1",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "10px",
+                                  }}
+                                >
+                                  <label
+                                    style={{
+                                      fontSize: "15px",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    स्पेयर पार्ट विकल्प:
+                                  </label>
+                                  <select
+                                    value={sparePartOption}
+                                    onChange={(e) =>
+                                      setSparePartOption(e.target.value)
+                                    }
+                                    style={inputStyle}
+                                  >
+                                    <option value="Used Part">
+                                      Used Part (इस्तेमाल किया गया)
+                                    </option>
+                                    <option value="Pending Part">
+                                      Pending Part (पार्ट मंगवाना है)
+                                    </option>
+                                    <option value="No Part Used">
+                                      No Part Used (कोई पार्ट नहीं लगा)
+                                    </option>
+                                  </select>
+
+                                  {isUsedPartSelected ? (
+                                    <div>
+                                      <div
+                                        style={{
+                                          fontSize: "14px",
+                                          fontWeight: "bold",
+                                          marginBottom: "8px",
+                                          color: "#334155",
+                                        }}
+                                      >
+                                        स्पेयर पार्ट का नाम, क्वांटिटी और अमाउंट:
+                                      </div>
+                                      {usedParts.map((item, idx) => {
+                                        const rowTotal =
+                                          (parseFloat(item.qty) || 0) *
+                                          (parseFloat(item.amount) || 0);
+                                        return (
+                                          <div
+                                            key={idx}
+                                            style={{
+                                              marginBottom: "10px",
+                                              paddingBottom: "8px",
+                                              borderBottom:
+                                                "1px dashed #cbd5e1",
+                                            }}
+                                          >
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                gap: "6px",
+                                              }}
+                                            >
+                                              <input
+                                                type="text"
+                                                placeholder={
+                                                  isAirCoolerSelected
+                                                    ? "जैसे: Water Pump, Cooling Pad, Fan Motor..."
+                                                    : isFridgeOrWCSelected
+                                                    ? "जैसे: Tap, Float Valve, Relay, OLP, Gas..."
+                                                    : "स्पेयर पार्ट का नाम"
+                                                }
+                                                value={item.partName}
+                                                onChange={(e) =>
+                                                  updatePartRow(
+                                                    idx,
+                                                    "partName",
+                                                    e.target.value
+                                                  )
+                                                }
+                                                style={{
+                                                  ...inputStyle,
+                                                  flex: 2,
+                                                  minWidth: 0,
+                                                }}
+                                              />
+                                              <input
+                                                type="number"
+                                                min="1"
+                                                placeholder="Qty"
+                                                value={item.qty}
+                                                onChange={(e) =>
+                                                  updatePartRow(
+                                                    idx,
+                                                    "qty",
+                                                    e.target.value
+                                                  )
+                                                }
+                                                style={{
+                                                  ...inputStyle,
+                                                  flex: 0.7,
+                                                  minWidth: 0,
+                                                }}
+                                              />
+                                              <input
+                                                type="number"
+                                                min="0"
+                                                placeholder="Rate ₹"
+                                                value={item.amount}
+                                                onChange={(e) =>
+                                                  updatePartRow(
+                                                    idx,
+                                                    "amount",
+                                                    e.target.value
+                                                  )
+                                                }
+                                                style={{
+                                                  ...inputStyle,
+                                                  flex: 1,
+                                                  minWidth: 0,
+                                                }}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  removePartRow(idx)
+                                                }
+                                                style={{
+                                                  padding: "8px 12px",
+                                                  background: "#dc2626",
+                                                  color: "#fff",
+                                                  border: "none",
+                                                  borderRadius: "6px",
+                                                  fontWeight: "bold",
+                                                  cursor: "pointer",
+                                                }}
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+                                            <div
+                                              style={{
+                                                fontSize: "13px",
+                                                color: "#475569",
+                                                textAlign: "right",
+                                                marginTop: "4px",
+                                                fontWeight: "bold",
+                                              }}
+                                            >
+                                              योग: ₹{rowTotal.toFixed(2)}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                        }}
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={addPartRow}
+                                          style={{
+                                            padding: "8px 14px",
+                                            background: "#1e3a8a",
+                                            color: "#fff",
+                                            border: "none",
+                                            borderRadius: "6px",
+                                            fontSize: "14px",
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                          }}
+                                        >
+                                          + पार्ट जोड़ें
+                                        </button>
+                                        <strong style={{ fontSize: "15px" }}>
+                                          पार्ट्स कुल: ₹
+                                          {usedPartsTotal.toFixed(2)}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    sparePartOption === "Pending Part" && (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: "8px",
+                                        }}
+                                      >
+                                        <input
+                                          type="text"
+                                          placeholder="Part Name"
+                                          value={sparePartName}
+                                          onChange={(e) =>
+                                            setSparePartName(e.target.value)
+                                          }
+                                          style={{ ...inputStyle, flex: 1 }}
+                                        />
+                                        <input
+                                          type="text"
+                                          placeholder="Model / No."
+                                          value={sparePartModel}
+                                          onChange={(e) =>
+                                            setSparePartModel(e.target.value)
+                                          }
+                                          style={{ ...inputStyle, flex: 1 }}
+                                        />
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+
+                                <div
+                                  style={{
+                                    background: "#f0fdf4",
+                                    padding: "14px",
+                                    borderRadius: "10px",
+                                    border: "1.5px solid #86efac",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "10px",
+                                  }}
+                                >
+                                  <label
+                                    style={{
+                                      fontSize: "15px",
+                                      fontWeight: "bold",
+                                      color: "#166534",
+                                    }}
+                                  >
+                                    सर्विस / अन्य चार्ज (₹):
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0.00"
+                                    value={serviceChargeInput}
+                                    onChange={(e) =>
+                                      setServiceChargeInput(e.target.value)
+                                    }
+                                    style={{
+                                      ...inputStyle,
+                                      width: "100%",
+                                      fontWeight: "bold",
+                                    }}
+                                  />
+
+                                  <div
+                                    style={{
+                                      padding: "12px",
+                                      borderRadius: "8px",
+                                      background: "#ffffff",
+                                      border: "1px solid #cbd5e1",
+                                      fontSize: "15px",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginBottom: "4px",
+                                      }}
+                                    >
+                                      <span>स्पेयर पार्ट्स कुल:</span>
+                                      <strong>
+                                        ₹{usedPartsTotal.toFixed(2)}
+                                      </strong>
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginBottom: "4px",
+                                      }}
+                                    >
+                                      <span>सर्विस / अन्य चार्ज:</span>
+                                      <strong>
+                                        ₹{serviceChargeVal.toFixed(2)}
+                                      </strong>
+                                    </div>
+                                    <hr style={{ margin: "6px 0" }} />
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        fontSize: "17px",
+                                        color: "#166534",
+                                      }}
+                                    >
+                                      <strong>टोटल बिल (Total Amount):</strong>
+                                      <strong>
+                                        ₹{grandTotalBill.toFixed(2)}
+                                      </strong>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={goNextSlide}
+                                  style={{
+                                    padding: "16px",
+                                    backgroundColor: "#166534",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontSize: "18px",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  अब तक भरी पूरी समरी देखें →
+                                </button>
+                              </div>
+                            )}
+
+                            {currentSlide.type === "statusSignStep" && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "12px",
+                                }}
+                              >
+                                <label
+                                  style={{
+                                    fontSize: "15px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  जॉब स्टेटस:
+                                </label>
+                                <select
+                                  value={jobStatusType}
+                                  onChange={(e) =>
+                                    setJobStatusType(e.target.value)
+                                  }
+                                  style={inputStyle}
+                                >
+                                  <option value="Completed">
+                                    Completed (पूर्ण)
+                                  </option>
+                                  <option value="Pending">
+                                    Pending (लंबित)
+                                  </option>
+                                </select>
+
+                                {jobStatusType === "Pending" && (
+                                  <>
+                                    <label
+                                      style={{
+                                        fontSize: "15px",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      पेंडिंग का कारण:
+                                    </label>
+                                    <select
+                                      value={pendingSubOption}
+                                      onChange={(e) =>
+                                        setPendingSubOption(e.target.value)
+                                      }
+                                      style={inputStyle}
+                                    >
+                                      <option value="Part Pending">
+                                        Part Pending (पार्ट प्रतीक्षित)
+                                      </option>
+                                      <option value="Repeat Complaint">
+                                        Repeat Complaint
+                                      </option>
+                                      <option value="Customer Busy">
+                                        Customer Busy
+                                      </option>
+                                    </select>
+                                  </>
+                                )}
+
+                                <label
+                                  style={{
+                                    fontSize: "15px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  ग्राहक की टिप्पणी / फीडबैक (Customer Remark):
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="जैसे: Working Fine / Good Service"
+                                  value={customerFeedback}
+                                  onChange={(e) =>
+                                    setCustomerFeedback(e.target.value)
+                                  }
+                                  style={inputStyle}
+                                />
+
+                                <label
+                                  style={{
+                                    fontSize: "15px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  साइट फोटो अपलोड करें (Single / Multiple):
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  multiple
+                                  onChange={(e) => {
+                                    handleFileChange(e);
+                                    handleSitePhotosChange(e);
+                                  }}
+                                  style={{ padding: "8px" }}
+                                />
+
+                                {uploadingPhotos && (
+                                  <div
+                                    style={{
+                                      fontSize: "14px",
+                                      color: "#0f766e",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    फोटो अपलोड हो रही है...
+                                  </div>
+                                )}
+
+                                {sitePhotos.length > 0 && (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "8px",
+                                      flexWrap: "wrap",
+                                    }}
+                                  >
+                                    {sitePhotos.map((p, idx) => (
+                                      <div
+                                        key={idx}
+                                        style={{ position: "relative" }}
+                                      >
+                                        <img
+                                          src={p.previewUrl}
+                                          alt={`फोटो ${idx + 1}`}
+                                          style={{
+                                            width: "80px",
+                                            height: "80px",
+                                            objectFit: "cover",
+                                            borderRadius: "8px",
+                                            border: "1px solid #cbd5e1",
+                                          }}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => removeSitePhoto(idx)}
+                                          style={{
+                                            position: "absolute",
+                                            top: "-6px",
+                                            right: "-6px",
+                                            width: "22px",
+                                            height: "22px",
+                                            borderRadius: "50%",
+                                            border: "none",
+                                            background: "#dc2626",
+                                            color: "#fff",
+                                            fontSize: "12px",
+                                            cursor: "pointer",
+                                          }}
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <label
+                                  style={{
+                                    fontSize: "15px",
+                                    fontWeight: "bold",
+                                    marginTop: "4px",
+                                  }}
+                                >
+                                  ग्राहक / साइट इंचार्ज के हस्ताक्षर (Customer Signature):
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsSignatureModalOpen(true)}
+                                  style={{
+                                    padding: "16px",
+                                    backgroundColor: savedSignatureURL
+                                      ? "#0284c7"
+                                      : "#2563eb",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontWeight: "bold",
+                                    fontSize: "16px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {savedSignatureURL
+                                    ? "✍️ हस्ताक्षर बदलें (Edit Full-Screen Signature)"
+                                    : "✍️ कस्टमर हस्ताक्षर करें (Open Full Screen)"}
+                                </button>
+
+                                {savedSignatureURL && (
+                                  <div
+                                    style={{
+                                      border: "1px solid #cbd5e1",
+                                      background: "#f8fafc",
+                                      padding: "10px",
+                                      borderRadius: "8px",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: "13px",
+                                        color: "#166534",
+                                        marginBottom: "6px",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      ✅ कस्टमर का हस्ताक्षर सेव हो चुका है:
+                                    </div>
+                                    <img
+                                      src={savedSignatureURL}
+                                      alt="Saved Signature Preview"
+                                      style={{
+                                        maxHeight: "85px",
+                                        border: "1px solid #e2e8f0",
+                                        background: "#fff",
+                                      }}
+                                    />
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={handleJobSubmit}
+                                  style={{
+                                    marginTop: "12px",
+                                    padding: "16px",
+                                    backgroundColor: "#166534",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontWeight: "bold",
+                                    fontSize: "18px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  ✅ जॉब शीट फाइनल सेव करें
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    )
+                  )}
                 </div>
               )}
             </div>
@@ -8957,6 +6372,7 @@ export default function App() {
                       onClick={() => {
                         setAdminMainTab("jobs");
                         setSelectedStaffFolder(null);
+                        setExpandedJobNo(null);
                       }}
                       style={{
                         padding: "10px",
@@ -9013,6 +6429,28 @@ export default function App() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => {
+                        setAdminMainTab("staffInOut");
+                        setAttSelectedYear(null);
+                        setAttSelectedMonth(null);
+                        setAttSelectedStaffPhone(null);
+                      }}
+                      style={{
+                        padding: "10px",
+                        backgroundColor:
+                          adminMainTab === "staffInOut" ? "#166534" : "#e2e8f0",
+                        color: adminMainTab === "staffInOut" ? "#fff" : "#000",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ⏱️ Staff IN/OUT ({pendingLogoutRecords.length} Active)
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setAdminMainTab("logins")}
                       style={{
                         padding: "10px",
@@ -9024,6 +6462,7 @@ export default function App() {
                         fontWeight: "bold",
                         fontSize: "13px",
                         cursor: "pointer",
+                        gridColumn: "span 2",
                       }}
                     >
                       🔐 लॉगिन हिस्ट्री ({loginLogs.length})
@@ -9044,6 +6483,7 @@ export default function App() {
                           onClick={() => {
                             setAdminJobSubTab("completed");
                             setSelectedStaffFolder(null);
+                            setExpandedJobNo(null);
                           }}
                           style={{
                             flex: 1,
@@ -9070,6 +6510,7 @@ export default function App() {
                           onClick={() => {
                             setAdminJobSubTab("pending");
                             setSelectedStaffFolder(null);
+                            setExpandedJobNo(null);
                           }}
                           style={{
                             flex: 1,
@@ -9112,9 +6553,10 @@ export default function App() {
                                 Object.keys(completedByStaff).map((staffName) => (
                                   <div
                                     key={staffName}
-                                    onClick={() =>
-                                      setSelectedStaffFolder(staffName)
-                                    }
+                                    onClick={() => {
+                                      setSelectedStaffFolder(staffName);
+                                      setExpandedJobNo(null);
+                                    }}
                                     style={{
                                       border: "1px solid #cbd5e1",
                                       padding: "12px",
@@ -9149,7 +6591,10 @@ export default function App() {
                             <div>
                               <button
                                 type="button"
-                                onClick={() => setSelectedStaffFolder(null)}
+                                onClick={() => {
+                                  setSelectedStaffFolder(null);
+                                  setExpandedJobNo(null);
+                                }}
                                 style={{
                                   marginBottom: "10px",
                                   padding: "6px 12px",
@@ -9171,35 +6616,132 @@ export default function App() {
                                 📁 स्टाफ: {selectedStaffFolder} (कम्पलीट जॉब्स)
                               </h4>
                               {completedByStaff[selectedStaffFolder].map(
-                                (job) => (
-                                  <div
-                                    key={job.jobSheetNo}
-                                    onClick={() => setInspectedJob(job)}
-                                    style={{
-                                      border: "1px solid #86efac",
-                                      padding: "10px",
-                                      borderRadius: "6px",
-                                      marginBottom: "8px",
-                                      background: "#f0fdf4",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <div>
-                                      <strong style={{ color: "#2563eb" }}>
-                                        {job.jobSheetNo}
-                                      </strong>{" "}
-                                      - {job.customerName} ({job.customerPhone})
-                                    </div>
+                                (job) => {
+                                  const isOpen =
+                                    expandedJobNo === job.jobSheetNo;
+                                  return (
                                     <div
+                                      key={job.jobSheetNo}
                                       style={{
-                                        fontSize: "12px",
-                                        color: "#475569",
+                                        border: "1px solid #86efac",
+                                        borderRadius: "6px",
+                                        marginBottom: "8px",
+                                        background: "#f0fdf4",
+                                        overflow: "hidden",
                                       }}
                                     >
-                                      उत्पाद: {job.product} | तारीख: {job.date}
+                                      <div
+                                        onClick={() =>
+                                          setExpandedJobNo(
+                                            isOpen ? null : job.jobSheetNo
+                                          )
+                                        }
+                                        style={{
+                                          padding: "10px 12px",
+                                          cursor: "pointer",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          gap: "8px",
+                                          fontSize: "12.5px",
+                                          whiteSpace: "nowrap",
+                                          overflowX: "auto",
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                          }}
+                                        >
+                                          <span style={{ color: "#475569" }}>
+                                            {job.date}
+                                          </span>
+                                          <span style={{ color: "#94a3b8" }}>|</span>
+                                          <strong style={{ color: "#0f172a" }}>
+                                            {job.customerName}
+                                          </strong>
+                                          <span style={{ color: "#94a3b8" }}>|</span>
+                                          <strong style={{ color: "#2563eb" }}>
+                                            {job.jobSheetNo}
+                                          </strong>
+                                        </div>
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            color: "#166534",
+                                            fontWeight: "bold",
+                                          }}
+                                        >
+                                          {isOpen ? "▲" : "▼"}
+                                        </span>
+                                      </div>
+
+                                      {isOpen && (
+                                        <div
+                                          style={{
+                                            padding: "10px 12px",
+                                            borderTop: "1px solid #bbf7d0",
+                                            background: "#ffffff",
+                                            fontSize: "12px",
+                                            color: "#334155",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "5px",
+                                          }}
+                                        >
+                                          <div>
+                                            <strong>मोबाइल:</strong>{" "}
+                                            {job.customerPhone}
+                                          </div>
+                                          <div>
+                                            <strong>पता:</strong>{" "}
+                                            {job.customerAddress || "-"}
+                                          </div>
+                                          <div>
+                                            <strong>उत्पाद:</strong>{" "}
+                                            {job.product}
+                                          </div>
+                                          <div>
+                                            <strong>समस्या / फॉल्ट:</strong>{" "}
+                                            {job.faultDetails || "-"}
+                                          </div>
+                                          <div>
+                                            <strong>किया गया कार्य:</strong>{" "}
+                                            {job.desc || "-"}
+                                          </div>
+                                          <div>
+                                            <strong>कुल बिल:</strong> ₹
+                                            {Number(
+                                              job.totalAmount ||
+                                                job.serviceCharge ||
+                                                0
+                                            ).toFixed(2)}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => setInspectedJob(job)}
+                                            style={{
+                                              marginTop: "6px",
+                                              alignSelf: "flex-start",
+                                              padding: "6px 12px",
+                                              background: "#0284c7",
+                                              color: "#fff",
+                                              border: "none",
+                                              borderRadius: "4px",
+                                              fontSize: "12px",
+                                              fontWeight: "bold",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            📄 पूरी जॉब शीट खोलें / प्रिंट करें
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>
-                                )
+                                  );
+                                }
                               )}
                             </div>
                           )}
@@ -9227,9 +6769,10 @@ export default function App() {
                                 Object.keys(pendingByStaff).map((staffName) => (
                                   <div
                                     key={staffName}
-                                    onClick={() =>
-                                      setSelectedStaffFolder(staffName)
-                                    }
+                                    onClick={() => {
+                                      setSelectedStaffFolder(staffName);
+                                      setExpandedJobNo(null);
+                                    }}
                                     style={{
                                       border: "1px solid #cbd5e1",
                                       padding: "12px",
@@ -9264,7 +6807,10 @@ export default function App() {
                             <div>
                               <button
                                 type="button"
-                                onClick={() => setSelectedStaffFolder(null)}
+                                onClick={() => {
+                                  setSelectedStaffFolder(null);
+                                  setExpandedJobNo(null);
+                                }}
                                 style={{
                                   marginBottom: "10px",
                                   padding: "6px 12px",
@@ -9286,35 +6832,128 @@ export default function App() {
                                 📁 स्टाफ: {selectedStaffFolder} (पेंडिंग जॉब्स)
                               </h4>
                               {pendingByStaff[selectedStaffFolder].map(
-                                (job) => (
-                                  <div
-                                    key={job.jobSheetNo}
-                                    onClick={() => setInspectedJob(job)}
-                                    style={{
-                                      border: "1px solid #fcd34d",
-                                      padding: "10px",
-                                      borderRadius: "6px",
-                                      marginBottom: "8px",
-                                      background: "#fffbeb",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <div>
-                                      <strong style={{ color: "#d97706" }}>
-                                        {job.jobSheetNo}
-                                      </strong>{" "}
-                                      - {job.customerName} ({job.customerPhone})
-                                    </div>
+                                (job) => {
+                                  const isOpen =
+                                    expandedJobNo === job.jobSheetNo;
+                                  return (
                                     <div
+                                      key={job.jobSheetNo}
                                       style={{
-                                        fontSize: "12px",
-                                        color: "#475569",
+                                        border: "1px solid #fcd34d",
+                                        borderRadius: "6px",
+                                        marginBottom: "8px",
+                                        background: "#fffbeb",
+                                        overflow: "hidden",
                                       }}
                                     >
-                                      उत्पाद: {job.product} | विवरण: {job.desc}
+                                      <div
+                                        onClick={() =>
+                                          setExpandedJobNo(
+                                            isOpen ? null : job.jobSheetNo
+                                          )
+                                        }
+                                        style={{
+                                          padding: "10px 12px",
+                                          cursor: "pointer",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          gap: "8px",
+                                          fontSize: "12.5px",
+                                          whiteSpace: "nowrap",
+                                          overflowX: "auto",
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                          }}
+                                        >
+                                          <span style={{ color: "#475569" }}>
+                                            {job.date}
+                                          </span>
+                                          <span style={{ color: "#94a3b8" }}>|</span>
+                                          <strong style={{ color: "#0f172a" }}>
+                                            {job.customerName}
+                                          </strong>
+                                          <span style={{ color: "#94a3b8" }}>|</span>
+                                          <strong style={{ color: "#d97706" }}>
+                                            {job.jobSheetNo}
+                                          </strong>
+                                        </div>
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            color: "#b45309",
+                                            fontWeight: "bold",
+                                          }}
+                                        >
+                                          {isOpen ? "▲" : "▼"}
+                                        </span>
+                                      </div>
+
+                                      {isOpen && (
+                                        <div
+                                          style={{
+                                            padding: "10px 12px",
+                                            borderTop: "1px solid #fde68a",
+                                            background: "#ffffff",
+                                            fontSize: "12px",
+                                            color: "#334155",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "5px",
+                                          }}
+                                        >
+                                          <div>
+                                            <strong>मोबाइल:</strong>{" "}
+                                            {job.customerPhone}
+                                          </div>
+                                          <div>
+                                            <strong>पता:</strong>{" "}
+                                            {job.customerAddress || "-"}
+                                          </div>
+                                          <div>
+                                            <strong>उत्पाद:</strong>{" "}
+                                            {job.product}
+                                          </div>
+                                          <div>
+                                            <strong>स्टेटस / कारण:</strong>{" "}
+                                            {job.status}{" "}
+                                            {job.pendingSubOption &&
+                                            job.pendingSubOption !== "-"
+                                              ? `(${job.pendingSubOption})`
+                                              : ""}
+                                          </div>
+                                          <div>
+                                            <strong>विवरण:</strong>{" "}
+                                            {job.desc || "-"}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => setInspectedJob(job)}
+                                            style={{
+                                              marginTop: "6px",
+                                              alignSelf: "flex-start",
+                                              padding: "6px 12px",
+                                              background: "#d97706",
+                                              color: "#fff",
+                                              border: "none",
+                                              borderRadius: "4px",
+                                              fontSize: "12px",
+                                              fontWeight: "bold",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            📄 पूरी जॉब शीट खोलें / प्रिंट करें
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>
-                                )
+                                  );
+                                }
                               )}
                             </div>
                           )}
@@ -9493,6 +7132,588 @@ export default function App() {
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* STAFF IN / OUT MANAGEMENT TAB (ADMIN) */}
+                  {adminMainTab === "staffInOut" && (
+                    <div>
+                      <h4
+                        style={{
+                          margin: "0 0 10px 0",
+                          fontSize: "15px",
+                          color: "#0f172a",
+                        }}
+                      >
+                        ⏱️ Staff IN / OUT प्रबंधन (Admin Control)
+                      </h4>
+
+                      <form
+                        onSubmit={handleAdminMarkStaffIn}
+                        style={{
+                          background: "#f0fdf4",
+                          border: "1.5px solid #86efac",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          marginBottom: "14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            color: "#166534",
+                          }}
+                        >
+                          🟢 नया Staff IN दर्ज करें (Manual Duty IN):
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <input
+                            type="tel"
+                            maxLength="10"
+                            placeholder="स्टाफ मोबाइल नं. (10 अंक)"
+                            value={manualInPhone}
+                            onChange={(e) => setManualInPhone(e.target.value)}
+                            style={{
+                              ...inputStyle,
+                              flex: 1,
+                              minWidth: "140px",
+                              fontSize: "13px",
+                              padding: "8px 10px",
+                            }}
+                            required
+                          />
+                          <input
+                            type="text"
+                            placeholder="स्टाफ का नाम (वैकल्पिक)"
+                            value={manualInName}
+                            onChange={(e) => setManualInName(e.target.value)}
+                            style={{
+                              ...inputStyle,
+                              flex: 1,
+                              minWidth: "140px",
+                              fontSize: "13px",
+                              padding: "8px 10px",
+                            }}
+                          />
+                          <button
+                            type="submit"
+                            style={{
+                              padding: "8px 14px",
+                              background: "#166534",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "6px",
+                              fontWeight: "bold",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            🟢 Staff IN करें
+                          </button>
+                        </div>
+                      </form>
+
+                      <div
+                        style={{
+                          background: "#fffbeb",
+                          border: "1.5px solid #fcd34d",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            color: "#b45309",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          ⚠️ जिनका Log Out बाकी है ({pendingLogoutRecords.length} Staff):
+                        </div>
+
+                        {pendingLogoutRecords.length === 0 ? (
+                          <div style={{ fontSize: "12px", color: "#64748b" }}>
+                            सभी स्टाफ का Log Out हो चुका है। कोई बाकी नहीं है।
+                          </div>
+                        ) : (
+                          pendingLogoutRecords.map((rec) => (
+                            <div
+                              key={rec.docId}
+                              style={{
+                                background: "#ffffff",
+                                border: "1px solid #fde68a",
+                                borderRadius: "6px",
+                                padding: "10px",
+                                marginBottom: "8px",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                                gap: "8px",
+                              }}
+                            >
+                              <div style={{ fontSize: "12px" }}>
+                                <strong
+                                  style={{ fontSize: "13px", color: "#0f172a" }}
+                                >
+                                  {rec.staffName} ({rec.staffPhone})
+                                </strong>
+                                <div
+                                  style={{
+                                    color: "#475569",
+                                    marginTop: "2px",
+                                  }}
+                                >
+                                  📅 तारीख: <strong>{rec.dateKey}</strong> | 🟢
+                                  IN: <strong>{formatTime12(rec.inTime)}</strong>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAdminMarkStaffOut(rec)}
+                                style={{
+                                  padding: "7px 14px",
+                                  background: "#dc2626",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  fontWeight: "bold",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                🔴 Staff Log Out करें
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {!attSelectedYear && (
+                        <div>
+                          <h4
+                            style={{
+                              margin: "0 0 10px 0",
+                              fontSize: "14px",
+                              color: "#0f172a",
+                            }}
+                          >
+                            📅 सभी रिकॉर्ड्स (वर्ष चुनें):
+                          </h4>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(2, 1fr)",
+                              gap: "10px",
+                            }}
+                          >
+                            {availableYears.map((yr) => (
+                              <button
+                                key={yr}
+                                type="button"
+                                onClick={() => setAttSelectedYear(yr)}
+                                style={{
+                                  padding: "14px",
+                                  background: "#f8fafc",
+                                  border: "1.5px solid #0284c7",
+                                  borderRadius: "8px",
+                                  fontWeight: "bold",
+                                  fontSize: "15px",
+                                  color: "#0369a1",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                📁 वर्ष {yr}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {attSelectedYear && !attSelectedMonth && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setAttSelectedYear(null)}
+                            style={{
+                              marginBottom: "10px",
+                              padding: "6px 12px",
+                              background: "#64748b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ← वर्ष (Year) पर वापस जाएं
+                          </button>
+                          <h4
+                            style={{
+                              margin: "0 0 10px 0",
+                              fontSize: "14px",
+                              color: "#0f172a",
+                            }}
+                          >
+                            📆 महीना चुनें (वर्ष {attSelectedYear}):
+                          </h4>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(2, 1fr)",
+                              gap: "8px",
+                            }}
+                          >
+                            {HINDI_MONTHS.map((mLabel, index) => {
+                              const mCode = String(index + 1).padStart(2, "0");
+                              const countInMonth = attendanceRecords.filter(
+                                (r) =>
+                                  r.year === attSelectedYear && r.month === mCode
+                              ).length;
+                              return (
+                                <button
+                                  key={mCode}
+                                  type="button"
+                                  onClick={() => setAttSelectedMonth(mCode)}
+                                  style={{
+                                    padding: "10px",
+                                    background:
+                                      countInMonth > 0 ? "#f0fdf4" : "#f8fafc",
+                                    border:
+                                      countInMonth > 0
+                                        ? "1.5px solid #166534"
+                                        : "1px solid #cbd5e1",
+                                    borderRadius: "6px",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  <div>{mLabel}</div>
+                                  <div
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "#64748b",
+                                      marginTop: "2px",
+                                    }}
+                                  >
+                                    रिकॉर्ड्स: {countInMonth}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {attSelectedYear &&
+                        attSelectedMonth &&
+                        !attSelectedStaffPhone && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setAttSelectedMonth(null)}
+                              style={{
+                                marginBottom: "10px",
+                                padding: "6px 12px",
+                                background: "#64748b",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ← महीनों की सूची पर वापस जाएं
+                            </button>
+                            <h4
+                              style={{
+                                margin: "0 0 10px 0",
+                                fontSize: "14px",
+                                color: "#0f172a",
+                              }}
+                            >
+                              👷 स्टाफ चुनें (
+                              {
+                                HINDI_MONTHS[
+                                  parseInt(attSelectedMonth, 10) - 1
+                                ]
+                              }{" "}
+                              {attSelectedYear}):
+                            </h4>
+                            {(() => {
+                              const monthRecords = attendanceRecords.filter(
+                                (r) =>
+                                  r.year === attSelectedYear &&
+                                  r.month === attSelectedMonth
+                              );
+                              const staffMap = {};
+                              monthRecords.forEach((r) => {
+                                if (!staffMap[r.staffPhone]) {
+                                  staffMap[r.staffPhone] = {
+                                    phone: r.staffPhone,
+                                    name:
+                                      r.staffName || `Staff (${r.staffPhone})`,
+                                    days: 0,
+                                    pendingOutCount: 0,
+                                  };
+                                }
+                                staffMap[r.staffPhone].days += 1;
+                                if (r.inTime && !r.outTime) {
+                                  staffMap[r.staffPhone].pendingOutCount += 1;
+                                }
+                              });
+                              const staffList = Object.values(staffMap);
+
+                              if (staffList.length === 0) {
+                                return (
+                                  <p
+                                    style={{ color: "#64748b", fontSize: "13px" }}
+                                  >
+                                    इस महीने में किसी स्टाफ की अटेंडेंस दर्ज नहीं
+                                    है।
+                                  </p>
+                                );
+                              }
+
+                              return staffList.map((st) => (
+                                <div
+                                  key={st.phone}
+                                  onClick={() =>
+                                    setAttSelectedStaffPhone(st.phone)
+                                  }
+                                  style={{
+                                    border: "1px solid #cbd5e1",
+                                    padding: "12px",
+                                    borderRadius: "6px",
+                                    marginBottom: "8px",
+                                    background: "#f8fafc",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <div>
+                                    👤 <strong>{st.name}</strong>
+                                    <div
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#64748b",
+                                      }}
+                                    >
+                                      मोबाइल: {st.phone}
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: "right" }}>
+                                    <span
+                                      style={{
+                                        background: "#166534",
+                                        color: "#fff",
+                                        padding: "3px 10px",
+                                        borderRadius: "12px",
+                                        fontSize: "11px",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      {st.days} दिन →
+                                    </span>
+                                    {st.pendingOutCount > 0 && (
+                                      <div
+                                        style={{
+                                          fontSize: "11px",
+                                          color: "#dc2626",
+                                          fontWeight: "bold",
+                                          marginTop: "4px",
+                                        }}
+                                      >
+                                        {st.pendingOutCount} OUT बाकी
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        )}
+
+                      {attSelectedYear &&
+                        attSelectedMonth &&
+                        attSelectedStaffPhone && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setAttSelectedStaffPhone(null)}
+                              style={{
+                                marginBottom: "10px",
+                                padding: "6px 12px",
+                                background: "#64748b",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ← स्टाफ सूची पर वापस जाएं
+                            </button>
+                            {(() => {
+                              const dailyLogs = attendanceRecords
+                                .filter(
+                                  (r) =>
+                                    r.year === attSelectedYear &&
+                                    r.month === attSelectedMonth &&
+                                    r.staffPhone === attSelectedStaffPhone
+                                )
+                                .sort((a, b) =>
+                                  String(b.dateKey).localeCompare(
+                                    String(a.dateKey)
+                                  )
+                                );
+
+                              const staffTitle =
+                                dailyLogs[0]?.staffName ||
+                                `Staff (${attSelectedStaffPhone})`;
+
+                              return (
+                                <div>
+                                  <h4
+                                    style={{
+                                      margin: "0 0 10px 0",
+                                      color: "#166534",
+                                      fontSize: "14px",
+                                    }}
+                                  >
+                                    ⏱️ {staffTitle} — IN / OUT मैनेजमेंट
+                                  </h4>
+
+                                  {dailyLogs.map((rec) => (
+                                    <div
+                                      key={rec.docId}
+                                      style={{
+                                        border: "1px solid #cbd5e1",
+                                        borderRadius: "8px",
+                                        padding: "10px",
+                                        marginBottom: "10px",
+                                        background: "#f8fafc",
+                                        fontSize: "12px",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                          borderBottom: "1px solid #e2e8f0",
+                                          paddingBottom: "5px",
+                                          marginBottom: "6px",
+                                        }}
+                                      >
+                                        <strong
+                                          style={{
+                                            fontSize: "13px",
+                                            color: "#0f172a",
+                                          }}
+                                        >
+                                          📅 दिनांक: {rec.dateKey}
+                                        </strong>
+                                        <span
+                                          style={{
+                                            background: rec.outTime
+                                              ? "#dcfce7"
+                                              : "#fef3c7",
+                                            color: rec.outTime
+                                              ? "#166534"
+                                              : "#92400e",
+                                            padding: "2px 8px",
+                                            borderRadius: "10px",
+                                            fontWeight: "bold",
+                                            fontSize: "11px",
+                                          }}
+                                        >
+                                          {calcWorkDuration(
+                                            rec.inTime,
+                                            rec.outTime
+                                          )}
+                                        </span>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                          flexWrap: "wrap",
+                                          gap: "8px",
+                                        }}
+                                      >
+                                        <div>
+                                          <div>
+                                            <strong>🟢 IN Time:</strong>{" "}
+                                            {formatTime12(rec.inTime)}
+                                          </div>
+                                          <div style={{ marginTop: "3px" }}>
+                                            <strong>🔴 OUT Time:</strong>{" "}
+                                            {rec.outTime
+                                              ? formatTime12(rec.outTime)
+                                              : "Pending (लॉग आउट बाकी है)"}
+                                          </div>
+                                        </div>
+
+                                        {!rec.outTime ? (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleAdminMarkStaffOut(rec)
+                                            }
+                                            style={{
+                                              padding: "8px 14px",
+                                              background: "#dc2626",
+                                              color: "#fff",
+                                              border: "none",
+                                              borderRadius: "6px",
+                                              fontWeight: "bold",
+                                              fontSize: "12px",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            🔴 Log Out करें (Admin)
+                                          </button>
+                                        ) : (
+                                          <span
+                                            style={{
+                                              padding: "5px 10px",
+                                              background: "#e2e8f0",
+                                              color: "#334155",
+                                              borderRadius: "6px",
+                                              fontWeight: "bold",
+                                              fontSize: "11px",
+                                            }}
+                                          >
+                                            ✔ Logged Out
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -9721,7 +7942,7 @@ export default function App() {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    {st.days} दिन उपस्थित →
+                                    {st.days} दिन →
                                   </span>
                                 </div>
                               ));
@@ -9776,54 +7997,38 @@ export default function App() {
                                       fontSize: "14px",
                                     }}
                                   >
-                                    📋 {staffTitle} —{" "}
-                                    {
-                                      HINDI_MONTHS[
-                                        parseInt(attSelectedMonth, 10) - 1
-                                      ]
-                                    }{" "}
-                                    {attSelectedYear}
+                                    📊 {staffTitle} — दैनिक अटेंडेंस व रूट
                                   </h4>
 
                                   {dailyLogs.map((rec) => {
                                     const pts = Array.isArray(rec.routePoints)
+                                      ? rec.routePoints.filter(
+                                          (p) =>
+                                            p &&
+                                            typeof p.lat === "number" &&
+                                            typeof p.lng === "number"
+                                        )
+                                      : [];
+
+                                    const allPts = Array.isArray(rec.routePoints)
                                       ? rec.routePoints
                                       : [];
 
-                                    const textRoute =
-                                      pts.length > 0
-                                        ? pts
-                                            .map(
-                                              (p) =>
-                                                `${p.timeText} (${p.address})`
-                                            )
-                                            .join(" ➔ ")
-                                        : "लोकेशन डेटा उपलब्ध नहीं";
-
-                                    const validCoords = pts.filter(
-                                      (p) => p.lat && p.lng
-                                    );
-                                    let googleMapUrl = "";
-                                    if (validCoords.length === 1) {
-                                      googleMapUrl = `https://www.google.com/maps/search/?api=1&query=${validCoords[0].lat},${validCoords[0].lng}`;
-                                    } else if (validCoords.length >= 2) {
-                                      const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
-                                      const dest = `${
-                                        validCoords[validCoords.length - 1].lat
-                                      },${
-                                        validCoords[validCoords.length - 1].lng
-                                      }`;
-                                      const mid = validCoords
-                                        .slice(1, -1)
-                                        .slice(0, 8)
-                                        .map((c) => `${c.lat},${c.lng}`)
-                                        .join("|");
-                                      googleMapUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
-                                        mid
-                                          ? `&waypoints=${encodeURIComponent(mid)}`
-                                          : ""
-                                      }&travelmode=driving`;
-                                    }
+                                    const googleRouteUrl =
+                                      pts.length >= 2
+                                        ? `https://www.google.com/maps/dir/?api=1&origin=${
+                                            pts[0].lat
+                                          },${pts[0].lng}&destination=${
+                                            pts[pts.length - 1].lat
+                                          },${
+                                            pts[pts.length - 1].lng
+                                          }&waypoints=${pts
+                                            .slice(1, -1)
+                                            .map((p) => `${p.lat},${p.lng}`)
+                                            .join("|")}`
+                                        : pts.length === 1
+                                        ? `https://www.google.com/maps/search/?api=1&query=${pts[0].lat},${pts[0].lng}`
+                                        : null;
 
                                     return (
                                       <div
@@ -9857,19 +8062,14 @@ export default function App() {
                                           </strong>
                                           <span
                                             style={{
-                                              background: rec.outTime
-                                                ? "#dcfce7"
-                                                : "#fef3c7",
-                                              color: rec.outTime
-                                                ? "#166534"
-                                                : "#92400e",
+                                              background: "#dcfce7",
+                                              color: "#166534",
                                               padding: "2px 8px",
                                               borderRadius: "10px",
                                               fontWeight: "bold",
                                               fontSize: "11px",
                                             }}
                                           >
-                                            कुल समय:{" "}
                                             {calcWorkDuration(
                                               rec.inTime,
                                               rec.outTime
@@ -9879,9 +8079,10 @@ export default function App() {
 
                                         <div
                                           style={{
-                                            display: "flex",
-                                            gap: "15px",
-                                            marginBottom: "6px",
+                                            display: "grid",
+                                            gridTemplateColumns: "1fr 1fr",
+                                            gap: "6px",
+                                            marginBottom: "8px",
                                           }}
                                         >
                                           <div>
@@ -9892,42 +8093,58 @@ export default function App() {
                                             <strong>🔴 OUT Time:</strong>{" "}
                                             {rec.outTime
                                               ? formatTime12(rec.outTime)
-                                              : "अभी ऑन ड्यूटी (Logged In)"}
+                                              : "Active / Pending"}
                                           </div>
                                         </div>
 
-                                        <div
-                                          style={{
-                                            background: "#ffffff",
-                                            border: "1px solid #e2e8f0",
-                                            borderRadius: "6px",
-                                            padding: "7px",
-                                            marginBottom: "6px",
-                                            lineHeight: "1.45",
-                                          }}
-                                        >
-                                          <strong>
-                                            📍 पूरे दिन का रूट (Text Route):
-                                          </strong>
+                                        {allPts.length > 0 && (
                                           <div
                                             style={{
-                                              color: "#334155",
-                                              marginTop: "3px",
+                                              background: "#fff",
+                                              border: "1px solid #e2e8f0",
+                                              borderRadius: "6px",
+                                              padding: "8px",
+                                              marginBottom: "8px",
                                             }}
                                           >
-                                            {textRoute}
+                                            <div
+                                              style={{
+                                                fontWeight: "bold",
+                                                marginBottom: "4px",
+                                                color: "#1e3a8a",
+                                              }}
+                                            >
+                                              🗺️ दिन भर की लोकेशन व रूट:
+                                            </div>
+                                            {allPts.map((pt, i) => (
+                                              <div
+                                                key={i}
+                                                style={{
+                                                  fontSize: "11px",
+                                                  padding: "2px 0",
+                                                  borderBottom:
+                                                    i < allPts.length - 1
+                                                      ? "1px dashed #f1f5f9"
+                                                      : "none",
+                                                }}
+                                              >
+                                                • <strong>{pt.timeText}</strong>{" "}
+                                                [{pt.event || "ROUTE"}] —{" "}
+                                                {pt.address}
+                                              </div>
+                                            ))}
                                           </div>
-                                        </div>
+                                        )}
 
-                                        {googleMapUrl && (
+                                        {googleRouteUrl && (
                                           <a
-                                            href={googleMapUrl}
+                                            href={googleRouteUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             style={{
                                               display: "inline-block",
                                               padding: "6px 12px",
-                                              background: "#2563eb",
+                                              background: "#0284c7",
                                               color: "#fff",
                                               textDecoration: "none",
                                               borderRadius: "5px",
@@ -9935,8 +8152,7 @@ export default function App() {
                                               fontSize: "11px",
                                             }}
                                           >
-                                            🗺️ Google Map पर पूरा रूट देखें (
-                                            {validCoords.length} Points)
+                                            📍 Google Map पर पूरा रूट देखें
                                           </a>
                                         )}
                                       </div>
@@ -9953,27 +8169,35 @@ export default function App() {
                   {adminMainTab === "logins" && (
                     <div>
                       <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>
-                        सभी पोर्टल लॉगिन हिस्ट्री
+                        उपयोगकर्ता लॉगिन हिस्ट्री:
                       </h4>
-                      {loginLogs.map((log, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            border: "1px solid #e2e8f0",
-                            padding: "8px 10px",
-                            borderRadius: "6px",
-                            marginBottom: "8px",
-                            background: "#fafafa",
-                            fontSize: "12px",
-                          }}
-                        >
-                          <strong>{log.name || log.phone}</strong> [{log.role}]
-                          — Count: {log.loginCount || 1}
-                          <div style={{ color: "#64748b" }}>
-                            Time: {log.lastLoginText || "-"}
+                      {loginLogs.length === 0 ? (
+                        <p style={{ color: "#64748b", fontSize: "13px" }}>
+                          अभी कोई लॉगिन रिकॉर्ड नहीं है।
+                        </p>
+                      ) : (
+                        loginLogs.map((log, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              border: "1px solid #e2e8f0",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              marginBottom: "8px",
+                              background: "#f8fafc",
+                              fontSize: "12px",
+                            }}
+                          >
+                            <div>
+                              <strong>{log.name}</strong> ({log.role}) —{" "}
+                              <strong>{log.loginCount || 1}</strong> बार लॉगिन
+                            </div>
+                            <div style={{ color: "#64748b", fontSize: "11px" }}>
+                              अंतिम लॉगिन: {log.lastLoginText || "-"}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
