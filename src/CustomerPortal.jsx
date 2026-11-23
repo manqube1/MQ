@@ -315,6 +315,10 @@ export default function CustomerPortal({
 
               {/* फोटो खींचकर और गैलरी से अपलोड करने के Option */}
               <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  यूनिट / समस्या की फोटो अपलोड करें
+                </label>
+
                 <input
                   ref={cameraInputRef}
                   type="file"
