@@ -64,6 +64,7 @@ export default function CustomerPortal({
   const [statusMsg, setStatusMsg] = useState("");
 
   const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   const handleCategoryChange = (cat) => {
     setCategoryType(cat);
@@ -312,7 +313,7 @@ export default function CustomerPortal({
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:border-[#2563eb]"
               />
 
-              {/* फोटो खींचकर डालने का Option */}
+              {/* फोटो खींचकर और गैलरी से अपलोड करने के Option */}
               <div className="space-y-2">
                 <input
                   ref={cameraInputRef}
@@ -323,15 +324,34 @@ export default function CustomerPortal({
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
 
-                <button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  className="w-full py-2.5 px-3 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition"
-                >
-                  <span>📷</span>
-                  <span>फोटो खींचें / अपलोड करें</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="w-full py-2 px-3 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <span>📷</span>
+                    <span>फोटो खींचें</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="w-full py-2 px-3 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <span>🖼️</span>
+                    <span>फोटो अपलोड करें</span>
+                  </button>
+                </div>
 
                 {uploadingPhotos && (
                   <div className="text-xs font-semibold text-teal-700 text-center">
