@@ -21,6 +21,64 @@ import {
 } from "firebase/storage";
 import JobSheet from "./JobSheet";
 
+const AppCubeLogo = ({ size = 66 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 120 120"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ display: "block", margin: "0 auto" }}
+  >
+    <defs>
+      <linearGradient id="topYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fde047" />
+        <stop offset="100%" stopColor="#eab308" />
+      </linearGradient>
+      <linearGradient id="leftGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#bef264" />
+        <stop offset="100%" stopColor="#84cc16" />
+      </linearGradient>
+      <linearGradient id="leftCyan" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#06b6d4" />
+        <stop offset="100%" stopColor="#0284c7" />
+      </linearGradient>
+      <linearGradient id="frontBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#38bdf8" />
+        <stop offset="55%" stopColor="#2563eb" />
+        <stop offset="100%" stopColor="#1e3a8a" />
+      </linearGradient>
+      <linearGradient id="rightOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fb923c" />
+        <stop offset="100%" stopColor="#ef4444" />
+      </linearGradient>
+      <linearGradient id="rightPurple" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#c026d3" />
+        <stop offset="100%" stopColor="#701a75" />
+      </linearGradient>
+    </defs>
+
+    {/* Top Yellow Block */}
+    <polygon points="60,12 84,26 60,40 36,26" fill="url(#topYellow)" />
+
+    {/* Left Back Block */}
+    <polygon points="33,28 57,42 33,56 12,44" fill="url(#leftGreen)" />
+    <polygon points="12,44 33,56 33,94 12,82" fill="url(#leftCyan)" />
+
+    {/* Front Tall Blue Block */}
+    <polygon points="60,43 84,57 60,71 36,57" fill="#38bdf8" />
+    <polygon points="36,57 60,71 60,108 36,94" fill="url(#frontBlue)" />
+    <polygon points="60,71 84,57 84,94 60,108" fill="#1d4ed8" />
+    {/* White Slash Accent */}
+    <line x1="36" y1="84" x2="55" y2="73" stroke="#e0f2fe" strokeWidth="4" strokeLinecap="round" />
+
+    {/* Right Upper Orange/Red Block */}
+    <polygon points="87,28 108,40 87,52 66,40" fill="url(#rightOrange)" />
+    <polygon points="87,52 108,40 108,64 87,76" fill="#dc2626" />
+
+    {/* Right Lower Purple Block */}
+    <polygon points="87,79 108,67 108,88 87,100" fill="url(#rightPurple)" />
+  </svg>
+);
 const firebaseConfig = {
   apiKey: "AIzaSyDUUnfmXZSLOS2FrUAnr2eSFYAWnwURRfC",
   authDomain: "mq-fsm-45ee9.firebaseapp.com",
