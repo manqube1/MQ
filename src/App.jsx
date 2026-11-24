@@ -260,7 +260,7 @@ const CoolerPrintableJobSheet = ({ job }) => {
         }}
       >
         <img
-          src="/1000384854.jpg"
+          src="/1000390289.jpg"
           alt="Logo"
           style={{ height: "54px", width: "auto", objectFit: "contain" }}
         />
@@ -719,7 +719,7 @@ const PrintableJobSheet = ({ job, onClose }) => {
             }}
           >
             <img
-              src="/1000384854.jpg"
+              src="/1000390289.jpg"
               alt="Logo"
               style={{ height: "58px", width: "auto", objectFit: "contain" }}
             />
@@ -4234,29 +4234,35 @@ export default function App() {
 
       {!isFillingJobSheet && (
         <>
+          {/* TOP HEADER WITH CENTER LOGO */}
           <div
             className="no-print"
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              padding: "12px 16px",
+              padding: "10px 16px",
               background: "#fff",
               borderRadius: "8px",
-              marginBottom: "15px",
+              marginBottom: "12px",
               boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
             }}
           >
-            <img
-              src="/1000384854.jpg"
-              alt="Logo"
-              style={{
-                width: "60px",
-                height: "60px",
-                objectFit: "contain",
-              }}
-            />
-            <div style={{ textAlign: "right", fontSize: "11px" }}>
+            <div style={{ width: "80px" }}></div>
+            <div style={{ textAlign: "center" }}>
+              <img
+                src="/1000390289.jpg"
+                alt="Logo"
+                style={{
+                  width: "66px",
+                  height: "66px",
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "0 auto",
+                }}
+              />
+            </div>
+            <div style={{ textAlign: "right", fontSize: "11px", width: "80px" }}>
               <span
                 style={{
                   padding: "4px 8px",
@@ -4264,9 +4270,10 @@ export default function App() {
                   background: isOnline ? "#dcfce7" : "#fef3c7",
                   color: isOnline ? "#166534" : "#92400e",
                   fontWeight: "bold",
+                  display: "inline-block",
                 }}
               >
-                {isOnline ? "🟢 Online (Synced)" : "🟠 Offline (Local Saving)"}
+                {isOnline ? "🟢 Online" : "🟠 Offline"}
               </span>
               {pendingSyncCount > 0 && (
                 <div
@@ -4276,7 +4283,7 @@ export default function App() {
                     fontWeight: "bold",
                   }}
                 >
-                  Pending Sync: {pendingSyncCount} items
+                  Sync: {pendingSyncCount}
                 </div>
               )}
             </div>
@@ -4352,9 +4359,9 @@ export default function App() {
       )}
 
       {activeTab === "home" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ textAlign: "center", marginBottom: "5px" }}>
-            <h3 style={{ margin: "0 0 5px 0", color: "#1e293b" }}>
+            <h3 style={{ margin: "0 0 5px 0", color: "#1e293b", fontSize: "20px" }}>
               पोर्टल चुनें (Select Portal)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#64748b" }}>
@@ -4367,13 +4374,14 @@ export default function App() {
             style={{
               background: "#fff",
               borderLeft: "5px solid #2563eb",
-              padding: "15px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+              padding: "20px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               cursor: "pointer",
+              textAlign: "center",
             }}
           >
-            <h3 style={{ margin: "0 0 5px 0", color: "#2563eb", fontSize: "18px" }}>
+            <h3 style={{ margin: "0 0 6px 0", color: "#2563eb", fontSize: "18px" }}>
               👤 कस्टमर पोर्टल (Customer Portal)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
@@ -4386,13 +4394,14 @@ export default function App() {
             style={{
               background: "#fff",
               borderLeft: "5px solid #166534",
-              padding: "15px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+              padding: "20px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               cursor: "pointer",
+              textAlign: "center",
             }}
           >
-            <h3 style={{ margin: "0 0 5px 0", color: "#166534", fontSize: "18px" }}>
+            <h3 style={{ margin: "0 0 6px 0", color: "#166534", fontSize: "18px" }}>
               🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile &amp; GPS Login)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
@@ -4405,13 +4414,14 @@ export default function App() {
             style={{
               background: "#fff",
               borderLeft: "5px solid #d97706",
-              padding: "15px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+              padding: "20px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               cursor: "pointer",
+              textAlign: "center",
             }}
           >
-            <h3 style={{ margin: "0 0 5px 0", color: "#d97706", fontSize: "18px" }}>
+            <h3 style={{ margin: "0 0 6px 0", color: "#d97706", fontSize: "18px" }}>
               📊 एडमिन &amp; ऑफिस स्टाफ पैनल (Office Login)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
@@ -7827,7 +7837,7 @@ export default function App() {
                                               handleAdminMarkStaffOut(rec)
                                             }
                                             style={{
-                                              padding: "8px 14px",
+                                              padding: "7px 14px",
                                               background: "#dc2626",
                                               color: "#fff",
                                               border: "none",
@@ -7837,20 +7847,20 @@ export default function App() {
                                               cursor: "pointer",
                                             }}
                                           >
-                                            🔴 Log Out करें (Admin)
+                                            🔴 Staff Log Out करें
                                           </button>
                                         ) : (
                                           <span
                                             style={{
-                                              padding: "5px 10px",
-                                              background: "#e2e8f0",
-                                              color: "#334155",
+                                              padding: "4px 10px",
+                                              background: "#dcfce7",
+                                              color: "#166534",
                                               borderRadius: "6px",
                                               fontWeight: "bold",
                                               fontSize: "11px",
                                             }}
                                           >
-                                            ✔ Logged Out
+                                            ✅ Logged Out
                                           </span>
                                         )}
                                       </div>
@@ -7864,7 +7874,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* YEAR -> MONTH -> STAFF -> DAILY ROUTE & GOOGLE MAPS */}
+                  {/* HIERARCHICAL ATTENDANCE & GPS ROUTE TRACKING */}
                   {adminMainTab === "attendance" && (
                     <div>
                       {!attSelectedYear && (
@@ -7876,7 +7886,7 @@ export default function App() {
                               color: "#0f172a",
                             }}
                           >
-                            📅 अटेंडेंस एवं रूट रिकॉर्ड (वर्ष चुनें):
+                            📅 अटेंडेंस एवं GPS रूट हिस्ट्री (वर्ष चुनें):
                           </h4>
                           <div
                             style={{
@@ -7976,7 +7986,7 @@ export default function App() {
                                       marginTop: "2px",
                                     }}
                                   >
-                                    हाज़िरी रिकॉर्ड: {countInMonth}
+                                    रिकॉर्ड्स: {countInMonth}
                                   </div>
                                 </button>
                               );
@@ -8145,50 +8155,41 @@ export default function App() {
                                       fontSize: "14px",
                                     }}
                                   >
-                                    📍 {staffTitle} — दैनिक IN/OUT व लाइव रूट
+                                    📍 {staffTitle} — दैनिक अटेंडेंस व रूट मैप
                                   </h4>
 
                                   {dailyLogs.map((rec) => {
-                                    const validPoints = Array.isArray(
-                                      rec.routePoints
-                                    )
-                                      ? rec.routePoints.filter(
-                                          (pt) =>
-                                            typeof pt.lat === "number" &&
-                                            typeof pt.lng === "number"
-                                        )
+                                    const pts = Array.isArray(rec.routePoints)
+                                      ? rec.routePoints
                                       : [];
-
-                                    const openFullRouteMap = () => {
-                                      if (validPoints.length === 0) return;
-                                      if (validPoints.length === 1) {
-                                        const p = validPoints[0];
-                                        window.open(
-                                          `https://www.google.com/maps?q=${p.lat},${p.lng}`,
-                                          "_blank"
-                                        );
-                                        return;
-                                      }
-                                      const origin = `${validPoints[0].lat},${validPoints[0].lng}`;
+                                    const validCoords = pts.filter(
+                                      (p) =>
+                                        typeof p.lat === "number" &&
+                                        typeof p.lng === "number"
+                                    );
+                                    let googleMapsRouteUrl = "";
+                                    if (validCoords.length === 1) {
+                                      googleMapsRouteUrl = `https://www.google.com/maps?q=${validCoords[0].lat},${validCoords[0].lng}`;
+                                    } else if (validCoords.length > 1) {
+                                      const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
                                       const dest = `${
-                                        validPoints[validPoints.length - 1].lat
+                                        validCoords[validCoords.length - 1].lat
                                       },${
-                                        validPoints[validPoints.length - 1].lng
+                                        validCoords[validCoords.length - 1].lng
                                       }`;
-                                      const midPoints = validPoints
+                                      const waypoints = validCoords
                                         .slice(1, -1)
                                         .slice(0, 8)
                                         .map((p) => `${p.lat},${p.lng}`)
                                         .join("|");
-                                      const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
-                                        midPoints
+                                      googleMapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
+                                        waypoints
                                           ? `&waypoints=${encodeURIComponent(
-                                              midPoints
+                                              waypoints
                                             )}`
                                           : ""
                                       }&travelmode=driving`;
-                                      window.open(url, "_blank");
-                                    };
+                                    }
 
                                     return (
                                       <div
@@ -8230,7 +8231,6 @@ export default function App() {
                                               fontSize: "11px",
                                             }}
                                           >
-                                            कुल कार्य:{" "}
                                             {calcWorkDuration(
                                               rec.inTime,
                                               rec.outTime
@@ -8254,74 +8254,81 @@ export default function App() {
                                             <strong>🔴 OUT Time:</strong>{" "}
                                             {rec.outTime
                                               ? formatTime12(rec.outTime)
-                                              : "On Duty (Active)"}
+                                              : "अभी Duty पर (Active)"}
                                           </div>
                                         </div>
 
-                                        {Array.isArray(rec.routePoints) &&
-                                          rec.routePoints.length > 0 && (
-                                            <div
+                                        {pts.length > 0 && (
+                                          <div
+                                            style={{
+                                              background: "#fff",
+                                              border: "1px solid #e2e8f0",
+                                              borderRadius: "6px",
+                                              padding: "8px",
+                                              marginBottom: "8px",
+                                            }}
+                                          >
+                                            <strong
                                               style={{
-                                                background: "#ffffff",
-                                                border: "1px solid #e2e8f0",
-                                                borderRadius: "6px",
-                                                padding: "8px",
-                                                marginBottom: "6px",
+                                                fontSize: "11px",
+                                                color: "#334155",
                                               }}
                                             >
-                                              <div
-                                                style={{
-                                                  fontWeight: "bold",
-                                                  marginBottom: "4px",
-                                                  color: "#0369a1",
-                                                }}
-                                              >
-                                                🛣️ दिन भर की लोकेशन व रूट (
-                                                {rec.routePoints.length} पॉइंट्स):
-                                              </div>
-                                              {rec.routePoints.map(
-                                                (pt, pIdx) => (
-                                                  <div
-                                                    key={pIdx}
-                                                    style={{
-                                                      fontSize: "11px",
-                                                      padding: "3px 0",
-                                                      borderBottom:
-                                                        pIdx <
-                                                        rec.routePoints.length -
-                                                          1
-                                                          ? "1px dashed #e2e8f0"
-                                                          : "none",
-                                                    }}
-                                                  >
-                                                    <strong>
-                                                      {pt.timeText} (
-                                                      {pt.event || "GPS"}):
-                                                    </strong>{" "}
-                                                    {pt.address ||
-                                                      `${pt.lat}, ${pt.lng}`}
-                                                  </div>
-                                                )
-                                              )}
+                                              🛣️ दिन भर का मूवमेंट रूट (
+                                              {pts.length} लोकेशन पॉइंट्स):
+                                            </strong>
+                                            <div
+                                              style={{
+                                                marginTop: "4px",
+                                                maxHeight: "120px",
+                                                overflowY: "auto",
+                                              }}
+                                            >
+                                              {pts.map((pt, i) => (
+                                                <div
+                                                  key={i}
+                                                  style={{
+                                                    fontSize: "11px",
+                                                    padding: "3px 0",
+                                                    borderBottom:
+                                                      i < pts.length - 1
+                                                        ? "1px dashed #e2e8f0"
+                                                        : "none",
+                                                  }}
+                                                >
+                                                  <strong>
+                                                    {pt.timeText || "-"}
+                                                  </strong>{" "}
+                                                  ({pt.event || "ROUTE"}) —{" "}
+                                                  {pt.address ||
+                                                    `${pt.lat}, ${pt.lng}`}
+                                                </div>
+                                              ))}
                                             </div>
-                                          )}
+                                          </div>
+                                        )}
 
-                                        {validPoints.length > 0 && (
+                                        {googleMapsRouteUrl && (
                                           <button
                                             type="button"
-                                            onClick={openFullRouteMap}
+                                            onClick={() =>
+                                              window.open(
+                                                googleMapsRouteUrl,
+                                                "_blank"
+                                              )
+                                            }
                                             style={{
                                               padding: "6px 12px",
                                               background: "#0284c7",
                                               color: "#fff",
                                               border: "none",
-                                              borderRadius: "4px",
+                                              borderRadius: "5px",
                                               fontSize: "11px",
                                               fontWeight: "bold",
                                               cursor: "pointer",
                                             }}
                                           >
-                                            🗺️ Google Maps पर पूरा रूट देखें
+                                            🗺️ पूरा रूट Google Maps पर देखें
                                           </button>
                                         )}
                                       </div>
@@ -8338,26 +8345,30 @@ export default function App() {
                   {adminMainTab === "logins" && (
                     <div>
                       <h4 style={{ margin: "0 0 10px 0", fontSize: "13px" }}>
-                        यूज़र लॉगिन हिस्ट्री:
+                        यूज़र लॉगिन रिकॉर्ड्स:
                       </h4>
                       {loginLogs.length === 0 ? (
                         <p style={{ color: "#64748b", fontSize: "13px" }}>
                           कोई लॉगिन रिकॉर्ड नहीं है।
                         </p>
                       ) : (
-                        loginLogs.map((log, i) => (
+                        loginLogs.map((log, idx) => (
                           <div
-                            key={i}
+                            key={idx}
                             style={{
                               border: "1px solid #e2e8f0",
                               padding: "8px 10px",
                               borderRadius: "6px",
-                              marginBottom: "6px",
+                              marginBottom: "8px",
+                              background: "#f8fafc",
                               fontSize: "12px",
                             }}
                           >
                             <strong>{log.name}</strong> ({log.role}) — कुल लॉगिन:{" "}
-                            {log.loginCount} | अंतिम: {log.lastLoginText}
+                            {log.loginCount || 1}
+                            <div style={{ color: "#64748b", fontSize: "11px" }}>
+                              अंतिम लॉगिन: {log.lastLoginText}
+                            </div>
                           </div>
                         ))
                       )}
