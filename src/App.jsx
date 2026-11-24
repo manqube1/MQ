@@ -56,29 +56,27 @@ const AppCubeLogo = ({ size = 66 }) => (
         <stop offset="100%" stopColor="#701a75" />
       </linearGradient>
     </defs>
-
-    {/* Top Yellow Block */}
     <polygon points="60,12 84,26 60,40 36,26" fill="url(#topYellow)" />
-
-    {/* Left Back Block */}
     <polygon points="33,28 57,42 33,56 12,44" fill="url(#leftGreen)" />
     <polygon points="12,44 33,56 33,94 12,82" fill="url(#leftCyan)" />
-
-    {/* Front Tall Blue Block */}
     <polygon points="60,43 84,57 60,71 36,57" fill="#38bdf8" />
     <polygon points="36,57 60,71 60,108 36,94" fill="url(#frontBlue)" />
     <polygon points="60,71 84,57 84,94 60,108" fill="#1d4ed8" />
-    {/* White Slash Accent */}
-    <line x1="36" y1="84" x2="55" y2="73" stroke="#e0f2fe" strokeWidth="4" strokeLinecap="round" />
-
-    {/* Right Upper Orange/Red Block */}
+    <line
+      x1="36"
+      y1="84"
+      x2="55"
+      y2="73"
+      stroke="#e0f2fe"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
     <polygon points="87,28 108,40 87,52 66,40" fill="url(#rightOrange)" />
     <polygon points="87,52 108,40 108,64 87,76" fill="#dc2626" />
-
-    {/* Right Lower Purple Block */}
     <polygon points="87,79 108,67 108,88 87,100" fill="url(#rightPurple)" />
   </svg>
 );
+
 const firebaseConfig = {
   apiKey: "AIzaSyDUUnfmXZSLOS2FrUAnr2eSFYAWnwURRfC",
   authDomain: "mq-fsm-45ee9.firebaseapp.com",
@@ -317,11 +315,9 @@ const CoolerPrintableJobSheet = ({ job }) => {
           marginBottom: "6px",
         }}
       >
-        <img
-          src="/1000390289.jpg"
-          alt="Logo"
-          style={{ height: "54px", width: "auto", objectFit: "contain" }}
-        />
+        <div>
+          <AppCubeLogo size={54} />
+        </div>
         <div style={{ textAlign: "right" }}>
           <div
             style={{
@@ -776,11 +772,9 @@ const PrintableJobSheet = ({ job, onClose }) => {
               borderBottom: "1.5px solid #000",
             }}
           >
-            <img
-              src="/1000390289.jpg"
-              alt="Logo"
-              style={{ height: "58px", width: "auto", objectFit: "contain" }}
-            />
+            <div>
+              <AppCubeLogo size={58} />
+            </div>
             <div
               style={{
                 fontSize: "13px",
@@ -4299,32 +4293,22 @@ export default function App() {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              padding: "10px 16px",
+              padding: "12px 16px",
               background: "#fff",
-              borderRadius: "8px",
-              marginBottom: "12px",
+              borderRadius: "10px",
+              marginBottom: "16px",
               boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
             }}
           >
             <div style={{ width: "80px" }}></div>
             <div style={{ textAlign: "center" }}>
-              <img
-                src="/1000390289.jpg"
-                alt="Logo"
-                style={{
-                  width: "66px",
-                  height: "66px",
-                  objectFit: "contain",
-                  display: "block",
-                  margin: "0 auto",
-                }}
-              />
+              <AppCubeLogo size={66} />
             </div>
             <div style={{ textAlign: "right", fontSize: "11px", width: "80px" }}>
               <span
                 style={{
-                  padding: "4px 8px",
-                  borderRadius: "12px",
+                  padding: "4px 10px",
+                  borderRadius: "14px",
                   background: isOnline ? "#dcfce7" : "#fef3c7",
                   color: isOnline ? "#166534" : "#92400e",
                   fontWeight: "bold",
@@ -4399,26 +4383,19 @@ export default function App() {
               </button>
             </div>
           )}
-
-          <div
-            className="no-print"
-            style={{
-              background: "#dcfce7",
-              padding: "10px",
-              borderRadius: "6px",
-              marginBottom: "15px",
-              fontSize: "12px",
-              color: "#166534",
-            }}
-          >
-            <strong>GPS:</strong> {staffGpsLocation}
-          </div>
         </>
       )}
 
       {activeTab === "home" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ textAlign: "center", marginBottom: "5px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            marginTop: "4px",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: "4px" }}>
             <h3 style={{ margin: "0 0 5px 0", color: "#1e293b", fontSize: "20px" }}>
               पोर्टल चुनें (Select Portal)
             </h3>
@@ -4432,17 +4409,30 @@ export default function App() {
             style={{
               background: "#fff",
               borderLeft: "5px solid #2563eb",
-              padding: "20px 16px",
+              padding: "20px 18px",
               borderRadius: "10px",
               boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               cursor: "pointer",
-              textAlign: "center",
             }}
           >
-            <h3 style={{ margin: "0 0 6px 0", color: "#2563eb", fontSize: "18px" }}>
+            <h3
+              style={{
+                margin: "0 0 6px 0",
+                color: "#2563eb",
+                fontSize: "18px",
+                textAlign: "center",
+              }}
+            >
               👤 कस्टमर पोर्टल (Customer Portal)
             </h3>
-            <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
+            <p
+              style={{
+                margin: "0",
+                fontSize: "13px",
+                color: "#475569",
+                textAlign: "center",
+              }}
+            >
               अपनी शिकायत दर्ज करें और पुरानी जॉब-शीट्स देखें
             </p>
           </div>
@@ -4452,17 +4442,30 @@ export default function App() {
             style={{
               background: "#fff",
               borderLeft: "5px solid #166534",
-              padding: "20px 16px",
+              padding: "20px 18px",
               borderRadius: "10px",
               boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               cursor: "pointer",
-              textAlign: "center",
             }}
           >
-            <h3 style={{ margin: "0 0 6px 0", color: "#166534", fontSize: "18px" }}>
+            <h3
+              style={{
+                margin: "0 0 6px 0",
+                color: "#166534",
+                fontSize: "18px",
+                textAlign: "center",
+              }}
+            >
               🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile &amp; GPS Login)
             </h3>
-            <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
+            <p
+              style={{
+                margin: "0",
+                fontSize: "13px",
+                color: "#475569",
+                textAlign: "left",
+              }}
+            >
               मोबाइल नंबर, OTP और GPS लोकेशन के साथ लॉगिन करें
             </p>
           </div>
@@ -4472,17 +4475,30 @@ export default function App() {
             style={{
               background: "#fff",
               borderLeft: "5px solid #d97706",
-              padding: "20px 16px",
+              padding: "20px 18px",
               borderRadius: "10px",
               boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               cursor: "pointer",
-              textAlign: "center",
             }}
           >
-            <h3 style={{ margin: "0 0 6px 0", color: "#d97706", fontSize: "18px" }}>
+            <h3
+              style={{
+                margin: "0 0 6px 0",
+                color: "#d97706",
+                fontSize: "18px",
+                textAlign: "center",
+              }}
+            >
               📊 एडमिन &amp; ऑफिस स्टाफ पैनल (Office Login)
             </h3>
-            <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}>
+            <p
+              style={{
+                margin: "0",
+                fontSize: "13px",
+                color: "#475569",
+                textAlign: "left",
+              }}
+            >
               स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक, Staff IN/OUT, अटेंडेंस (रूट व मैप) देखें
             </p>
           </div>
@@ -7785,8 +7801,18 @@ export default function App() {
                             >
                               ← स्टाफ सूची पर वापस जाएं
                             </button>
+                            <h4
+                              style={{
+                                margin: "0 0 10px 0",
+                                fontSize: "14px",
+                                color: "#166534",
+                              }}
+                            >
+                              📅 तारीखवार IN/OUT रिकॉर्ड ({attSelectedStaffPhone}
+                              ):
+                            </h4>
                             {(() => {
-                              const dailyLogs = attendanceRecords
+                              const dayRecords = attendanceRecords
                                 .filter(
                                   (r) =>
                                     r.year === attSelectedYear &&
@@ -7794,145 +7820,118 @@ export default function App() {
                                     r.staffPhone === attSelectedStaffPhone
                                 )
                                 .sort((a, b) =>
-                                  String(b.dateKey).localeCompare(
-                                    String(a.dateKey)
-                                  )
+                                  b.dateKey.localeCompare(a.dateKey)
                                 );
 
-                              const staffTitle =
-                                dailyLogs[0]?.staffName ||
-                                `Staff (${attSelectedStaffPhone})`;
-
-                              return (
-                                <div>
-                                  <h4
+                              return dayRecords.map((rec) => (
+                                <div
+                                  key={rec.docId}
+                                  style={{
+                                    border: "1.5px solid #94a3b8",
+                                    borderRadius: "8px",
+                                    padding: "12px",
+                                    marginBottom: "10px",
+                                    background: "#f8fafc",
+                                  }}
+                                >
+                                  <div
                                     style={{
-                                      margin: "0 0 10px 0",
-                                      color: "#166534",
-                                      fontSize: "14px",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      borderBottom: "1px solid #cbd5e1",
+                                      paddingBottom: "6px",
+                                      marginBottom: "8px",
                                     }}
                                   >
-                                    ⏱️ {staffTitle} — IN / OUT मैनेजमेंट
-                                  </h4>
-
-                                  {dailyLogs.map((rec) => (
-                                    <div
-                                      key={rec.docId}
+                                    <strong
                                       style={{
-                                        border: "1px solid #cbd5e1",
-                                        borderRadius: "8px",
-                                        padding: "10px",
-                                        marginBottom: "10px",
-                                        background: "#f8fafc",
-                                        fontSize: "12px",
+                                        fontSize: "14px",
+                                        color: "#0f172a",
                                       }}
                                     >
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          justifyContent: "space-between",
-                                          alignItems: "center",
-                                          borderBottom: "1px solid #e2e8f0",
-                                          paddingBottom: "5px",
-                                          marginBottom: "6px",
-                                        }}
-                                      >
-                                        <strong
-                                          style={{
-                                            fontSize: "13px",
-                                            color: "#0f172a",
-                                          }}
-                                        >
-                                          📅 दिनांक: {rec.dateKey}
-                                        </strong>
+                                      📆 तारीख: {rec.dateKey}
+                                    </strong>
+                                    <span
+                                      style={{
+                                        fontSize: "11px",
+                                        fontWeight: "bold",
+                                        padding: "2px 8px",
+                                        borderRadius: "10px",
+                                        background: rec.outTime
+                                          ? "#dcfce7"
+                                          : "#fef3c7",
+                                        color: rec.outTime
+                                          ? "#166534"
+                                          : "#92400e",
+                                      }}
+                                    >
+                                      {calcWorkDuration(
+                                        rec.inTime,
+                                        rec.outTime
+                                      )}
+                                    </span>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      flexWrap: "wrap",
+                                      gap: "8px",
+                                      fontSize: "13px",
+                                    }}
+                                  >
+                                    <div>
+                                      🟢 <strong>IN:</strong>{" "}
+                                      {formatTime12(rec.inTime)}
+                                    </div>
+                                    <div>
+                                      🔴 <strong>OUT:</strong>{" "}
+                                      {rec.outTime ? (
+                                        formatTime12(rec.outTime)
+                                      ) : (
                                         <span
                                           style={{
-                                            background: rec.outTime
-                                              ? "#dcfce7"
-                                              : "#fef3c7",
-                                            color: rec.outTime
-                                              ? "#166534"
-                                              : "#92400e",
-                                            padding: "2px 8px",
-                                            borderRadius: "10px",
+                                            color: "#dc2626",
                                             fontWeight: "bold",
-                                            fontSize: "11px",
                                           }}
                                         >
-                                          {calcWorkDuration(
-                                            rec.inTime,
-                                            rec.outTime
-                                          )}
+                                          अभी ड्यूटी पर (Pending)
                                         </span>
-                                      </div>
-
-                                      <div
+                                      )}
+                                    </div>
+                                    {!rec.outTime && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAdminMarkStaffOut(rec)
+                                        }
                                         style={{
-                                          display: "flex",
-                                          justifyContent: "space-between",
-                                          alignItems: "center",
-                                          flexWrap: "wrap",
-                                          gap: "8px",
+                                          padding: "5px 10px",
+                                          background: "#dc2626",
+                                          color: "#fff",
+                                          border: "none",
+                                          borderRadius: "5px",
+                                          fontSize: "11px",
+                                          fontWeight: "bold",
+                                          cursor: "pointer",
                                         }}
                                       >
-                                        <div>
-                                          <div>
-                                            <strong>🟢 IN Time:</strong>{" "}
-                                            {formatTime12(rec.inTime)}
-                                          </div>
-                                          <div style={{ marginTop: "3px" }}>
-                                            <strong>🔴 OUT Time:</strong>{" "}
-                                            {rec.outTime
-                                              ? formatTime12(rec.outTime)
-                                              : "Pending (लॉग आउट बाकी है)"}
-                                          </div>
-                                        </div>
-
-                                        {!rec.outTime ? (
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleAdminMarkStaffOut(rec)
-                                            }
-                                            style={{
-                                              padding: "7px 14px",
-                                              background: "#dc2626",
-                                              color: "#fff",
-                                              border: "none",
-                                              borderRadius: "6px",
-                                              fontWeight: "bold",
-                                              fontSize: "12px",
-                                              cursor: "pointer",
-                                            }}
-                                          >
-                                            🔴 Staff Log Out करें
-                                          </button>
-                                        ) : (
-                                          <span
-                                            style={{
-                                              padding: "4px 10px",
-                                              background: "#dcfce7",
-                                              color: "#166534",
-                                              borderRadius: "6px",
-                                              fontWeight: "bold",
-                                              fontSize: "11px",
-                                            }}
-                                          >
-                                            ✅ Logged Out
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
+                                        🔴 Log Out करें
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              );
+                              ));
                             })()}
                           </div>
                         )}
                     </div>
                   )}
 
-                  {/* HIERARCHICAL ATTENDANCE & GPS ROUTE TRACKING */}
+                  {/* HIERARCHICAL ATTENDANCE & GPS ROUTE TRACKER TAB */}
                   {adminMainTab === "attendance" && (
                     <div>
                       {!attSelectedYear && (
@@ -7944,7 +7943,7 @@ export default function App() {
                               color: "#0f172a",
                             }}
                           >
-                            📅 अटेंडेंस एवं GPS रूट हिस्ट्री (वर्ष चुनें):
+                            📅 वर्ष चुनें (Select Year):
                           </h4>
                           <div
                             style={{
@@ -8044,7 +8043,7 @@ export default function App() {
                                       marginTop: "2px",
                                     }}
                                   >
-                                    रिकॉर्ड्स: {countInMonth}
+                                    उपस्थिति रिकॉर्ड: {countInMonth}
                                   </div>
                                 </button>
                               );
@@ -8158,7 +8157,7 @@ export default function App() {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    {st.days} दिन कार्य →
+                                    {st.days} दिन उपस्थिति →
                                   </span>
                                 </div>
                               ));
@@ -8186,8 +8185,18 @@ export default function App() {
                             >
                               ← स्टाफ सूची पर वापस जाएं
                             </button>
+                            <h4
+                              style={{
+                                margin: "0 0 10px 0",
+                                fontSize: "14px",
+                                color: "#166534",
+                              }}
+                            >
+                              🗺️ तारीखवार IN/OUT, कार्य अवधि और GPS रूट (
+                              {attSelectedStaffPhone}):
+                            </h4>
                             {(() => {
-                              const dailyLogs = attendanceRecords
+                              const dayRecords = attendanceRecords
                                 .filter(
                                   (r) =>
                                     r.year === attSelectedYear &&
@@ -8195,205 +8204,193 @@ export default function App() {
                                     r.staffPhone === attSelectedStaffPhone
                                 )
                                 .sort((a, b) =>
-                                  String(b.dateKey).localeCompare(
-                                    String(a.dateKey)
-                                  )
+                                  b.dateKey.localeCompare(a.dateKey)
                                 );
 
-                              const staffTitle =
-                                dailyLogs[0]?.staffName ||
-                                `Staff (${attSelectedStaffPhone})`;
+                              return dayRecords.map((rec) => {
+                                const pts = Array.isArray(rec.routePoints)
+                                  ? rec.routePoints.filter(
+                                      (p) => p && p.lat && p.lng
+                                    )
+                                  : [];
 
-                              return (
-                                <div>
-                                  <h4
+                                let googleMapsRouteUrl = null;
+                                if (pts.length === 1) {
+                                  googleMapsRouteUrl = `https://www.google.com/maps/search/?api=1&query=${pts[0].lat},${pts[0].lng}`;
+                                } else if (pts.length >= 2) {
+                                  const origin = `${pts[0].lat},${pts[0].lng}`;
+                                  const destination = `${
+                                    pts[pts.length - 1].lat
+                                  },${pts[pts.length - 1].lng}`;
+                                  const middle = pts
+                                    .slice(1, -1)
+                                    .slice(0, 8)
+                                    .map((p) => `${p.lat},${p.lng}`)
+                                    .join("|");
+                                  googleMapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${
+                                    middle ? `&waypoints=${middle}` : ""
+                                  }&travelmode=driving`;
+                                }
+
+                                return (
+                                  <div
+                                    key={rec.docId}
                                     style={{
-                                      margin: "0 0 10px 0",
-                                      color: "#166534",
-                                      fontSize: "14px",
+                                      border: "1.5px solid #94a3b8",
+                                      borderRadius: "8px",
+                                      padding: "12px",
+                                      marginBottom: "12px",
+                                      background: "#f8fafc",
                                     }}
                                   >
-                                    📍 {staffTitle} — दैनिक अटेंडेंस व रूट मैप
-                                  </h4>
-
-                                  {dailyLogs.map((rec) => {
-                                    const pts = Array.isArray(rec.routePoints)
-                                      ? rec.routePoints
-                                      : [];
-                                    const validCoords = pts.filter(
-                                      (p) =>
-                                        typeof p.lat === "number" &&
-                                        typeof p.lng === "number"
-                                    );
-                                    let googleMapsRouteUrl = "";
-                                    if (validCoords.length === 1) {
-                                      googleMapsRouteUrl = `https://www.google.com/maps?q=${validCoords[0].lat},${validCoords[0].lng}`;
-                                    } else if (validCoords.length > 1) {
-                                      const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
-                                      const dest = `${
-                                        validCoords[validCoords.length - 1].lat
-                                      },${
-                                        validCoords[validCoords.length - 1].lng
-                                      }`;
-                                      const waypoints = validCoords
-                                        .slice(1, -1)
-                                        .slice(0, 8)
-                                        .map((p) => `${p.lat},${p.lng}`)
-                                        .join("|");
-                                      googleMapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
-                                        waypoints
-                                          ? `&waypoints=${encodeURIComponent(
-                                              waypoints
-                                            )}`
-                                          : ""
-                                      }&travelmode=driving`;
-                                    }
-
-                                    return (
-                                      <div
-                                        key={rec.docId}
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        borderBottom: "1px solid #cbd5e1",
+                                        paddingBottom: "6px",
+                                        marginBottom: "8px",
+                                      }}
+                                    >
+                                      <strong
                                         style={{
-                                          border: "1px solid #cbd5e1",
-                                          borderRadius: "8px",
-                                          padding: "10px",
-                                          marginBottom: "10px",
-                                          background: "#f8fafc",
-                                          fontSize: "12px",
+                                          fontSize: "14px",
+                                          color: "#0f172a",
                                         }}
                                       >
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            borderBottom: "1px solid #e2e8f0",
-                                            paddingBottom: "5px",
-                                            marginBottom: "6px",
-                                          }}
-                                        >
-                                          <strong
-                                            style={{
-                                              fontSize: "13px",
-                                              color: "#0f172a",
-                                            }}
-                                          >
-                                            📅 दिनांक: {rec.dateKey}
-                                          </strong>
-                                          <span
-                                            style={{
-                                              background: "#dcfce7",
-                                              color: "#166534",
-                                              padding: "2px 8px",
-                                              borderRadius: "10px",
-                                              fontWeight: "bold",
-                                              fontSize: "11px",
-                                            }}
-                                          >
-                                            {calcWorkDuration(
-                                              rec.inTime,
-                                              rec.outTime
-                                            )}
-                                          </span>
-                                        </div>
-
-                                        <div
-                                          style={{
-                                            display: "grid",
-                                            gridTemplateColumns: "1fr 1fr",
-                                            gap: "6px",
-                                            marginBottom: "8px",
-                                          }}
-                                        >
-                                          <div>
-                                            <strong>🟢 IN Time:</strong>{" "}
-                                            {formatTime12(rec.inTime)}
-                                          </div>
-                                          <div>
-                                            <strong>🔴 OUT Time:</strong>{" "}
-                                            {rec.outTime
-                                              ? formatTime12(rec.outTime)
-                                              : "अभी Duty पर (Active)"}
-                                          </div>
-                                        </div>
-
-                                        {pts.length > 0 && (
-                                          <div
-                                            style={{
-                                              background: "#fff",
-                                              border: "1px solid #e2e8f0",
-                                              borderRadius: "6px",
-                                              padding: "8px",
-                                              marginBottom: "8px",
-                                            }}
-                                          >
-                                            <strong
-                                              style={{
-                                                fontSize: "11px",
-                                                color: "#334155",
-                                              }}
-                                            >
-                                              🛣️ दिन भर का मूवमेंट रूट (
-                                              {pts.length} लोकेशन पॉइंट्स):
-                                            </strong>
-                                            <div
-                                              style={{
-                                                marginTop: "4px",
-                                                maxHeight: "120px",
-                                                overflowY: "auto",
-                                              }}
-                                            >
-                                              {pts.map((pt, i) => (
-                                                <div
-                                                  key={i}
-                                                  style={{
-                                                    fontSize: "11px",
-                                                    padding: "3px 0",
-                                                    borderBottom:
-                                                      i < pts.length - 1
-                                                        ? "1px dashed #e2e8f0"
-                                                        : "none",
-                                                  }}
-                                                >
-                                                  <strong>
-                                                    {pt.timeText || "-"}
-                                                  </strong>{" "}
-                                                  ({pt.event || "ROUTE"}) —{" "}
-                                                  {pt.address ||
-                                                    `${pt.lat}, ${pt.lng}`}
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
+                                        📆 तारीख: {rec.dateKey}
+                                      </strong>
+                                      <span
+                                        style={{
+                                          fontSize: "11px",
+                                          fontWeight: "bold",
+                                          padding: "2px 8px",
+                                          borderRadius: "10px",
+                                          background: rec.outTime
+                                            ? "#dcfce7"
+                                            : "#fef3c7",
+                                          color: rec.outTime
+                                            ? "#166534"
+                                            : "#92400e",
+                                        }}
+                                      >
+                                        कुल समय:{" "}
+                                        {calcWorkDuration(
+                                          rec.inTime,
+                                          rec.outTime
                                         )}
+                                      </span>
+                                    </div>
 
-                                        {googleMapsRouteUrl && (
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              window.open(
-                                                googleMapsRouteUrl,
-                                                "_blank"
-                                              )
-                                            }
-                                            style={{
-                                              padding: "6px 12px",
-                                              background: "#0284c7",
-                                              color: "#fff",
-                                              border: "none",
-                                              borderRadius: "5px",
-                                              fontSize: "11px",
-                                              fontWeight: "bold",
-                                              cursor: "pointer",
-                                            }}
-                                          >
-                                            🗺️ पूरा रूट Google Maps पर देखें
-                                          </button>
-                                        )}
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        fontSize: "13px",
+                                        marginBottom: "8px",
+                                        flexWrap: "wrap",
+                                        gap: "6px",
+                                      }}
+                                    >
+                                      <div>
+                                        🟢 <strong>IN (प्रवेश):</strong>{" "}
+                                        {formatTime12(rec.inTime)}
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              );
+                                      <div>
+                                        🔴 <strong>OUT (निकास):</strong>{" "}
+                                        {rec.outTime
+                                          ? formatTime12(rec.outTime)
+                                          : "अभी ड्यूटी पर (Active)"}
+                                      </div>
+                                    </div>
+
+                                    {googleMapsRouteUrl && (
+                                      <div style={{ marginBottom: "8px" }}>
+                                        <a
+                                          href={googleMapsRouteUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={{
+                                            display: "inline-block",
+                                            padding: "6px 12px",
+                                            background: "#2563eb",
+                                            color: "#fff",
+                                            textDecoration: "none",
+                                            borderRadius: "5px",
+                                            fontSize: "12px",
+                                            fontWeight: "bold",
+                                          }}
+                                        >
+                                          🗺️ Google Map पर आज का पूरा रास्ता देखें ({pts.length}{" "}
+                                          Points)
+                                        </a>
+                                      </div>
+                                    )}
+
+                                    <div
+                                      style={{
+                                        background: "#ffffff",
+                                        border: "1px solid #e2e8f0",
+                                        borderRadius: "6px",
+                                        padding: "8px",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          fontSize: "11px",
+                                          fontWeight: "bold",
+                                          color: "#475569",
+                                          marginBottom: "6px",
+                                        }}
+                                      >
+                                        📍 दिन भर की लोकेशन टाइमलाइन:
+                                      </div>
+                                      {Array.isArray(rec.routePoints) &&
+                                      rec.routePoints.length > 0 ? (
+                                        rec.routePoints.map((pt, i) => (
+                                          <div
+                                            key={i}
+                                            style={{
+                                              fontSize: "11px",
+                                              padding: "4px 0",
+                                              borderBottom:
+                                                i < rec.routePoints.length - 1
+                                                  ? "1px dashed #e2e8f0"
+                                                  : "none",
+                                            }}
+                                          >
+                                            <strong>[{pt.timeText}]</strong>{" "}
+                                            <span
+                                              style={{
+                                                color:
+                                                  pt.event === "IN"
+                                                    ? "#166534"
+                                                    : pt.event === "OUT"
+                                                    ? "#dc2626"
+                                                    : "#0369a1",
+                                                fontWeight: "bold",
+                                              }}
+                                            >
+                                              ({pt.event || "ROUTE"})
+                                            </span>{" "}
+                                            — {pt.address}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div
+                                          style={{
+                                            fontSize: "11px",
+                                            color: "#94a3b8",
+                                          }}
+                                        >
+                                          GPS लोकेशन पॉइंट्स रिकॉर्ड नहीं हुए।
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              });
                             })()}
                           </div>
                         )}
@@ -8403,11 +8400,11 @@ export default function App() {
                   {adminMainTab === "logins" && (
                     <div>
                       <h4 style={{ margin: "0 0 10px 0", fontSize: "13px" }}>
-                        यूज़र लॉगिन रिकॉर्ड्स:
+                        🔐 लॉगिन हिस्ट्री:
                       </h4>
                       {loginLogs.length === 0 ? (
                         <p style={{ color: "#64748b", fontSize: "13px" }}>
-                          कोई लॉगिन रिकॉर्ड नहीं है।
+                          कोई लॉगिन हिस्ट्री उपलब्ध नहीं है।
                         </p>
                       ) : (
                         loginLogs.map((log, idx) => (
@@ -8417,16 +8414,13 @@ export default function App() {
                               border: "1px solid #e2e8f0",
                               padding: "8px 10px",
                               borderRadius: "6px",
-                              marginBottom: "8px",
-                              background: "#f8fafc",
+                              marginBottom: "6px",
+                              background: "#fafafa",
                               fontSize: "12px",
                             }}
                           >
                             <strong>{log.name}</strong> ({log.role}) — कुल लॉगिन:{" "}
-                            {log.loginCount || 1}
-                            <div style={{ color: "#64748b", fontSize: "11px" }}>
-                              अंतिम लॉगिन: {log.lastLoginText}
-                            </div>
+                            {log.loginCount} | अंतिम: {log.lastLoginText}
                           </div>
                         ))
                       )}
