@@ -4506,7 +4506,7 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-                                                मोबाइल नंबर, OTP
+                                            
             </p>
           </div>
 
@@ -4542,7 +4542,7 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-                                       स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक
+                                       	स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक
             </p>
           </div>
         </div>
