@@ -4506,7 +4506,7 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-              मोबाइल नंबर, OTP
+                                                मोबाइल नंबर, OTP
             </p>
           </div>
 
@@ -4532,7 +4532,7 @@ export default function App() {
                 textAlign: "center",
               }}
             >
-              📊 एडमिन &amp; ऑफिस स्टाफ पैनल (Office Login)
+              📊 एडमिन &amp; ऑफिस स्टाफ (Office Login)
             </h3>
             <p
               style={{
@@ -4542,7 +4542,7 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक
+                                       स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक
             </p>
           </div>
         </div>
