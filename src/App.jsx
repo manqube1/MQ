@@ -4496,7 +4496,7 @@ export default function App() {
                 textAlign: "center",
               }}
             >
-              🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile &amp; GPS Login)
+              🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile)
             </h3>
             <p
               style={{
