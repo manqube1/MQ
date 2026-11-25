@@ -1801,7 +1801,7 @@ export default function App() {
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminMainTab, setAdminMainTab] = useState("jobs");
+  const [adminMainTab, setAdminMainTab] = useState("menu");
   const [adminJobSubTab, setAdminJobSubTab] = useState("completed");
   const [adminSpareSubTab, setAdminSpareSubTab] = useState("stock");
   const [selectedStaffFolder, setSelectedStaffFolder] = useState(null);
@@ -2825,6 +2825,7 @@ export default function App() {
     e.preventDefault();
     if (adminUser.toUpperCase() === "ADMIN" && adminPass === "123456789") {
       setAdminLoggedIn(true);
+      setAdminMainTab("menu");
       recordUserLogin(
         adminUser.toUpperCase(),
         "office",
@@ -4381,10 +4382,14 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   setActiveTab("home");
+                  setAdminMainTab("menu");
                   setInspectedJob(null);
                   setLastSubmittedJob(null);
                   setSelectedStaffFolder(null);
                   setExpandedJobNo(null);
+                  setAttSelectedYear(null);
+                  setAttSelectedMonth(null);
+                  setAttSelectedStaffPhone(null);
                 }}
                 style={{
                   padding: "8px 14px",
@@ -4506,7 +4511,10 @@ export default function App() {
           </div>
 
           <div
-            onClick={() => setActiveTab("admin")}
+            onClick={() => {
+              setActiveTab("admin");
+              setAdminMainTab("menu");
+            }}
             style={{
               background: "#fff",
               borderLeft: "5px solid #d97706",
@@ -6542,7 +6550,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 3. एडमिन कंट्रोल पैनल */}
+      {/* 3. एडमिन कंट्रोल पैनल (SINGLE-VIEW NAVIGATION) */}
       {activeTab === "admin" && (
         <div
           style={{
@@ -6600,115 +6608,145 @@ export default function App() {
                 />
               ) : (
                 <div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, 1fr)",
-                      gap: "8px",
-                      marginBottom: "15px",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdminMainTab("jobs");
-                        setSelectedStaffFolder(null);
-                        setExpandedJobNo(null);
-                      }}
+                  {adminMainTab === "menu" ? (
+                    <div
                       style={{
-                        padding: "10px",
-                        backgroundColor:
-                          adminMainTab === "jobs" ? "#166534" : "#e2e8f0",
-                        color: adminMainTab === "jobs" ? "#fff" : "#000",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontWeight: "bold",
-                        fontSize: "13px",
-                        cursor: "pointer",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
                       }}
                     >
-                      📋 जॉब शीट ({jobSheets.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdminMainTab("spares")}
-                      style={{
-                        padding: "10px",
-                        backgroundColor:
-                          adminMainTab === "spares" ? "#166534" : "#e2e8f0",
-                        color: adminMainTab === "spares" ? "#fff" : "#000",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontWeight: "bold",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      ⚙️ स्पेयर पार्ट ({spareStock.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdminMainTab("attendance");
-                        setAttSelectedYear(null);
-                        setAttSelectedMonth(null);
-                        setAttSelectedStaffPhone(null);
-                      }}
-                      style={{
-                        padding: "10px",
-                        backgroundColor:
-                          adminMainTab === "attendance" ? "#166534" : "#e2e8f0",
-                        color: adminMainTab === "attendance" ? "#fff" : "#000",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontWeight: "bold",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      📅 अटेंडेंस व रूट ({attendanceRecords.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdminMainTab("staffInOut");
-                        setAttSelectedYear(null);
-                        setAttSelectedMonth(null);
-                        setAttSelectedStaffPhone(null);
-                      }}
-                      style={{
-                        padding: "10px",
-                        backgroundColor:
-                          adminMainTab === "staffInOut" ? "#166534" : "#e2e8f0",
-                        color: adminMainTab === "staffInOut" ? "#fff" : "#000",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontWeight: "bold",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      ⏱️ Staff IN/OUT ({pendingLogoutRecords.length} Active)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdminMainTab("logins")}
-                      style={{
-                        padding: "10px",
-                        backgroundColor:
-                          adminMainTab === "logins" ? "#166534" : "#e2e8f0",
-                        color: adminMainTab === "logins" ? "#fff" : "#000",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontWeight: "bold",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        gridColumn: "span 2",
-                      }}
-                    >
-                      🔐 लॉगिन हिस्ट्री ({loginLogs.length})
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminMainTab("jobs");
+                          setSelectedStaffFolder(null);
+                          setExpandedJobNo(null);
+                        }}
+                        style={{
+                          padding: "14px",
+                          backgroundColor: "#166534",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "15px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📋 जॉब शीट ({jobSheets.length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAdminMainTab("spares")}
+                        style={{
+                          padding: "14px",
+                          backgroundColor: "#0284c7",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "15px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ⚙️ स्पेयर पार्ट ({spareStock.length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminMainTab("attendance");
+                          setAttSelectedYear(null);
+                          setAttSelectedMonth(null);
+                          setAttSelectedStaffPhone(null);
+                        }}
+                        style={{
+                          padding: "14px",
+                          backgroundColor: "#7c3aed",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "15px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📅 अटेंडेंस व रूट ({attendanceRecords.length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminMainTab("staffInOut");
+                          setAttSelectedYear(null);
+                          setAttSelectedMonth(null);
+                          setAttSelectedStaffPhone(null);
+                        }}
+                        style={{
+                          padding: "14px",
+                          backgroundColor: "#d97706",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "15px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ⏱️ Staff IN/OUT ({pendingLogoutRecords.length} Active)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAdminMainTab("logins")}
+                        style={{
+                          padding: "14px",
+                          backgroundColor: "#334155",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "15px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                        }}
+                      >
+                        🔐 लॉगिन हिस्ट्री ({loginLogs.length})
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: "12px" }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminMainTab("menu");
+                          setSelectedStaffFolder(null);
+                          setExpandedJobNo(null);
+                          setAttSelectedYear(null);
+                          setAttSelectedMonth(null);
+                          setAttSelectedStaffPhone(null);
+                        }}
+                        style={{
+                          padding: "8px 14px",
+                          background: "#475569",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "6px",
+                          fontWeight: "bold",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ← एडमिन मेनू पर वापस जाएं
+                      </button>
+                    </div>
+                  )}
 
                   {adminMainTab === "jobs" && (
                     <div>
@@ -7749,43 +7787,35 @@ export default function App() {
                                   }}
                                 >
                                   <div>
-                                    👤 <strong>{st.name}</strong>
-                                    <div
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#64748b",
-                                      }}
-                                    >
-                                      मोबाइल: {st.phone}
-                                    </div>
-                                  </div>
-                                  <div style={{ textAlign: "right" }}>
-                                    <span
-                                      style={{
-                                        background: "#166534",
-                                        color: "#fff",
-                                        padding: "3px 10px",
-                                        borderRadius: "12px",
-                                        fontSize: "11px",
-                                        fontWeight: "bold",
-                                        display: "inline-block",
-                                      }}
-                                    >
-                                      {st.days} दिन
-                                    </span>
+                                    👷 <strong>{st.name}</strong> (मोबाइल:{" "}
+                                    {st.phone})
                                     {st.pendingOutCount > 0 && (
-                                      <div
+                                      <span
                                         style={{
+                                          marginLeft: "8px",
+                                          background: "#fef3c7",
+                                          color: "#b45309",
+                                          padding: "2px 6px",
+                                          borderRadius: "4px",
                                           fontSize: "10px",
-                                          color: "#dc2626",
                                           fontWeight: "bold",
-                                          marginTop: "3px",
                                         }}
                                       >
-                                        Log Out बाकी ({st.pendingOutCount})
-                                      </div>
+                                        {st.pendingOutCount} Log Out बाकी
+                                      </span>
                                     )}
                                   </div>
+                                  <span
+                                    style={{
+                                      background: "#0284c7",
+                                      color: "#fff",
+                                      padding: "3px 8px",
+                                      borderRadius: "10px",
+                                      fontSize: "11px",
+                                    }}
+                                  >
+                                    {st.days} दिन
+                                  </span>
                                 </div>
                               ));
                             })()}
@@ -7810,126 +7840,116 @@ export default function App() {
                                 cursor: "pointer",
                               }}
                             >
-                              ← स्टाफ सूची पर वापस जाएं
+                              ← स्टाफ लिस्ट पर वापस जाएं
                             </button>
                             <h4
                               style={{
                                 margin: "0 0 10px 0",
                                 fontSize: "14px",
-                                color: "#166534",
+                                color: "#0284c7",
                               }}
                             >
-                              ⏱️ Staff IN/OUT शीट: {attSelectedStaffPhone} (
-                              {
-                                HINDI_MONTHS[
-                                  parseInt(attSelectedMonth, 10) - 1
-                                ]
-                              }{" "}
-                              {attSelectedYear})
+                              🕒 स्टाफ IN / OUT डिटेल्स:{" "}
+                              {attSelectedStaffPhone}
                             </h4>
+                            {(() => {
+                              const dailyRecs = attendanceRecords
+                                .filter(
+                                  (r) =>
+                                    r.year === attSelectedYear &&
+                                    r.month === attSelectedMonth &&
+                                    r.staffPhone === attSelectedStaffPhone
+                                )
+                                .sort((a, b) =>
+                                  b.dateKey.localeCompare(a.dateKey)
+                                );
 
-                            {attendanceRecords
-                              .filter(
-                                (r) =>
-                                  r.year === attSelectedYear &&
-                                  r.month === attSelectedMonth &&
-                                  r.staffPhone === attSelectedStaffPhone
-                              )
-                              .sort((a, b) =>
-                                b.dateKey.localeCompare(a.dateKey)
-                              )
-                              .map((rec) => (
+                              return dailyRecs.map((rec) => (
                                 <div
                                   key={rec.docId}
                                   style={{
-                                    border: "1.5px solid #cbd5e1",
+                                    border: "1px solid #cbd5e1",
                                     borderRadius: "8px",
                                     padding: "12px",
-                                    marginBottom: "10px",
-                                    background: rec.outTime
-                                      ? "#f8fafc"
-                                      : "#fffbeb",
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    flexWrap: "wrap",
-                                    gap: "8px",
+                                    marginBottom: "12px",
+                                    background: "#ffffff",
                                   }}
                                 >
-                                  <div style={{ fontSize: "12px" }}>
-                                    <div
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      paddingBottom: "6px",
+                                      marginBottom: "8px",
+                                      fontSize: "13px",
+                                    }}
+                                  >
+                                    <strong>
+                                      📅 तारीख: {rec.day}/{rec.month}/
+                                      {rec.year}
+                                    </strong>
+                                    <span
                                       style={{
+                                        color: "#166534",
                                         fontWeight: "bold",
-                                        fontSize: "13px",
-                                        color: "#0f172a",
-                                        marginBottom: "4px",
                                       }}
                                     >
-                                      📅 तारीख: {rec.dateKey}
-                                    </div>
+                                      कुल अवधि:{" "}
+                                      {calcWorkDuration(
+                                        rec.inTime,
+                                        rec.outTime
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      fontSize: "12px",
+                                      flexWrap: "wrap",
+                                      gap: "8px",
+                                    }}
+                                  >
                                     <div>
-                                      <span style={{ color: "#166534" }}>
-                                        🟢 <strong>IN:</strong>{" "}
-                                        {formatTime12(rec.inTime)}
-                                      </span>{" "}
-                                      &nbsp;|&nbsp;{" "}
-                                      <span
+                                      🟢 <strong>IN:</strong>{" "}
+                                      {formatTime12(rec.inTime)} &nbsp;|&nbsp; 🔴{" "}
+                                      <strong>OUT:</strong>{" "}
+                                      {rec.outTime
+                                        ? formatTime12(rec.outTime)
+                                        : "अभी लॉगिन है (Log Out बाकी)"}
+                                    </div>
+                                    {!rec.outTime && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAdminMarkStaffOut(rec)
+                                        }
                                         style={{
-                                          color: rec.outTime
-                                            ? "#dc2626"
-                                            : "#d97706",
+                                          padding: "5px 10px",
+                                          background: "#dc2626",
+                                          color: "#fff",
+                                          border: "none",
+                                          borderRadius: "4px",
+                                          fontWeight: "bold",
+                                          fontSize: "11px",
+                                          cursor: "pointer",
                                         }}
                                       >
-                                        🔴 <strong>OUT:</strong>{" "}
-                                        {rec.outTime
-                                          ? formatTime12(rec.outTime)
-                                          : "Log Out बाकी"}
-                                      </span>
-                                    </div>
-                                    <div
-                                      style={{
-                                        marginTop: "3px",
-                                        color: "#475569",
-                                      }}
-                                    >
-                                      ⏱️ कुल समय:{" "}
-                                      <strong>
-                                        {calcWorkDuration(
-                                          rec.inTime,
-                                          rec.outTime
-                                        )}
-                                      </strong>
-                                    </div>
+                                        🔴 Log Out करें
+                                      </button>
+                                    )}
                                   </div>
-
-                                  {!rec.outTime && (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleAdminMarkStaffOut(rec)
-                                      }
-                                      style={{
-                                        padding: "8px 14px",
-                                        background: "#dc2626",
-                                        color: "#fff",
-                                        border: "none",
-                                        borderRadius: "6px",
-                                        fontWeight: "bold",
-                                        fontSize: "12px",
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      🔴 Staff Log Out करें
-                                    </button>
-                                  )}
                                 </div>
-                              ))}
+                              ));
+                            })()}
                           </div>
                         )}
                     </div>
                   )}
 
-                  {/* YEAR -> MONTH -> STAFF -> DAILY ATTENDANCE & GPS ROUTE */}
+                  {/* ATTENDANCE & ROUTE TRACKING TAB */}
                   {adminMainTab === "attendance" && (
                     <div>
                       {!attSelectedYear && (
@@ -7941,7 +7961,7 @@ export default function App() {
                               color: "#0f172a",
                             }}
                           >
-                            📅 1. वर्ष चुनें (Select Year):
+                            📅 अटेंडेंस एवं रूट रिकॉर्ड (वर्ष चुनें):
                           </h4>
                           <div
                             style={{
@@ -7998,7 +8018,7 @@ export default function App() {
                               color: "#0f172a",
                             }}
                           >
-                            📆 2. महीना चुनें (वर्ष {attSelectedYear}):
+                            📆 महीना चुनें (वर्ष {attSelectedYear}):
                           </h4>
                           <div
                             style={{
@@ -8077,7 +8097,7 @@ export default function App() {
                                 color: "#0f172a",
                               }}
                             >
-                              👷 3. स्टाफ चुनें (
+                              👷 स्टाफ चुनें (
                               {
                                 HINDI_MONTHS[
                                   parseInt(attSelectedMonth, 10) - 1
@@ -8135,27 +8155,19 @@ export default function App() {
                                   }}
                                 >
                                   <div>
-                                    👤 <strong>{st.name}</strong>
-                                    <div
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#64748b",
-                                      }}
-                                    >
-                                      मोबाइल: {st.phone}
-                                    </div>
+                                    👷 <strong>{st.name}</strong> (मोबाइल:{" "}
+                                    {st.phone})
                                   </div>
                                   <span
                                     style={{
-                                      background: "#166534",
+                                      background: "#0284c7",
                                       color: "#fff",
-                                      padding: "3px 10px",
-                                      borderRadius: "12px",
+                                      padding: "3px 8px",
+                                      borderRadius: "10px",
                                       fontSize: "11px",
-                                      fontWeight: "bold",
                                     }}
                                   >
-                                    {st.days} दिन उपस्थित
+                                    {st.days} दिन
                                   </span>
                                 </div>
                               ));
@@ -8181,235 +8193,175 @@ export default function App() {
                                 cursor: "pointer",
                               }}
                             >
-                              ← स्टाफ सूची पर वापस जाएं
+                              ← स्टाफ लिस्ट पर वापस जाएं
                             </button>
                             <h4
                               style={{
                                 margin: "0 0 10px 0",
                                 fontSize: "14px",
-                                color: "#166534",
+                                color: "#0284c7",
                               }}
                             >
-                              📍 दैनिक अटेंडेंस व लाइव रूट:{" "}
-                              {attSelectedStaffPhone} (
-                              {
-                                HINDI_MONTHS[
-                                  parseInt(attSelectedMonth, 10) - 1
-                                ]
-                              }{" "}
-                              {attSelectedYear})
+                              📍 दैनिक IN/OUT व लाइव रूट हिस्ट्री:{" "}
+                              {attSelectedStaffPhone}
                             </h4>
+                            {(() => {
+                              const dailyRecs = attendanceRecords
+                                .filter(
+                                  (r) =>
+                                    r.year === attSelectedYear &&
+                                    r.month === attSelectedMonth &&
+                                    r.staffPhone === attSelectedStaffPhone
+                                )
+                                .sort((a, b) =>
+                                  b.dateKey.localeCompare(a.dateKey)
+                                );
 
-                            {attendanceRecords
-                              .filter(
-                                (r) =>
-                                  r.year === attSelectedYear &&
-                                  r.month === attSelectedMonth &&
-                                  r.staffPhone === attSelectedStaffPhone
-                              )
-                              .sort((a, b) =>
-                                b.dateKey.localeCompare(a.dateKey)
-                              )
-                              .map((rec) => {
+                              return dailyRecs.map((rec) => {
                                 const pts = Array.isArray(rec.routePoints)
                                   ? rec.routePoints
                                   : [];
-                                const validCoords = pts.filter(
+                                const validGps = pts.filter(
                                   (p) => p.lat && p.lng
                                 );
-                                let mapsRouteUrl = "";
-                                if (validCoords.length === 1) {
-                                  mapsRouteUrl = `https://www.google.com/maps?q=${validCoords[0].lat},${validCoords[0].lng}`;
-                                } else if (validCoords.length >= 2) {
-                                  const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
-                                  const dest = `${
-                                    validCoords[validCoords.length - 1].lat
-                                  },${
-                                    validCoords[validCoords.length - 1].lng
-                                  }`;
-                                  const mid = validCoords
-                                    .slice(1, -1)
-                                    .slice(0, 8)
-                                    .map((w) => `${w.lat},${w.lng}`)
-                                    .join("|");
-                                  mapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
-                                    mid ? `&waypoints=${mid}` : ""
-                                  }&travelmode=driving`;
-                                }
+                                const mapUrl =
+                                  validGps.length >= 2
+                                    ? `https://www.google.com/maps/dir/${validGps
+                                        .map((p) => `${p.lat},${p.lng}`)
+                                        .join("/")}`
+                                    : validGps.length === 1
+                                    ? `https://www.google.com/maps?q=${validGps[0].lat},${validGps[0].lng}`
+                                    : null;
 
                                 return (
                                   <div
                                     key={rec.docId}
                                     style={{
-                                      border: "1.5px solid #cbd5e1",
+                                      border: "1px solid #cbd5e1",
                                       borderRadius: "8px",
                                       padding: "12px",
                                       marginBottom: "12px",
-                                      background: "#f8fafc",
+                                      background: "#ffffff",
                                     }}
                                   >
                                     <div
                                       style={{
                                         display: "flex",
                                         justifyContent: "space-between",
-                                        alignItems: "center",
                                         borderBottom: "1px solid #e2e8f0",
                                         paddingBottom: "6px",
                                         marginBottom: "8px",
-                                        flexWrap: "wrap",
-                                        gap: "6px",
+                                        fontSize: "13px",
                                       }}
                                     >
-                                      <strong style={{ fontSize: "14px" }}>
-                                        📅 तारीख: {rec.dateKey}
+                                      <strong>
+                                        📅 तारीख: {rec.day}/{rec.month}/
+                                        {rec.year}
                                       </strong>
-                                      {mapsRouteUrl && (
-                                        <a
-                                          href={mapsRouteUrl}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          style={{
-                                            padding: "4px 10px",
-                                            background: "#0284c7",
-                                            color: "#fff",
-                                            borderRadius: "4px",
-                                            fontSize: "11px",
-                                            fontWeight: "bold",
-                                            textDecoration: "none",
-                                          }}
-                                        >
-                                          🗺️ Google Map पर पूरा रूट देखें
-                                        </a>
-                                      )}
-                                    </div>
-
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        gap: "12px",
-                                        fontSize: "12px",
-                                        marginBottom: "8px",
-                                        flexWrap: "wrap",
-                                      }}
-                                    >
-                                      <span style={{ color: "#166534" }}>
-                                        🟢 <strong>IN:</strong>{" "}
-                                        {formatTime12(rec.inTime)}
-                                      </span>
-                                      <span style={{ color: "#dc2626" }}>
-                                        🔴 <strong>OUT:</strong>{" "}
-                                        {rec.outTime
-                                          ? formatTime12(rec.outTime)
-                                          : "अभी ड्यूटी पर (Active)"}
-                                      </span>
-                                      <span style={{ color: "#334155" }}>
-                                        ⏱️ <strong>कुल समय:</strong>{" "}
+                                      <span
+                                        style={{
+                                          color: "#166534",
+                                          fontWeight: "bold",
+                                        }}
+                                      >
+                                        कुल अवधि:{" "}
                                         {calcWorkDuration(
                                           rec.inTime,
                                           rec.outTime
                                         )}
                                       </span>
                                     </div>
-
                                     <div
                                       style={{
-                                        background: "#ffffff",
-                                        border: "1px solid #e2e8f0",
-                                        borderRadius: "6px",
-                                        padding: "8px",
                                         fontSize: "12px",
+                                        marginBottom: "8px",
                                       }}
                                     >
+                                      🟢 <strong>IN:</strong>{" "}
+                                      {formatTime12(rec.inTime)} &nbsp;|&nbsp; 🔴{" "}
+                                      <strong>OUT:</strong>{" "}
+                                      {rec.outTime
+                                        ? formatTime12(rec.outTime)
+                                        : "अभी लॉगिन है (Active)"}
+                                    </div>
+
+                                    {pts.length > 0 && (
                                       <div
                                         style={{
-                                          fontWeight: "bold",
-                                          marginBottom: "4px",
-                                          color: "#475569",
+                                          background: "#f8fafc",
+                                          padding: "8px",
+                                          borderRadius: "6px",
+                                          fontSize: "11px",
+                                          border: "1px solid #e2e8f0",
                                         }}
                                       >
-                                        📍 दिनभर का रूट / लोकेशन लॉग ({pts.length}{" "}
-                                        पॉइंट्स):
-                                      </div>
-                                      {pts.length === 0 ? (
-                                        <div style={{ color: "#94a3b8" }}>
-                                          कोई GPS पॉइंट दर्ज नहीं हुआ।
+                                        <div
+                                          style={{
+                                            fontWeight: "bold",
+                                            marginBottom: "4px",
+                                            color: "#334155",
+                                          }}
+                                        >
+                                          🛣️ दिन भर का मूवमेंट रूट ({pts.length}{" "}
+                                          पॉइंट्स):
                                         </div>
-                                      ) : (
-                                        pts.map((pt, idx) => (
+                                        {pts.map((p, idx) => (
                                           <div
                                             key={idx}
                                             style={{
-                                              padding: "4px 0",
-                                              borderBottom:
-                                                idx < pts.length - 1
-                                                  ? "1px dashed #e2e8f0"
-                                                  : "none",
+                                              marginBottom: "3px",
+                                              color: "#475569",
                                             }}
                                           >
+                                            •{" "}
                                             <strong>
-                                              {idx + 1}. [{pt.timeText}]
+                                              {p.timeText ||
+                                                formatTime12(p.timestamp)}
                                             </strong>{" "}
-                                            <span
-                                              style={{
-                                                fontSize: "10px",
-                                                padding: "1px 5px",
-                                                borderRadius: "4px",
-                                                background:
-                                                  pt.event === "IN"
-                                                    ? "#dcfce7"
-                                                    : pt.event === "OUT"
-                                                    ? "#fee2e2"
-                                                    : "#e0f2fe",
-                                                color:
-                                                  pt.event === "IN"
-                                                    ? "#166534"
-                                                    : pt.event === "OUT"
-                                                    ? "#991b1b"
-                                                    : "#075985",
-                                              }}
-                                            >
-                                              {pt.event}
-                                            </span>{" "}
-                                            — {pt.address}{" "}
-                                            {pt.lat && pt.lng && (
-                                              <a
-                                                href={`https://www.google.com/maps?q=${pt.lat},${pt.lng}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                style={{
-                                                  color: "#2563eb",
-                                                  marginLeft: "4px",
-                                                }}
-                                              >
-                                                (Pin)
-                                              </a>
-                                            )}
+                                            [{p.event || "ROUTE"}]:{" "}
+                                            {p.address ||
+                                              `${p.lat}, ${p.lng}`}
                                           </div>
-                                        ))
-                                      )}
-                                    </div>
+                                        ))}
+                                        {mapUrl && (
+                                          <a
+                                            href={mapUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            style={{
+                                              display: "inline-block",
+                                              marginTop: "6px",
+                                              padding: "5px 10px",
+                                              background: "#0284c7",
+                                              color: "#fff",
+                                              borderRadius: "4px",
+                                              textDecoration: "none",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            🗺️ Google Maps पर पूरा रूट देखें
+                                          </a>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 );
-                              })}
+                              });
+                            })()}
                           </div>
                         )}
                     </div>
                   )}
 
+                  {/* LOGIN HISTORY TAB */}
                   {adminMainTab === "logins" && (
                     <div>
-                      <h4
-                        style={{
-                          margin: "0 0 10px 0",
-                          fontSize: "13px",
-                          color: "#334155",
-                        }}
-                      >
-                        🔐 लॉगिन हिस्ट्री:
+                      <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>
+                        🔐 यूजर लॉगिन हिस्ट्री:
                       </h4>
                       {loginLogs.length === 0 ? (
                         <p style={{ color: "#64748b", fontSize: "13px" }}>
-                          कोई लॉगिन रिकॉर्ड नहीं है।
+                          कोई लॉगिन हिस्ट्री नहीं मिली।
                         </p>
                       ) : (
                         loginLogs.map((log, idx) => (
@@ -8419,16 +8371,13 @@ export default function App() {
                               border: "1px solid #e2e8f0",
                               padding: "8px 10px",
                               borderRadius: "6px",
-                              marginBottom: "8px",
+                              marginBottom: "6px",
                               background: "#f8fafc",
                               fontSize: "12px",
                             }}
                           >
                             <strong>{log.name}</strong> ({log.role}) — कुल लॉगिन:{" "}
-                            {log.loginCount}
-                            <div style={{ color: "#64748b" }}>
-                              आखिरी लॉगिन: {log.lastLoginText}
-                            </div>
+                            {log.loginCount} | आखिरी समय: {log.lastLoginText}
                           </div>
                         ))
                       )}
