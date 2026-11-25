@@ -4400,7 +4400,7 @@ export default function App() {
               पोर्टल चुनें (Select Portal)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#64748b" }}>
-              कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:
+              -
             </p>
           </div>
 
@@ -4456,7 +4456,7 @@ export default function App() {
                 textAlign: "center",
               }}
             >
-              🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile &amp; GPS Login)
+              🛠️ फ़ील्ड स्टाफ पोर्टल (StaffLogin)
             </h3>
             <p
               style={{
@@ -4466,8 +4466,7 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-              मोबाइल नंबर, OTP और GPS लोकेशन के साथ लॉगिन करें
-            </p>
+                       </p>
           </div>
 
           <div
@@ -4499,8 +4498,7 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक, Staff IN/OUT, अटेंडेंस (रूट व मैप) देखें
-            </p>
+                         </p>
           </div>
         </div>
       )}
