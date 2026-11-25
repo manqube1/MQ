@@ -127,29 +127,27 @@ const sendStaffTelegramAlert = async (messageText) => {
 
 export const compressImage = (file) => {
   return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const maxWidth = 600;
-        const scaleSize = maxWidth / img.width;
-        canvas.width = maxWidth;
-        canvas.height = img.height * scaleSize;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxWidth = 420;
+      const scaleSize = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scaleSize;
+      canvas.height = img.height * scaleSize;
 
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
 
-        canvas.toBlob(
-          (blob) => {
-            resolve(blob);
-          },
-          "image/jpeg",
-          0.6
-        );
-      };
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.45
+      );
     };
   });
 };
@@ -1738,9 +1736,8 @@ export default function App() {
   const [productType, setProductType] = useState("Split / Window AC");
   const [problemDesc, setProblemDesc] = useState("");
   const [custPhotos, setCustPhotos] = useState([]);
-  const [uploadingCustPhotos, setUploadingCustPhotos] = useState(false);
 
-  const handleCustPhotoChange = async (e) => {
+  const handleCustPhotoChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -1750,15 +1747,15 @@ export default function App() {
       file,
       uploadedUrl: "",
     }));
+
     setCustPhotos((prev) => [...prev, ...previews]);
 
-    try {
-      setUploadingCustPhotos(true);
-      for (const item of previews) {
+    previews.forEach(async (item) => {
+      try {
         const compressedBlob = await compressImage(item.file);
         const storageRef = ref(
           storage,
-          `complaint_photos/${Date.now()}_${item.name}`
+          `complaint_photos/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${item.name}`
         );
         await uploadBytesResumable(storageRef, compressedBlob);
         const downloadUrl = await getDownloadURL(storageRef);
@@ -1770,12 +1767,10 @@ export default function App() {
               : p
           )
         );
+      } catch (err) {
+        console.error("Background photo upload error:", err);
       }
-    } catch (err) {
-      console.error("Customer photo upload error:", err);
-    } finally {
-      setUploadingCustPhotos(false);
-    }
+    });
   };
 
   const savedStaffSession = (() => {
@@ -1816,7 +1811,6 @@ export default function App() {
   const [attSelectedMonth, setAttSelectedMonth] = useState(null);
   const [attSelectedStaffPhone, setAttSelectedStaffPhone] = useState(null);
 
-  // Admin Staff IN / OUT States
   const [manualInPhone, setManualInPhone] = useState("");
   const [manualInName, setManualInName] = useState("");
 
@@ -1909,7 +1903,6 @@ export default function App() {
   const [customerFeedback, setCustomerFeedback] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [sitePhotos, setSitePhotos] = useState([]);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [savedSignatureURL, setSavedSignatureURL] = useState("");
@@ -2478,7 +2471,7 @@ export default function App() {
   const serviceChargeVal = parseFloat(serviceChargeInput) || 0;
   const grandTotalBill = usedPartsTotal + serviceChargeVal;
 
-  const handleSitePhotosChange = async (e) => {
+  const handleSitePhotosChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -2490,13 +2483,12 @@ export default function App() {
     }));
     setSitePhotos((prev) => [...prev, ...previews]);
 
-    try {
-      setUploadingPhotos(true);
-      for (const item of previews) {
+    previews.forEach(async (item) => {
+      try {
         const compressedBlob = await compressImage(item.file);
         const storageRef = ref(
           storage,
-          `job_photos/${Date.now()}_${item.name}`
+          `job_photos/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${item.name}`
         );
         await uploadBytesResumable(storageRef, compressedBlob);
         const downloadUrl = await getDownloadURL(storageRef);
@@ -2508,12 +2500,10 @@ export default function App() {
               : p
           )
         );
+      } catch (err) {
+        console.error("Background site photo upload error:", err);
       }
-    } catch (err) {
-      console.error("Upload error:", err);
-    } finally {
-      setUploadingPhotos(false);
-    }
+    });
   };
 
   const removeSitePhoto = (index) => {
@@ -2675,7 +2665,8 @@ export default function App() {
 
     const jobSheetNo = "COMP" + custPhone + day + month + hours + minutes;
 
-    const uploadedCustUrls = custPhotos
+    const currentPhotosSnapshot = [...custPhotos];
+    const uploadedCustUrls = currentPhotosSnapshot
       .map((p) => p.uploadedUrl)
       .filter(Boolean);
 
@@ -2706,9 +2697,29 @@ export default function App() {
     };
 
     setJobSheets([newEntry, ...jobSheets]);
-    setDoc(doc(db, "jobs", jobSheetNo), newEntry).catch((err) =>
-      console.error(err)
-    );
+    setDoc(doc(db, "jobs", jobSheetNo), newEntry)
+      .then(() => {
+        currentPhotosSnapshot.forEach(async (item) => {
+          if (!item.uploadedUrl && item.file) {
+            try {
+              const compressedBlob = await compressImage(item.file);
+              const storageRef = ref(
+                storage,
+                `complaint_photos/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${item.name}`
+              );
+              await uploadBytesResumable(storageRef, compressedBlob);
+              const url = await getDownloadURL(storageRef);
+              await updateDoc(doc(db, "jobs", jobSheetNo), {
+                photoURL: url,
+                sitePhotoUrls: arrayUnion(url),
+              });
+            } catch (err) {
+              console.error("Deferred complaint photo upload error:", err);
+            }
+          }
+        });
+      })
+      .catch((err) => console.error(err));
 
     setProblemDesc("");
     setCustNameInput("");
@@ -2985,7 +2996,8 @@ export default function App() {
         )
       : [];
 
-    const uploadedPhotoUrls = sitePhotos
+    const sitePhotosSnapshot = [...sitePhotos];
+    const uploadedPhotoUrls = sitePhotosSnapshot
       .map((p) => p.uploadedUrl)
       .filter(Boolean);
 
@@ -3230,11 +3242,34 @@ export default function App() {
             (err) => console.error("Photo upload bg error:", err),
             () => {
               getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-                updateDoc(doc(db, "jobs", jobSheetNo), { photoURL: url });
+                updateDoc(doc(db, "jobs", jobSheetNo), {
+                  photoURL: url,
+                  sitePhotoUrls: arrayUnion(url),
+                });
               });
             }
           );
         }
+
+        sitePhotosSnapshot.forEach(async (item) => {
+          if (!item.uploadedUrl && item.file) {
+            try {
+              const compressedBlob = await compressImage(item.file);
+              const sRef = ref(
+                storage,
+                `job_photos/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${item.name}`
+              );
+              await uploadBytesResumable(sRef, compressedBlob);
+              const url = await getDownloadURL(sRef);
+              await updateDoc(doc(db, "jobs", jobSheetNo), {
+                photoURL: url,
+                sitePhotoUrls: arrayUnion(url),
+              });
+            } catch (e) {
+              console.error("Deferred site photo upload error:", e);
+            }
+          }
+        });
       })
       .catch(() => {
         enqueueOfflinePayload({
@@ -4400,7 +4435,7 @@ export default function App() {
               पोर्टल चुनें (Select Portal)
             </h3>
             <p style={{ margin: "0", fontSize: "13px", color: "#64748b" }}>
-              -
+              कृपया आगे बढ़ने के लिए अपना संबंधित पोर्टल चुनें:
             </p>
           </div>
 
@@ -4456,7 +4491,7 @@ export default function App() {
                 textAlign: "center",
               }}
             >
-              🛠️ फ़ील्ड स्टाफ पोर्टल (StaffLogin)
+              🛠️ फ़ील्ड स्टाफ पोर्टल (Staff Mobile &amp; GPS Login)
             </h3>
             <p
               style={{
@@ -4466,7 +4501,8 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-                       </p>
+              मोबाइल नंबर, OTP
+            </p>
           </div>
 
           <div
@@ -4498,7 +4534,8 @@ export default function App() {
                 textAlign: "left",
               }}
             >
-                         </p>
+              स्टाफ-वाइज जॉब फोल्डर, स्पेयर पार्ट्स स्टॉक
+            </p>
           </div>
         </div>
       )}
@@ -4676,18 +4713,6 @@ export default function App() {
                   style={{ padding: "6px" }}
                 />
 
-                {uploadingCustPhotos && (
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#0f766e",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    फोटो अपलोड हो रही है...
-                  </div>
-                )}
-
                 {custPhotos.length > 0 && (
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     {custPhotos.map((p, idx) => (
@@ -4733,7 +4758,6 @@ export default function App() {
 
                 <button
                   type="submit"
-                  disabled={uploadingCustPhotos}
                   style={{
                     padding: "12px",
                     backgroundColor: "#166534",
@@ -6377,18 +6401,6 @@ export default function App() {
                                   style={{ padding: "8px" }}
                                 />
 
-                                {uploadingPhotos && (
-                                  <div
-                                    style={{
-                                      fontSize: "14px",
-                                      color: "#0f766e",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    फोटो अपलोड हो रही है...
-                                  </div>
-                                )}
-
                                 {sitePhotos.length > 0 && (
                                   <div
                                     style={{
@@ -7756,20 +7768,21 @@ export default function App() {
                                         borderRadius: "12px",
                                         fontSize: "11px",
                                         fontWeight: "bold",
+                                        display: "inline-block",
                                       }}
                                     >
-                                      {st.days} दिन →
+                                      {st.days} दिन
                                     </span>
                                     {st.pendingOutCount > 0 && (
                                       <div
                                         style={{
-                                          fontSize: "11px",
+                                          fontSize: "10px",
                                           color: "#dc2626",
                                           fontWeight: "bold",
-                                          marginTop: "4px",
+                                          marginTop: "3px",
                                         }}
                                       >
-                                        {st.pendingOutCount} OUT बाकी
+                                        Log Out बाकी ({st.pendingOutCount})
                                       </div>
                                     )}
                                   </div>
@@ -7806,130 +7819,117 @@ export default function App() {
                                 color: "#166534",
                               }}
                             >
-                              📅 तारीखवार IN/OUT रिकॉर्ड ({attSelectedStaffPhone}
-                              ):
+                              ⏱️ Staff IN/OUT शीट: {attSelectedStaffPhone} (
+                              {
+                                HINDI_MONTHS[
+                                  parseInt(attSelectedMonth, 10) - 1
+                                ]
+                              }{" "}
+                              {attSelectedYear})
                             </h4>
-                            {(() => {
-                              const dayRecords = attendanceRecords
-                                .filter(
-                                  (r) =>
-                                    r.year === attSelectedYear &&
-                                    r.month === attSelectedMonth &&
-                                    r.staffPhone === attSelectedStaffPhone
-                                )
-                                .sort((a, b) =>
-                                  b.dateKey.localeCompare(a.dateKey)
-                                );
 
-                              return dayRecords.map((rec) => (
+                            {attendanceRecords
+                              .filter(
+                                (r) =>
+                                  r.year === attSelectedYear &&
+                                  r.month === attSelectedMonth &&
+                                  r.staffPhone === attSelectedStaffPhone
+                              )
+                              .sort((a, b) =>
+                                b.dateKey.localeCompare(a.dateKey)
+                              )
+                              .map((rec) => (
                                 <div
                                   key={rec.docId}
                                   style={{
-                                    border: "1.5px solid #94a3b8",
+                                    border: "1.5px solid #cbd5e1",
                                     borderRadius: "8px",
                                     padding: "12px",
                                     marginBottom: "10px",
-                                    background: "#f8fafc",
+                                    background: rec.outTime
+                                      ? "#f8fafc"
+                                      : "#fffbeb",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
                                   }}
                                 >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                      borderBottom: "1px solid #cbd5e1",
-                                      paddingBottom: "6px",
-                                      marginBottom: "8px",
-                                    }}
-                                  >
-                                    <strong
+                                  <div style={{ fontSize: "12px" }}>
+                                    <div
                                       style={{
-                                        fontSize: "14px",
-                                        color: "#0f172a",
-                                      }}
-                                    >
-                                      📆 तारीख: {rec.dateKey}
-                                    </strong>
-                                    <span
-                                      style={{
-                                        fontSize: "11px",
                                         fontWeight: "bold",
-                                        padding: "2px 8px",
-                                        borderRadius: "10px",
-                                        background: rec.outTime
-                                          ? "#dcfce7"
-                                          : "#fef3c7",
-                                        color: rec.outTime
-                                          ? "#166534"
-                                          : "#92400e",
+                                        fontSize: "13px",
+                                        color: "#0f172a",
+                                        marginBottom: "4px",
                                       }}
                                     >
-                                      {calcWorkDuration(
-                                        rec.inTime,
-                                        rec.outTime
-                                      )}
-                                    </span>
-                                  </div>
-
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                      flexWrap: "wrap",
-                                      gap: "8px",
-                                      fontSize: "13px",
-                                    }}
-                                  >
-                                    <div>
-                                      🟢 <strong>IN:</strong>{" "}
-                                      {formatTime12(rec.inTime)}
+                                      📅 तारीख: {rec.dateKey}
                                     </div>
                                     <div>
-                                      🔴 <strong>OUT:</strong>{" "}
-                                      {rec.outTime ? (
-                                        formatTime12(rec.outTime)
-                                      ) : (
-                                        <span
-                                          style={{
-                                            color: "#dc2626",
-                                            fontWeight: "bold",
-                                          }}
-                                        >
-                                          अभी ड्यूटी पर (Pending)
-                                        </span>
-                                      )}
-                                    </div>
-                                    {!rec.outTime && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleAdminMarkStaffOut(rec)
-                                        }
+                                      <span style={{ color: "#166534" }}>
+                                        🟢 <strong>IN:</strong>{" "}
+                                        {formatTime12(rec.inTime)}
+                                      </span>{" "}
+                                      &nbsp;|&nbsp;{" "}
+                                      <span
                                         style={{
-                                          padding: "5px 10px",
-                                          background: "#dc2626",
-                                          color: "#fff",
-                                          border: "none",
-                                          borderRadius: "5px",
-                                          fontSize: "11px",
-                                          fontWeight: "bold",
-                                          cursor: "pointer",
+                                          color: rec.outTime
+                                            ? "#dc2626"
+                                            : "#d97706",
                                         }}
                                       >
-                                        🔴 Log Out करें
-                                      </button>
-                                    )}
+                                        🔴 <strong>OUT:</strong>{" "}
+                                        {rec.outTime
+                                          ? formatTime12(rec.outTime)
+                                          : "Log Out बाकी"}
+                                      </span>
+                                    </div>
+                                    <div
+                                      style={{
+                                        marginTop: "3px",
+                                        color: "#475569",
+                                      }}
+                                    >
+                                      ⏱️ कुल समय:{" "}
+                                      <strong>
+                                        {calcWorkDuration(
+                                          rec.inTime,
+                                          rec.outTime
+                                        )}
+                                      </strong>
+                                    </div>
                                   </div>
+
+                                  {!rec.outTime && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAdminMarkStaffOut(rec)
+                                      }
+                                      style={{
+                                        padding: "8px 14px",
+                                        background: "#dc2626",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "6px",
+                                        fontWeight: "bold",
+                                        fontSize: "12px",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      🔴 Staff Log Out करें
+                                    </button>
+                                  )}
                                 </div>
-                              ));
-                            })()}
+                              ))}
                           </div>
                         )}
                     </div>
                   )}
 
-                  {/* HIERARCHICAL ATTENDANCE & GPS ROUTE TRACKER TAB */}
+                  {/* YEAR -> MONTH -> STAFF -> DAILY ATTENDANCE & GPS ROUTE */}
                   {adminMainTab === "attendance" && (
                     <div>
                       {!attSelectedYear && (
@@ -7941,7 +7941,7 @@ export default function App() {
                               color: "#0f172a",
                             }}
                           >
-                            📅 वर्ष चुनें (Select Year):
+                            📅 1. वर्ष चुनें (Select Year):
                           </h4>
                           <div
                             style={{
@@ -7998,7 +7998,7 @@ export default function App() {
                               color: "#0f172a",
                             }}
                           >
-                            📆 महीना चुनें (वर्ष {attSelectedYear}):
+                            📆 2. महीना चुनें (वर्ष {attSelectedYear}):
                           </h4>
                           <div
                             style={{
@@ -8041,7 +8041,7 @@ export default function App() {
                                       marginTop: "2px",
                                     }}
                                   >
-                                    उपस्थिति रिकॉर्ड: {countInMonth}
+                                    रिकॉर्ड्स: {countInMonth}
                                   </div>
                                 </button>
                               );
@@ -8077,7 +8077,7 @@ export default function App() {
                                 color: "#0f172a",
                               }}
                             >
-                              👷 स्टाफ चुनें (
+                              👷 3. स्टाफ चुनें (
                               {
                                 HINDI_MONTHS[
                                   parseInt(attSelectedMonth, 10) - 1
@@ -8155,7 +8155,7 @@ export default function App() {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    {st.days} दिन उपस्थिति →
+                                    {st.days} दिन उपस्थित
                                   </span>
                                 </div>
                               ));
@@ -8190,43 +8190,50 @@ export default function App() {
                                 color: "#166534",
                               }}
                             >
-                              🗺️ तारीखवार IN/OUT, कार्य अवधि और GPS रूट (
-                              {attSelectedStaffPhone}):
+                              📍 दैनिक अटेंडेंस व लाइव रूट:{" "}
+                              {attSelectedStaffPhone} (
+                              {
+                                HINDI_MONTHS[
+                                  parseInt(attSelectedMonth, 10) - 1
+                                ]
+                              }{" "}
+                              {attSelectedYear})
                             </h4>
-                            {(() => {
-                              const dayRecords = attendanceRecords
-                                .filter(
-                                  (r) =>
-                                    r.year === attSelectedYear &&
-                                    r.month === attSelectedMonth &&
-                                    r.staffPhone === attSelectedStaffPhone
-                                )
-                                .sort((a, b) =>
-                                  b.dateKey.localeCompare(a.dateKey)
-                                );
 
-                              return dayRecords.map((rec) => {
+                            {attendanceRecords
+                              .filter(
+                                (r) =>
+                                  r.year === attSelectedYear &&
+                                  r.month === attSelectedMonth &&
+                                  r.staffPhone === attSelectedStaffPhone
+                              )
+                              .sort((a, b) =>
+                                b.dateKey.localeCompare(a.dateKey)
+                              )
+                              .map((rec) => {
                                 const pts = Array.isArray(rec.routePoints)
-                                  ? rec.routePoints.filter(
-                                      (p) => p && p.lat && p.lng
-                                    )
+                                  ? rec.routePoints
                                   : [];
-
-                                let googleMapsRouteUrl = null;
-                                if (pts.length === 1) {
-                                  googleMapsRouteUrl = `https://www.google.com/maps/search/?api=1&query=${pts[0].lat},${pts[0].lng}`;
-                                } else if (pts.length >= 2) {
-                                  const origin = `${pts[0].lat},${pts[0].lng}`;
-                                  const destination = `${
-                                    pts[pts.length - 1].lat
-                                  },${pts[pts.length - 1].lng}`;
-                                  const middle = pts
+                                const validCoords = pts.filter(
+                                  (p) => p.lat && p.lng
+                                );
+                                let mapsRouteUrl = "";
+                                if (validCoords.length === 1) {
+                                  mapsRouteUrl = `https://www.google.com/maps?q=${validCoords[0].lat},${validCoords[0].lng}`;
+                                } else if (validCoords.length >= 2) {
+                                  const origin = `${validCoords[0].lat},${validCoords[0].lng}`;
+                                  const dest = `${
+                                    validCoords[validCoords.length - 1].lat
+                                  },${
+                                    validCoords[validCoords.length - 1].lng
+                                  }`;
+                                  const mid = validCoords
                                     .slice(1, -1)
                                     .slice(0, 8)
-                                    .map((p) => `${p.lat},${p.lng}`)
+                                    .map((w) => `${w.lat},${w.lng}`)
                                     .join("|");
-                                  googleMapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${
-                                    middle ? `&waypoints=${middle}` : ""
+                                  mapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${
+                                    mid ? `&waypoints=${mid}` : ""
                                   }&travelmode=driving`;
                                 }
 
@@ -8234,7 +8241,7 @@ export default function App() {
                                   <div
                                     key={rec.docId}
                                     style={{
-                                      border: "1.5px solid #94a3b8",
+                                      border: "1.5px solid #cbd5e1",
                                       borderRadius: "8px",
                                       padding: "12px",
                                       marginBottom: "12px",
@@ -8246,34 +8253,57 @@ export default function App() {
                                         display: "flex",
                                         justifyContent: "space-between",
                                         alignItems: "center",
-                                        borderBottom: "1px solid #cbd5e1",
+                                        borderBottom: "1px solid #e2e8f0",
                                         paddingBottom: "6px",
                                         marginBottom: "8px",
+                                        flexWrap: "wrap",
+                                        gap: "6px",
                                       }}
                                     >
-                                      <strong
-                                        style={{
-                                          fontSize: "14px",
-                                          color: "#0f172a",
-                                        }}
-                                      >
-                                        📆 तारीख: {rec.dateKey}
+                                      <strong style={{ fontSize: "14px" }}>
+                                        📅 तारीख: {rec.dateKey}
                                       </strong>
-                                      <span
-                                        style={{
-                                          fontSize: "11px",
-                                          fontWeight: "bold",
-                                          padding: "2px 8px",
-                                          borderRadius: "10px",
-                                          background: rec.outTime
-                                            ? "#dcfce7"
-                                            : "#fef3c7",
-                                          color: rec.outTime
-                                            ? "#166534"
-                                            : "#92400e",
-                                        }}
-                                      >
-                                        कुल समय:{" "}
+                                      {mapsRouteUrl && (
+                                        <a
+                                          href={mapsRouteUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          style={{
+                                            padding: "4px 10px",
+                                            background: "#0284c7",
+                                            color: "#fff",
+                                            borderRadius: "4px",
+                                            fontSize: "11px",
+                                            fontWeight: "bold",
+                                            textDecoration: "none",
+                                          }}
+                                        >
+                                          🗺️ Google Map पर पूरा रूट देखें
+                                        </a>
+                                      )}
+                                    </div>
+
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "12px",
+                                        fontSize: "12px",
+                                        marginBottom: "8px",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <span style={{ color: "#166534" }}>
+                                        🟢 <strong>IN:</strong>{" "}
+                                        {formatTime12(rec.inTime)}
+                                      </span>
+                                      <span style={{ color: "#dc2626" }}>
+                                        🔴 <strong>OUT:</strong>{" "}
+                                        {rec.outTime
+                                          ? formatTime12(rec.outTime)
+                                          : "अभी ड्यूटी पर (Active)"}
+                                      </span>
+                                      <span style={{ color: "#334155" }}>
+                                        ⏱️ <strong>कुल समय:</strong>{" "}
                                         {calcWorkDuration(
                                           rec.inTime,
                                           rec.outTime
@@ -8283,113 +8313,84 @@ export default function App() {
 
                                     <div
                                       style={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        fontSize: "13px",
-                                        marginBottom: "8px",
-                                        flexWrap: "wrap",
-                                        gap: "6px",
-                                      }}
-                                    >
-                                      <div>
-                                        🟢 <strong>IN (प्रवेश):</strong>{" "}
-                                        {formatTime12(rec.inTime)}
-                                      </div>
-                                      <div>
-                                        🔴 <strong>OUT (निकास):</strong>{" "}
-                                        {rec.outTime
-                                          ? formatTime12(rec.outTime)
-                                          : "अभी ड्यूटी पर (Active)"}
-                                      </div>
-                                    </div>
-
-                                    {googleMapsRouteUrl && (
-                                      <div style={{ marginBottom: "8px" }}>
-                                        <a
-                                          href={googleMapsRouteUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{
-                                            display: "inline-block",
-                                            padding: "6px 12px",
-                                            background: "#2563eb",
-                                            color: "#fff",
-                                            textDecoration: "none",
-                                            borderRadius: "5px",
-                                            fontSize: "12px",
-                                            fontWeight: "bold",
-                                          }}
-                                        >
-                                          🗺️ Google Map पर आज का पूरा रास्ता देखें ({pts.length}{" "}
-                                          Points)
-                                        </a>
-                                      </div>
-                                    )}
-
-                                    <div
-                                      style={{
                                         background: "#ffffff",
                                         border: "1px solid #e2e8f0",
                                         borderRadius: "6px",
                                         padding: "8px",
+                                        fontSize: "12px",
                                       }}
                                     >
                                       <div
                                         style={{
-                                          fontSize: "11px",
                                           fontWeight: "bold",
+                                          marginBottom: "4px",
                                           color: "#475569",
-                                          marginBottom: "6px",
                                         }}
                                       >
-                                        📍 दिन भर की लोकेशन टाइमलाइन:
+                                        📍 दिनभर का रूट / लोकेशन लॉग ({pts.length}{" "}
+                                        पॉइंट्स):
                                       </div>
-                                      {Array.isArray(rec.routePoints) &&
-                                      rec.routePoints.length > 0 ? (
-                                        rec.routePoints.map((pt, i) => (
+                                      {pts.length === 0 ? (
+                                        <div style={{ color: "#94a3b8" }}>
+                                          कोई GPS पॉइंट दर्ज नहीं हुआ।
+                                        </div>
+                                      ) : (
+                                        pts.map((pt, idx) => (
                                           <div
-                                            key={i}
+                                            key={idx}
                                             style={{
-                                              fontSize: "11px",
                                               padding: "4px 0",
                                               borderBottom:
-                                                i < rec.routePoints.length - 1
+                                                idx < pts.length - 1
                                                   ? "1px dashed #e2e8f0"
                                                   : "none",
                                             }}
                                           >
-                                            <strong>[{pt.timeText}]</strong>{" "}
+                                            <strong>
+                                              {idx + 1}. [{pt.timeText}]
+                                            </strong>{" "}
                                             <span
                                               style={{
+                                                fontSize: "10px",
+                                                padding: "1px 5px",
+                                                borderRadius: "4px",
+                                                background:
+                                                  pt.event === "IN"
+                                                    ? "#dcfce7"
+                                                    : pt.event === "OUT"
+                                                    ? "#fee2e2"
+                                                    : "#e0f2fe",
                                                 color:
                                                   pt.event === "IN"
                                                     ? "#166534"
                                                     : pt.event === "OUT"
-                                                    ? "#dc2626"
-                                                    : "#0369a1",
-                                                fontWeight: "bold",
+                                                    ? "#991b1b"
+                                                    : "#075985",
                                               }}
                                             >
-                                              ({pt.event || "ROUTE"})
+                                              {pt.event}
                                             </span>{" "}
-                                            — {pt.address}
+                                            — {pt.address}{" "}
+                                            {pt.lat && pt.lng && (
+                                              <a
+                                                href={`https://www.google.com/maps?q=${pt.lat},${pt.lng}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{
+                                                  color: "#2563eb",
+                                                  marginLeft: "4px",
+                                                }}
+                                              >
+                                                (Pin)
+                                              </a>
+                                            )}
                                           </div>
                                         ))
-                                      ) : (
-                                        <div
-                                          style={{
-                                            fontSize: "11px",
-                                            color: "#94a3b8",
-                                          }}
-                                        >
-                                          GPS लोकेशन पॉइंट्स रिकॉर्ड नहीं हुए।
-                                        </div>
                                       )}
                                     </div>
                                   </div>
                                 );
-                              });
-                            })()}
+                              })}
                           </div>
                         )}
                     </div>
@@ -8397,12 +8398,18 @@ export default function App() {
 
                   {adminMainTab === "logins" && (
                     <div>
-                      <h4 style={{ margin: "0 0 10px 0", fontSize: "13px" }}>
+                      <h4
+                        style={{
+                          margin: "0 0 10px 0",
+                          fontSize: "13px",
+                          color: "#334155",
+                        }}
+                      >
                         🔐 लॉगिन हिस्ट्री:
                       </h4>
                       {loginLogs.length === 0 ? (
                         <p style={{ color: "#64748b", fontSize: "13px" }}>
-                          कोई लॉगिन हिस्ट्री उपलब्ध नहीं है।
+                          कोई लॉगिन रिकॉर्ड नहीं है।
                         </p>
                       ) : (
                         loginLogs.map((log, idx) => (
@@ -8412,13 +8419,16 @@ export default function App() {
                               border: "1px solid #e2e8f0",
                               padding: "8px 10px",
                               borderRadius: "6px",
-                              marginBottom: "6px",
-                              background: "#fafafa",
+                              marginBottom: "8px",
+                              background: "#f8fafc",
                               fontSize: "12px",
                             }}
                           >
                             <strong>{log.name}</strong> ({log.role}) — कुल लॉगिन:{" "}
-                            {log.loginCount} | अंतिम: {log.lastLoginText}
+                            {log.loginCount}
+                            <div style={{ color: "#64748b" }}>
+                              आखिरी लॉगिन: {log.lastLoginText}
+                            </div>
                           </div>
                         ))
                       )}
